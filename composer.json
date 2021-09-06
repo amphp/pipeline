@@ -1,0 +1,60 @@
+{
+    "name": "amphp/pipeline",
+    "homepage": "http://amphp.org/pipeline",
+    "description": "Asynchronous iterators and operators.",
+    "support": {
+        "issues": "https://github.com/amphp/pipeline/issues"
+    },
+    "keywords": [
+        "iterator",
+        "async",
+        "non-blocking",
+        "amp",
+        "amphp",
+        "io"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Aaron Piotrowski",
+            "email": "aaron@trowski.com"
+        },
+        {
+            "name": "Niklas Keller",
+            "email": "me@kelunik.com"
+        }
+    ],
+    "require": {
+        "php": ">=8",
+        "amphp/amp": "dev-v3-revolt"
+    },
+    "require-dev": {
+        "amphp/phpunit-util": "dev-v2-revolt",
+        "phpunit/phpunit": "^9",
+        "friendsofphp/php-cs-fixer": "^2.3",
+        "amphp/php-cs-fixer-config": "dev-master",
+        "psalm/phar": "^4.7",
+        "jetbrains/phpstorm-stubs": "^2019.3"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Amp\\Pipeline\\": "src"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Amp\\Pipeline\\": "test"
+        }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:revolt-php/event-loop.git"
+        }
+    ]
+}
