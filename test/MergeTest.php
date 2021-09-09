@@ -104,12 +104,12 @@ class MergeTest extends AsyncTestCase
         $pipeline = Pipeline\merge([$generator, $unused = Pipeline\fromIterable(\range(1, 5))]);
 
         try {
-            Pipeline\discard($pipeline)->join();
+            Pipeline\discard($pipeline);
             self::fail("The exception used to fail the pipeline should be thrown from continue()");
         } catch (TestException $reason) {
             self::assertSame($exception, $reason);
         } finally {
-            Pipeline\discard($unused)->join();
+            Pipeline\discard($unused);
         }
     }
 

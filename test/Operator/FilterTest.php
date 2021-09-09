@@ -18,7 +18,7 @@ class FilterTest extends AsyncTestCase
 
         $source->complete();
 
-        Pipeline\discard($pipeline)->join();
+        Pipeline\discard($pipeline);
     }
 
     public function testValuesEmitted(): void

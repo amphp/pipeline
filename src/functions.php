@@ -217,19 +217,17 @@ function takeWhile(callable $predicate): Operator
  *
  * @param Pipeline<TValue> $pipeline
  *
- * @return Future<int>
+ * @return int
  */
-function discard(Pipeline $pipeline): Future
+function discard(Pipeline $pipeline): int
 {
-    return spawn(static function () use ($pipeline): int {
-        $count = 0;
+    $count = 0;
 
-        while (null !== $pipeline->continue()) {
-            $count++;
-        }
+    while (null !== $pipeline->continue()) {
+        $count++;
+    }
 
-        return $count;
-    });
+    return $count;
 }
 
 /**
