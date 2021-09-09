@@ -140,16 +140,10 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
      */
     public function pipe(Operator ...$operators): Pipeline
     {
-        if (empty($operators)) {
-            return $this;
-        }
-
         $pipeline = $this;
         foreach ($operators as $operator) {
-            /** @psalm-suppress PossiblyInvalidArgument */
             $pipeline = $operator->pipe($pipeline);
         }
-
         return $pipeline;
     }
 

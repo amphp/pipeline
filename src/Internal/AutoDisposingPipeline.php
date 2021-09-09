@@ -52,15 +52,10 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
      */
     public function pipe(Operator ...$operators): Pipeline
     {
-        if (empty($operators)) {
-            return $this;
-        }
-
         $pipeline = $this;
         foreach ($operators as $operator) {
             $pipeline = $operator->pipe($pipeline);
         }
-
         return $pipeline;
     }
 
