@@ -26,16 +26,15 @@ class FilterTest extends AsyncTestCase
         $count = 0;
         $values = [1, 2, 3];
         $expected = [1, 3];
-        $generator = new AsyncGenerator(static function () use ($values) {
+        $generator = new AsyncGenerator(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
         });
 
-        $pipeline = $generator->pipe(Pipeline\filter(static function ($value) use (&$count) {
+        $pipeline = $generator->pipe(Pipeline\filter(function ($value) use (&$count): bool {
             ++$count;
-
-            return $value & 1;
+            return (bool) ($value & 1);
         }));
 
         while (null !== $value = $pipeline->continue()) {
@@ -52,15 +51,13 @@ class FilterTest extends AsyncTestCase
     {
         $values = [1, 2, 3];
         $exception = new TestException;
-        $generator = new AsyncGenerator(static function () use ($values) {
+        $generator = new AsyncGenerator(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
         });
 
-        $pipeline = $generator->pipe(Pipeline\filter(static function () use ($exception) {
-            throw $exception;
-        }));
+        $pipeline = $generator->pipe(Pipeline\filter(fn() => throw $exception));
 
         $this->expectExceptionObject($exception);
 

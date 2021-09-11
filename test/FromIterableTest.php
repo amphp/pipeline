@@ -4,7 +4,6 @@ namespace Amp\Pipeline;
 
 use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
-use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
 use function Amp\Future\spawn;
 use function Revolt\EventLoop\delay;
@@ -12,59 +11,6 @@ use function Revolt\EventLoop\delay;
 class FromIterableTest extends AsyncTestCase
 {
     private const TIMEOUT = 0.1;
-
-    public function testSuccessfulPromises(): void
-    {
-        $expected = \range(1, 3);
-        $pipeline = Pipeline\fromIterable([Future::complete(1), Future::complete(2), Future::complete(3)]);
-
-        while (null !== $value = $pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $value);
-        }
-    }
-
-    public function testFailedPromises(): void
-    {
-        $exception = new \Exception;
-        $iterator = Pipeline\fromIterable([Future::error($exception), Future::error($exception)]);
-
-        $this->expectExceptionObject($exception);
-
-        $iterator->continue();
-    }
-
-    public function testMixedPromises(): void
-    {
-        $exception = new TestException;
-        $expected = \range(1, 2);
-        $pipeline = Pipeline\fromIterable([Future::complete(1), Future::complete(2), Future::error($exception), Future::complete(4)]);
-
-        try {
-            while (null !== $value = $pipeline->continue()) {
-                self::assertSame(\array_shift($expected), $value);
-            }
-            self::fail("A failed promise in the iterable should fail the pipeline and be thrown from continue()");
-        } catch (TestException $reason) {
-            self::assertSame($exception, $reason);
-        }
-
-        self::assertEmpty($expected);
-    }
-
-    public function testPendingPromises(): void
-    {
-        $expected = \range(1, 4);
-        $pipeline = Pipeline\fromIterable([
-            $this->asyncValue(0.03, 1),
-            $this->asyncValue(0.01, 2),
-            $this->asyncValue(0.02, 3),
-            Future::complete(4),
-        ]);
-
-        while (null !== $value = $pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $value);
-        }
-    }
 
     public function testTraversable(): void
     {
@@ -132,13 +78,5 @@ class FromIterableTest extends AsyncTestCase
         }
 
         self::assertSame($count, $i);
-    }
-
-    private function asyncValue(float $delay, mixed $value): Future
-    {
-        return spawn(static function () use ($delay, $value): mixed {
-            delay($delay);
-            return $value;
-        });
     }
 }

@@ -24,15 +24,14 @@ class MapTest extends AsyncTestCase
     {
         $count = 0;
         $values = [1, 2, 3];
-        $generator = new AsyncGenerator(static function () use ($values) {
+        $generator = new AsyncGenerator(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
         });
 
-        $pipeline = $generator->pipe(Pipeline\map(static function ($value) use (&$count) {
+        $pipeline = $generator->pipe(Pipeline\map(function ($value) use (&$count): int {
             ++$count;
-
             return $value + 1;
         }));
 
@@ -51,15 +50,13 @@ class MapTest extends AsyncTestCase
         $values = [1, 2, 3];
         $exception = new TestException;
 
-        $generator = new AsyncGenerator(static function () use ($values) {
+        $generator = new AsyncGenerator(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
         });
 
-        $pipeline = $generator->pipe(Pipeline\map(static function () use ($exception) {
-            throw $exception;
-        }));
+        $pipeline = $generator->pipe(Pipeline\map(fn () => throw $exception));
 
         $this->expectExceptionObject($exception);
 

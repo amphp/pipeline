@@ -4,7 +4,6 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
-use function Amp\Future\all;
 use function Amp\Future\spawn;
 use function Revolt\EventLoop\defer;
 
@@ -25,8 +24,7 @@ function share(Pipeline $pipeline): Source
 }
 
 /**
- * Creates a pipeline from the given iterable, emitting each value. The iterable may contain promises. If any
- * promise fails, the returned pipeline will fail with the same reason.
+ * Creates a pipeline from the given iterable, emitting each value.
  *
  * @template TValue
  *
@@ -35,17 +33,11 @@ function share(Pipeline $pipeline): Source
  * @psalm-param iterable<array-key, TValue> $iterable
  *
  * @return Pipeline<TValue>
- *
- * @throws \TypeError If the argument is not an array or instance of \Traversable.
  */
 function fromIterable(iterable $iterable): Pipeline
 {
     return new AsyncGenerator(static function () use ($iterable): \Generator {
         foreach ($iterable as $value) {
-            if ($value instanceof Future) {
-                $value = $value->join();
-            }
-
             yield $value;
         }
     });
@@ -70,21 +62,26 @@ function merge(array $pipelines): Pipeline
             throw new \TypeError(\sprintf('Must provide only instances of %s to %s', Pipeline::class, __FUNCTION__));
         }
 
-        $futures[] = spawn(static function () use (&$subject, $pipeline): void {
-            while ((null !== $value = $pipeline->continue()) && $subject !== null) {
+        $futures[] = spawn(static function () use ($subject, $pipeline): void {
+            foreach ($pipeline as $value) {
+                if ($subject->isComplete()) {
+                    return;
+                }
                 $subject->yield($value);
             }
         });
     }
 
-    defer(static function () use (&$subject, $futures, $pipelines): void {
+    defer(static function () use ($subject, $futures, $pipelines): void {
         try {
-            all($futures);
+            Future\all($futures);
             $subject->complete();
         } catch (\Throwable $exception) {
             $subject->error($exception);
         } finally {
-            $subject = null;
+            foreach ($pipelines as $pipeline) {
+                $pipeline->dispose();
+            }
         }
     });
 
@@ -111,9 +108,55 @@ function concat(array $pipelines): Pipeline
     }
 
     return new AsyncGenerator(function () use ($pipelines): \Generator {
-        foreach ($pipelines as $pipeline) {
-            while (null !== $value = $pipeline->continue()) {
-                yield $value;
+        try {
+            foreach ($pipelines as $pipeline) {
+                foreach ($pipeline as $value) {
+                    yield $value;
+                }
+            }
+        } finally {
+            foreach ($pipelines as $pipeline) {
+                $pipeline->dispose();
+            }
+        }
+    });
+}
+
+/**
+ * Combines all given pipelines into one pipeline, emitting an array of values only after each pipeline has emitted a
+ * value. The returned pipeline completes when any pipeline completes or errors when any pipeline errors.
+ *
+ * @template TKey as array-key
+ * @template TValue
+ *
+ * @param array<TKey, Pipeline<TValue>> $pipelines
+ * @return Pipeline<array<TKey, TValue>>
+ */
+function zip(array $pipelines): Pipeline
+{
+    foreach ($pipelines as $pipeline) {
+        if (!$pipeline instanceof Pipeline) {
+            throw new \TypeError(\sprintf('Must provide only instances of %s to %s', Pipeline::class, __FUNCTION__));
+        }
+    }
+
+    return new AsyncGenerator(static function () use ($pipelines): \Generator {
+        try {
+            while (true) {
+                $next = Future\all(\array_map(
+                    static fn (Pipeline $pipeline) => Future\spawn(static fn () => $pipeline->continue()),
+                    $pipelines
+                ));
+
+                if (\in_array(needle: null, haystack: $next, strict: true)) {
+                    return;
+                }
+
+                yield $next;
+            }
+        } finally {
+            foreach ($pipelines as $pipeline) {
+                $pipeline->dispose();
             }
         }
     });
@@ -123,13 +166,13 @@ function concat(array $pipelines): Pipeline
  * @template TValue
  * @template TReturn
  *
- * @param callable(TValue):TReturn $onEmit
+ * @param callable(TValue):TReturn $map
  *
  * @return Operator<TValue, TReturn>
  */
-function map(callable $onEmit): Operator
+function map(callable $map): Operator
 {
-    return new Operator\MapOperator($onEmit);
+    return new Operator\MapOperator($map);
 }
 
 /**
@@ -155,6 +198,20 @@ function filter(callable $filter): Operator
 function delay(float $timeout): Operator
 {
     return new Operator\DelayOperator($timeout);
+}
+
+/**
+ * Values emitted from the source pipeline are not emitted on the returned pipline until the $delayWhen pipeline emits.
+ * The returned pipeline completes or errors when either the source or $delayWhen completes or errors.
+ *
+ * @template TValue
+ *
+ * @param Pipeline<mixed> $delayWhen
+ * @return Operator<TValue, TValue>
+ */
+function delayWhen(Pipeline $delayWhen): Operator
+{
+    return new Operator\DelayWhenOperator($delayWhen);
 }
 
 /**
@@ -208,6 +265,66 @@ function take(int $count): Operator
 function takeWhile(callable $predicate): Operator
 {
     return new Operator\TakeWhileOperator($predicate);
+}
+
+/**
+ * Invokes the given function each time a value is emitted to perform side effects with the value.
+ * While this could be accomplished with map, the intention of this operator is to keep those functions pure.
+ *
+ * @template TValue
+ *
+ * @param callable(TValue):void $tap
+ * @return Operator<TValue, TValue>
+ */
+function tap(callable $tap): Operator
+{
+    return new Operator\TapOperator($tap);
+}
+
+/**
+ * Invokes the given function when the pipeline completes, either successfully or with an error.
+ *
+ * @template TValue
+ *
+ * @param callable():void $finally
+ * @return Operator<TValue, TValue>
+ */
+function finalize(callable $finally): Operator
+{
+    return new Operator\FinalizeOperator($finally);
+}
+
+/**
+ * The last value emitted on the pipeline is emitted only when $sampleWhen emits. If the previous value has already
+ * been emitted when $sampleWhen emits, no value is emitted on the returned pipeline.
+ *
+ * The returned pipeline completes or errors when either the source or $sampleWhen completes or errors.
+ *
+ * @template TValue
+ *
+ * @param Pipeline<mixed> $sampleWhen
+ * @return Operator<TValue, TValue>
+ */
+function sampleWhen(Pipeline $sampleWhen): Operator
+{
+    return new Operator\SampleWhenOperator($sampleWhen);
+}
+
+/**
+ * @template TValue
+ *
+ * @param float $period
+ * @return Operator<TValue, TValue>
+ */
+function sampleTime(float $period): Operator
+{
+    return new Operator\SampleWhenOperator(
+        (new AsyncGenerator(static function (): \Generator {
+            while (true) {
+                yield 0;
+            }
+        }))->pipe(delay($period))
+    );
 }
 
 /**
