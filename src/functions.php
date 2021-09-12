@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Amp\Pipeline;
 
 use Amp\Future;
@@ -367,6 +366,35 @@ function sampleTime(float $period): Operator
             }
         }))->pipe(delay($period))
     );
+}
+
+/**
+ * @template TValue
+ *
+ * @param Pipeline<TValue> $pipeline
+ * @param callable(TValue):void $callback
+ */
+function each(Pipeline $pipeline, callable $callback): void {
+    foreach ($pipeline as $value) {
+        $callback($value);
+    }
+}
+
+/**
+ * @template TValue
+ * @template TResult
+ *
+ * @param Pipeline<TValue> $pipeline
+ * @param callable(TResult, TValue):TResult $accumulator
+ * @param TResult $initial
+ * @return TResult
+ */
+function reduce(Pipeline $pipeline, callable $accumulator, mixed $initial = null): mixed {
+    $result = $initial;
+    foreach ($pipeline as $value) {
+        $result = $accumulator($result, $value);
+    }
+    return $result;
 }
 
 /**

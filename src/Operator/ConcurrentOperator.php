@@ -30,11 +30,14 @@ final class ConcurrentOperator implements Operator
 
     public function pipe(Pipeline $pipeline): Pipeline
     {
-        $result = new Subject();
+        $destination = new Subject();
 
-        defer(function () use ($pipeline, $result): void {
+        defer(function () use ($pipeline, $destination): void {
             $queue = new \SplQueue();
             $subjects = new \ArrayObject();
+
+            // Add initial source which will dispose of destination if no values are emitted.
+            $queue->push($this->createSubject($destination, $queue, $subjects));
 
             $previous = Future::complete(null);
 
@@ -42,12 +45,12 @@ final class ConcurrentOperator implements Operator
                 foreach ($pipeline as $value) {
                     $lock = $this->semaphore->acquire();
 
-                    if ($result->isComplete() || $result->isDisposed()) {
+                    if ($destination->isComplete() || $destination->isDisposed()) {
                         return;
                     }
 
                     if ($queue->isEmpty()) {
-                        $subject = $this->createSubject($result, $queue, $subjects);
+                        $subject = $this->createSubject($destination, $queue, $subjects);
                     } else {
                         $subject = $queue->shift();
                     }
@@ -57,8 +60,14 @@ final class ConcurrentOperator implements Operator
 
                 $previous->join();
             } catch (\Throwable $exception) {
-                if (!$result->isComplete()) {
-                    $result->error($exception);
+                try {
+                    $previous->join();
+                } catch (\Throwable $ignored) {
+                    // Exception ignored in case destination is disposed while waiting.
+                }
+
+                if (!$destination->isComplete()) {
+                    $destination->error($exception);
                 }
             } finally {
                 foreach ($subjects as $subject) {
@@ -67,7 +76,7 @@ final class ConcurrentOperator implements Operator
             }
         });
 
-        return $result->asPipeline();
+        return $destination->asPipeline();
     }
 
     private function createSubject(Subject $destination, \SplQueue $queue, \ArrayObject $subjects): Subject {

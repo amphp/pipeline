@@ -4,7 +4,6 @@ namespace Amp\Pipeline\Internal;
 
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
-use Amp\Pipeline\Source;
 
 /**
  * Wraps an EmitSource instance that has public methods to emit, complete, and fail into an object that only allows
