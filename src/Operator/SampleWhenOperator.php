@@ -11,42 +11,40 @@ use function Revolt\EventLoop\defer;
 
 final class SampleWhenOperator implements Operator
 {
-    private mixed $current;
-    private bool $sampled = true;
-    private Deferred $deferred;
-
     public function __construct(
         private Pipeline $sampleWhen
     ) {
-        $this->deferred = new Deferred();
     }
 
     public function pipe(Pipeline $pipeline): Pipeline
     {
-        defer(function () use ($pipeline): void {
+        $deferred = new Deferred;
+        $sampled = true;
+
+        defer(function () use (&$sampled, &$current, $deferred, $pipeline): void {
             try {
-                foreach ($pipeline as $this->current) {
-                    $this->sampled = false;
+                foreach ($pipeline as $current) {
+                    $sampled = false;
                 }
-                $this->deferred->complete(null);
+                $deferred->complete(null);
             } catch (\Throwable $exception) {
-                $this->deferred->error($exception);
+                $deferred->error($exception);
             }
         });
 
-        return new AsyncGenerator(function (): \Generator {
+        return new AsyncGenerator(function () use (&$sampled, &$current, $deferred): \Generator {
             while (
                 Future\first([
-                    $this->deferred->getFuture(),
+                    $deferred->getFuture(),
                     Future\spawn(fn() => $this->sampleWhen->continue())
                 ]) !== null
             ) {
-                if ($this->sampled) {
+                if ($sampled) {
                     continue;
                 }
 
-                $this->sampled = true;
-                yield $this->current;
+                $sampled = true;
+                yield $current;
             }
         });
     }
