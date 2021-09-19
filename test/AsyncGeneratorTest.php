@@ -5,8 +5,8 @@ namespace Amp\Pipeline;
 use Amp\Deferred;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use function Amp\Future\spawn;
-use function Revolt\EventLoop\delay;
+use function Amp\coroutine;
+use function Amp\delay;
 
 class AsyncGeneratorTest extends AsyncTestCase
 {
@@ -67,11 +67,11 @@ class AsyncGeneratorTest extends AsyncTestCase
             $result = yield $value;
         });
 
-        $future1 = spawn(fn () => $generator->continue());
-        $future2 = spawn(fn () => $generator->send($send));
+        $future1 = coroutine(fn () => $generator->continue());
+        $future2 = coroutine(fn () => $generator->send($send));
 
-        self::assertSame($value, $future1->join());
-        self::assertNull($future2->join());
+        self::assertSame($value, $future1->await());
+        self::assertNull($future2->await());
         self::assertSame($result, $send);
     }
 
@@ -87,11 +87,11 @@ class AsyncGeneratorTest extends AsyncTestCase
             }
         });
 
-        $future1 = spawn(fn () => $generator->continue());
-        $future2 = spawn(fn () => $generator->throw($exception));
+        $future1 = coroutine(fn () => $generator->continue());
+        $future2 = coroutine(fn () => $generator->throw($exception));
 
-        self::assertSame($value, $future1->join());
-        self::assertNull($future2->join());
+        self::assertSame($value, $future1->await());
+        self::assertNull($future2->await());
         self::assertSame($result, $exception);
     }
 
@@ -159,7 +159,7 @@ class AsyncGeneratorTest extends AsyncTestCase
         $deferred = new Deferred;
 
         $generator = new AsyncGenerator(function () use ($deferred) {
-            yield $deferred->getFuture()->join();
+            yield $deferred->getFuture()->await();
         });
 
         $deferred->error($exception);
@@ -232,7 +232,7 @@ class AsyncGeneratorTest extends AsyncTestCase
             }
         });
 
-        $future = spawn(static fn () => $generator->getReturn());
+        $future = coroutine(static fn () => $generator->getReturn());
 
         self::assertSame(0, $generator->continue());
 
@@ -241,7 +241,7 @@ class AsyncGeneratorTest extends AsyncTestCase
         $generator->dispose();
 
         try {
-            self::assertSame(1, $future->join());
+            self::assertSame(1, $future->await());
             self::fail("Pipeline should have been disposed");
         } catch (DisposedException $exception) {
             self::assertTrue($invoked);

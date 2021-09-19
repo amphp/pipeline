@@ -3,7 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
-use function Amp\Future\spawn;
+use function Amp\coroutine;
 
 /**
  * @template TValue
@@ -43,7 +43,7 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
             return;
         }
 
-        $this->future = spawn(static function () use ($generator, $source): mixed {
+        $this->future = coroutine(static function () use ($generator, $source): mixed {
             try {
                 $yielded = $generator->current();
 
@@ -132,7 +132,7 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
      */
     public function getReturn(): mixed
     {
-        return $this->future->join();
+        return $this->future->await();
     }
 
     /**

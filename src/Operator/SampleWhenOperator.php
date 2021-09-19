@@ -7,6 +7,7 @@ use Amp\Future;
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
+use function Amp\coroutine;
 use function Revolt\EventLoop\defer;
 
 final class SampleWhenOperator implements Operator
@@ -34,9 +35,9 @@ final class SampleWhenOperator implements Operator
 
         return new AsyncGenerator(function () use (&$sampled, &$current, $deferred): \Generator {
             while (
-                Future\first([
+                Future\race([
                     $deferred->getFuture(),
-                    Future\spawn(fn() => $this->sampleWhen->continue())
+                    coroutine(fn() => $this->sampleWhen->continue())
                 ]) !== null
             ) {
                 if ($sampled) {

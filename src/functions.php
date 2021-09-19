@@ -4,7 +4,7 @@ namespace Amp\Pipeline;
 
 use Amp\Future;
 use Amp\Sync\Semaphore;
-use function Amp\Future\spawn;
+use function Amp\coroutine;
 use function Revolt\EventLoop\defer;
 
 /**
@@ -62,7 +62,7 @@ function merge(array $pipelines): Pipeline
             throw new \TypeError(\sprintf('Must provide only instances of %s to %s', Pipeline::class, __FUNCTION__));
         }
 
-        $futures[] = spawn(static function () use ($subject, $pipeline): void {
+        $futures[] = coroutine(static function () use ($subject, $pipeline): void {
             foreach ($pipeline as $value) {
                 if ($subject->isComplete()) {
                     return;
@@ -144,7 +144,7 @@ function zip(array $pipelines): Pipeline
         try {
             while (true) {
                 $next = Future\all(\array_map(
-                    static fn (Pipeline $pipeline) => Future\spawn(static fn () => $pipeline->continue()),
+                    static fn (Pipeline $pipeline) => coroutine(static fn () => $pipeline->continue()),
                     $pipelines
                 ));
 

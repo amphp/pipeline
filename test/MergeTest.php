@@ -6,8 +6,8 @@ use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use function Amp\Future\spawn;
-use function Revolt\EventLoop\delay;
+use function Amp\coroutine;
+use function Amp\delay;
 
 class MergeTest extends AsyncTestCase
 {
@@ -51,13 +51,13 @@ class MergeTest extends AsyncTestCase
 
         $pipelines[] = new AsyncGenerator(function () use ($values1) {
             foreach ($values1 as $value) {
-                yield $value->join();
+                yield $value->await();
             }
         });
 
         $pipelines[] = new AsyncGenerator(function () use ($values2) {
             foreach ($values2 as $value) {
-                yield $value->join();
+                yield $value->await();
             }
         });
 
@@ -121,7 +121,7 @@ class MergeTest extends AsyncTestCase
 
     private function asyncValue(float $delay, mixed $value): Future
     {
-        return spawn(static function () use ($delay, $value): mixed {
+        return coroutine(static function () use ($delay, $value): mixed {
             delay($delay);
             return $value;
         });

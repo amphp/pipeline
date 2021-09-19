@@ -4,11 +4,10 @@ namespace Amp\Pipeline\Operator;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline;
 use Amp\Pipeline\Subject;
 use Amp\Sync\LocalSemaphore;
-use function Revolt\EventLoop\delay;
+use function Amp\delay;
 
 class ConcurrentTest extends AsyncTestCase
 {

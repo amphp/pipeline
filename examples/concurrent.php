@@ -6,7 +6,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use Amp\Pipeline;
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Sync\LocalSemaphore;
-use function Revolt\EventLoop\delay;
+use function Amp\delay;
 
 $pipeline = new AsyncGenerator(function (): \Generator {
     for ($i = 0; $i < 100; ++$i) {

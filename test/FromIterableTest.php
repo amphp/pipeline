@@ -2,11 +2,9 @@
 
 namespace Amp\Pipeline;
 
-use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\Pipeline;
-use function Amp\Future\spawn;
-use function Revolt\EventLoop\delay;
+use function Amp\delay;
 
 class FromIterableTest extends AsyncTestCase
 {

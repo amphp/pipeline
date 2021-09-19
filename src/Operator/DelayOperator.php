@@ -5,7 +5,7 @@ namespace Amp\Pipeline\Operator;
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
-use function Revolt\EventLoop\delay;
+use function Amp\delay;
 
 final class DelayOperator implements Operator
 {

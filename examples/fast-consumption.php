@@ -4,8 +4,8 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Amp\Pipeline\AsyncGenerator;
-use function Amp\Future\spawn;
-use function Revolt\EventLoop\delay;
+use function Amp\coroutine;
+use function Amp\delay;
 
 try {
     /** @psalm-var AsyncGenerator<int, null, null> $pipeline */
@@ -28,10 +28,10 @@ try {
 
     // Pipeline consumer attempts to consume 11 values at once. Only 10 will be emitted.
     $futures = [];
-    for ($i = 0; $i < 11 && ($futures[] = spawn(fn(): ?int => $pipeline->continue())); ++$i) ;
+    for ($i = 0; $i < 11 && ($futures[] = coroutine(fn(): ?int => $pipeline->continue())); ++$i) ;
 
     foreach ($futures as $key => $future) {
-        if (null === $yielded = $future->join()) {
+        if (null === $yielded = $future->await()) {
             \printf("Async generator completed after yielding %d values\n", $key);
             break;
         }

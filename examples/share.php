@@ -6,9 +6,9 @@ require __DIR__ . '/../vendor/autoload.php';
 use Amp\Future;
 use Amp\Pipeline;
 use Amp\Pipeline\Subject;
-use function Amp\Future\spawn;
+use function Amp\coroutine;
+use function Amp\delay;
 use function Revolt\EventLoop\defer;
-use function Revolt\EventLoop\delay;
 
 try {
     /** @psalm-var Subject<int> $source */
@@ -34,7 +34,7 @@ try {
     $pipeline1 = $source->asPipeline();
     $pipeline2 = $source->asPipeline();
 
-    $future1 = spawn(function () use ($pipeline1) {
+    $future1 = coroutine(function () use ($pipeline1) {
         // Use Amp\Pipeline\toIterator() to use a pipeline with foreach.
         foreach ($pipeline1 as $value) {
             \printf("Pipeline source yielded %d\n", $value);
@@ -42,7 +42,7 @@ try {
         }
     });
 
-    $future2 = spawn(function () use ($pipeline2) {
+    $future2 = coroutine(function () use ($pipeline2) {
         foreach ($pipeline2 as $value) {
             \printf("Pipeline source yielded %d\n", $value);
             delay(0.1); // Listener consumption takes only 100 ms, but is limited by 500 ms loop above.

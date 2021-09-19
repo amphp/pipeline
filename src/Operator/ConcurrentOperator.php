@@ -58,10 +58,10 @@ final class ConcurrentOperator implements Operator
                     $previous = $subject->emit([$value, $lock, $previous]);
                 }
 
-                $previous->join();
+                $previous->await();
             } catch (\Throwable $exception) {
                 try {
-                    $previous->join();
+                    $previous->await();
                 } catch (\Throwable $ignored) {
                     // Exception ignored in case destination is disposed while waiting.
                 }
@@ -109,7 +109,7 @@ final class ConcurrentOperator implements Operator
                     }
 
                     if ($this->ordered) {
-                        $previous->join();
+                        $previous->await();
                     }
 
                     $destination->yield($value);

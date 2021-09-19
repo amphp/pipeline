@@ -4,8 +4,8 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Amp\Pipeline\Subject;
+use function Amp\delay;
 use function Revolt\EventLoop\defer;
-use function Revolt\EventLoop\delay;
 
 try {
     /** @psalm-var Subject<int> $source */

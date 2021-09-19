@@ -5,10 +5,10 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Amp\Pipeline\AsyncGenerator;
 use Revolt\EventLoop\Loop;
-use function Amp\Future\spawn;
-use function Revolt\EventLoop\delay;
+use function Amp\coroutine;
+use function Amp\delay;
 
-$future = spawn(function (): void {
+$future = coroutine(function (): void {
     try {
         $timer = Loop::repeat(0.1, function () {
             echo ".", PHP_EOL; // This repeat timer is to show the loop is not being blocked.
@@ -40,4 +40,4 @@ $future = spawn(function (): void {
     }
 });
 
-$future->join();
+$future->await();
