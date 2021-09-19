@@ -8,7 +8,7 @@ use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
 use function Amp\coroutine;
-use function Revolt\EventLoop\defer;
+use function Revolt\EventLoop\queue;
 
 final class SampleWhenOperator implements Operator
 {
@@ -22,7 +22,7 @@ final class SampleWhenOperator implements Operator
         $deferred = new Deferred;
         $sampled = true;
 
-        defer(function () use (&$sampled, &$current, $deferred, $pipeline): void {
+        queue(function () use (&$sampled, &$current, $deferred, $pipeline): void {
             try {
                 foreach ($pipeline as $current) {
                     $sampled = false;

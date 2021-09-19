@@ -8,7 +8,7 @@ use Amp\Pipeline\Pipeline;
 use Amp\Pipeline\Subject;
 use Amp\Sync\Lock;
 use Amp\Sync\Semaphore;
-use function Revolt\EventLoop\defer;
+use function Revolt\EventLoop\queue;
 
 /**
  * @template TValue
@@ -32,7 +32,7 @@ final class ConcurrentOperator implements Operator
     {
         $destination = new Subject();
 
-        defer(function () use ($pipeline, $destination): void {
+        queue(function () use ($pipeline, $destination): void {
             $queue = new \SplQueue();
             $subjects = new \ArrayObject();
 
@@ -83,7 +83,7 @@ final class ConcurrentOperator implements Operator
         $subject = new Subject();
         $subjects->append($subject);
 
-        defer(function () use ($subjects, $subject, $destination, $queue): void {
+        queue(function () use ($subjects, $subject, $destination, $queue): void {
             $operatorSubject = new Subject();
             $operatorPipeline = $operatorSubject->asPipeline();
             foreach ($this->operators as $operator) {

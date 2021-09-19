@@ -25,7 +25,7 @@ final class SharedSource implements Source
     private function disperse(): void {
         $sources = &$this->sources;
         $pipeline = $this->pipeline;
-        defer(static function () use (&$sources, $pipeline): void {
+        queue(static function () use (&$sources, $pipeline): void {
             try {
                 foreach ($pipeline as $item) {
                     $futures = [];

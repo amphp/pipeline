@@ -5,7 +5,7 @@ namespace Amp\Pipeline;
 use Amp\Future;
 use Amp\Sync\Semaphore;
 use function Amp\coroutine;
-use function Revolt\EventLoop\defer;
+use function Revolt\EventLoop\queue;
 
 /**
  * Creates a source that can create any number of pipelines by calling {@see Source::asPipeline()}. The new pipelines
@@ -72,7 +72,7 @@ function merge(array $pipelines): Pipeline
         });
     }
 
-    defer(static function () use ($subject, $futures, $pipelines): void {
+    queue(static function () use ($subject, $futures, $pipelines): void {
         try {
             Future\all($futures);
             $subject->complete();

@@ -6,7 +6,7 @@ use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
 use Amp\Pipeline\Subject;
-use function Revolt\EventLoop\defer;
+use function Revolt\EventLoop\queue;
 
 class SampleWhenTest extends AsyncTestCase
 {
@@ -67,8 +67,8 @@ class SampleWhenTest extends AsyncTestCase
 
         $pipeline = $source->asPipeline()->pipe(Pipeline\sampleWhen($sample));
 
-        defer(fn() => $source->emit(1));
-        defer(fn() => $source->error($exception));
+        queue(fn() => $source->emit(1));
+        queue(fn() => $source->error($exception));
 
         self::assertSame(1, $pipeline->continue());
 
@@ -91,8 +91,8 @@ class SampleWhenTest extends AsyncTestCase
             Pipeline\sampleWhen($source->asPipeline())
         );
 
-        defer(fn() => $source->emit(1));
-        defer(fn() => $source->error($exception));
+        queue(fn() => $source->emit(1));
+        queue(fn() => $source->error($exception));
 
         self::assertSame(1, $pipeline->continue());
 

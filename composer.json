@@ -51,11 +51,5 @@
         "psr-4": {
             "Amp\\Pipeline\\": "test"
         }
-    },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "git@github.com:revolt-php/event-loop.git"
-        }
-    ]
+    }
 }

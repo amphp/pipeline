@@ -8,13 +8,13 @@ use Amp\Pipeline;
 use Amp\Pipeline\Subject;
 use function Amp\coroutine;
 use function Amp\delay;
-use function Revolt\EventLoop\defer;
+use function Revolt\EventLoop\queue;
 
 try {
     /** @psalm-var Subject<int> $source */
     $source = new Subject;
 
-    defer(function () use ($source): void {
+    queue(function () use ($source): void {
         // Source emits all values at once without awaiting back-pressure.
         $source->emit(1);
         $source->emit(2);
