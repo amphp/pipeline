@@ -67,7 +67,7 @@ class PipelineSourceTest extends AsyncTestCase
         $this->expectExceptionMessage('Pipelines cannot emit values after calling complete');
 
         $this->source->complete();
-        $this->source->emit(1);
+        $this->source->emit(1)->await();
     }
 
     /**
@@ -78,7 +78,7 @@ class PipelineSourceTest extends AsyncTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Pipelines cannot emit NULL');
 
-        $this->source->emit(null);
+        $this->source->emit(null)->await();
     }
 
     /**
@@ -89,7 +89,7 @@ class PipelineSourceTest extends AsyncTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Pipelines cannot emit futures');
 
-        $this->source->emit(Future::complete(null));
+        $this->source->emit(Future::complete(null))->await();
     }
 
     public function testDoubleComplete(): void
@@ -133,6 +133,7 @@ class PipelineSourceTest extends AsyncTestCase
         self::assertSame($value, $future->await());
 
         $future = coroutine(fn () => $pipeline->continue());
+        $future->ignore();
 
         self::assertNull($backPressure->await());
 
@@ -295,7 +296,7 @@ class PipelineSourceTest extends AsyncTestCase
         unset($pipeline); // Trigger automatic disposal.
         $this->source->onDisposal($this->createCallback(1));
         self::assertFalse($this->source->isDisposed());
-        $this->source->emit(1);
+        $this->source->emit(1)->ignore();
         self::assertSame(1, $future->await());
 
         self::assertTrue($this->source->isDisposed());

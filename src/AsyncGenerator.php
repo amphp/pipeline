@@ -40,6 +40,7 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
         } catch (\Throwable $exception) {
             $this->source->error($exception);
             $this->future = Future::error($exception);
+            $this->future->ignore();
             return;
         }
 
@@ -64,6 +65,8 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
             $source->complete();
             return $generator->getReturn();
         });
+
+        $this->future->ignore();
     }
 
     public function __destruct()

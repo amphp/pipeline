@@ -33,7 +33,7 @@ class TapTest extends AsyncTestCase
             $invoked++;
         }));
 
-        $source->emit(1);
+        $source->emit(1)->ignore();
         $source->error($exception);
 
         try {
@@ -53,7 +53,7 @@ class TapTest extends AsyncTestCase
 
         $pipeline = $source->asPipeline()->pipe(Pipeline\tap(fn() => throw $exception));
 
-        $source->emit(1);
+        $source->emit(1)->ignore();
 
         $this->expectExceptionObject($exception);
 

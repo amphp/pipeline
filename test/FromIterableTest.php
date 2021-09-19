@@ -53,7 +53,7 @@ class FromIterableTest extends AsyncTestCase
     public function testInterval(): void
     {
         $count = 3;
-        $pipeline = Pipeline\fromIterable(\range(1, $count), self::TIMEOUT);
+        $pipeline = Pipeline\fromIterable(\range(1, $count));
 
         $i = 0;
         while (null !== $value = $pipeline->continue()) {
@@ -69,7 +69,7 @@ class FromIterableTest extends AsyncTestCase
     public function testSlowConsumer(): void
     {
         $count = 5;
-        $pipeline = Pipeline\fromIterable(\range(1, $count), self::TIMEOUT);
+        $pipeline = Pipeline\fromIterable(\range(1, $count));
 
         for ($i = 0; $value = $pipeline->continue(); ++$i) {
             delay(self::TIMEOUT * 2);

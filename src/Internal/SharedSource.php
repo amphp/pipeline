@@ -6,7 +6,7 @@ use Amp\Future;
 use Amp\Pipeline\Pipeline;
 use Amp\Pipeline\Source;
 use Amp\Pipeline\Subject;
-use function Revolt\EventLoop\defer;
+use function Revolt\EventLoop\queue;
 
 /**
  * @internal

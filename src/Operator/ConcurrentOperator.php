@@ -97,7 +97,8 @@ final class ConcurrentOperator implements Operator
                  * @var  $previous Future
                  */
                 foreach ($subject->asPipeline() as [$value, $lock, $previous]) {
-                    $operatorSubject->emit($value);
+                    $operatorSubject->emit($value)->ignore();
+                    $previous->ignore();
 
                     try {
                         if (null === $value = $operatorPipeline->continue()) {

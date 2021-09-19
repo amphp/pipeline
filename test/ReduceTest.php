@@ -24,7 +24,7 @@ class ReduceTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Subject;
 
-        $source->emit(1);
+        $source->emit(1)->ignore();
         $source->error($exception);
 
         $this->expectExceptionObject($exception);

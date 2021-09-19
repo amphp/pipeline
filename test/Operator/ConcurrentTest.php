@@ -79,7 +79,7 @@ class ConcurrentTest extends AsyncTestCase
             )
         );
 
-        $source->emit(1);
+        $source->emit(1)->ignore();
 
         $source->error($exception);
 
