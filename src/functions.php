@@ -142,6 +142,7 @@ function zip(array $pipelines): Pipeline
 
     return new AsyncGenerator(static function () use ($pipelines): \Generator {
         try {
+            $keys = \array_keys($pipelines);
             while (true) {
                 $next = Future\all(\array_map(
                     static fn (Pipeline $pipeline) => coroutine(static fn () => $pipeline->continue()),
@@ -152,7 +153,8 @@ function zip(array $pipelines): Pipeline
                     return;
                 }
 
-                yield $next;
+                // Reconstruct emit array to ensure keys are in same iteration order as pipelines.
+                yield \array_map(static fn ($key) => $next[$key], $keys);
             }
         } finally {
             foreach ($pipelines as $pipeline) {
