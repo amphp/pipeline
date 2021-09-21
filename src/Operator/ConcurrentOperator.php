@@ -18,8 +18,9 @@ use function Revolt\EventLoop\queue;
 final class ConcurrentOperator implements Operator
 {
     /**
-     * @param Semaphore $semaphore
-     * @param Operator[] $operators
+     * @param Semaphore $semaphore Concurrency limited to number of locks provided by the semaphore.
+     * @param Operator[] $operators Set of operators to apply to each concurrent pipeline.
+     * @param bool $ordered True to maintain order of emissions on output pipeline.
      */
     public function __construct(
         private Semaphore $semaphore,
@@ -62,7 +63,7 @@ final class ConcurrentOperator implements Operator
             } catch (\Throwable $exception) {
                 try {
                     $previous->await();
-                } catch (\Throwable $ignored) {
+                } catch (\Throwable) {
                     // Exception ignored in case destination is disposed while waiting.
                 }
 
@@ -111,6 +112,10 @@ final class ConcurrentOperator implements Operator
 
                     if ($this->ordered) {
                         $previous->await();
+                    }
+
+                    if ($destination->isComplete()) {
+                        break;
                     }
 
                     $destination->yield($value);

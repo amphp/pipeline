@@ -105,5 +105,4 @@ class ConcurrentTest extends AsyncTestCase
 
         self::assertSame(0, $pipeline->continue());
     }
-
 }
