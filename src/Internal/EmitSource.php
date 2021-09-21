@@ -388,17 +388,10 @@ final class EmitSource
         }
     }
 
-    /**
-     * Resolves all backpressure and outstanding calls for emitted values.
-     */
-    private function resolvePending(): void
+    private function relieveBackPressure(?\Throwable $exception): void
     {
         $backPressure = $this->backPressure;
-        $waiting = $this->waiting;
-
-        unset($this->waiting, $this->backPressure);
-
-        $exception = $this->exception ?? null;
+        unset($this->backPressure);
 
         foreach ($backPressure as $placeholder) {
             if ($exception) {
@@ -411,6 +404,17 @@ final class EmitSource
                     : $placeholder->complete(null);
             }
         }
+    }
+
+    /**
+     * Resolves all backpressure and outstanding calls for emitted values.
+     */
+    private function resolvePending(): void
+    {
+        $waiting = $this->waiting;
+        unset($this->waiting);
+
+        $exception = $this->exception ?? null;
 
         foreach ($waiting as $suspension) {
             if ($exception) {
@@ -426,7 +430,7 @@ final class EmitSource
      */
     private function triggerDisposal(): void
     {
-        \assert($this->disposed, "Pipeline was not disposed on triggering disposal");
+        \assert($this->disposed && $this->exception, "Pipeline was not disposed on triggering disposal");
 
         if ($this->onDisposal === null) {
             return;
@@ -435,6 +439,7 @@ final class EmitSource
         $onDisposal = $this->onDisposal;
         $this->onDisposal = null;
 
+        $this->relieveBackPressure($this->exception);
         $this->resolvePending();
 
         foreach ($onDisposal as $callback) {

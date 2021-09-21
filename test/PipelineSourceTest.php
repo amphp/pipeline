@@ -366,4 +366,50 @@ class PipelineSourceTest extends AsyncTestCase
 
         self::assertSame([1, 2, 3], $values);
     }
+
+    public function testBackPressureOnComplete(): void
+    {
+        $future1 = $this->source->emit(1);
+        $future2 = $this->source->emit(2);
+        $this->source->complete();
+
+        delay(0.01);
+
+        self::assertFalse($future1->isComplete());
+
+        $pipeline = $this->source->asPipeline();
+        self::assertSame(1, $pipeline->continue());
+        self::assertSame(2, $pipeline->continue());
+
+
+        self::assertTrue($future1->isComplete());
+        self::assertFalse($future2->isComplete());
+
+        self::assertSame(null, $pipeline->continue());
+
+        delay(0.01);
+
+        self::assertTrue($future2->isComplete());
+    }
+
+    public function testBackPressureOnDisposal(): void
+    {
+        $future1 = $this->source->emit(1);
+        $future2 = $this->source->emit(2);
+
+        $future1->ignore();
+        $future2->ignore();
+
+        delay(0.01);
+
+        self::assertFalse($future1->isComplete());
+
+        $pipeline = $this->source->asPipeline();
+        unset($pipeline);
+
+        delay(0.01);
+
+        self::assertTrue($future1->isComplete());
+        self::assertTrue($future2->isComplete());
+    }
 }
