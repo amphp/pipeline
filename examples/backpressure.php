@@ -5,14 +5,14 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Amp\Pipeline\Subject;
 use function Amp\delay;
-use function Revolt\EventLoop\queue;
+use function Revolt\launch;
 
 try {
     /** @psalm-var Subject<int> $source */
     $source = new Subject;
     $pipeline = $source->asPipeline();
 
-    queue(function () use ($source): void {
+    launch(function () use ($source): void {
         delay(0.5);
         $source->yield(1);
         delay(1.5);

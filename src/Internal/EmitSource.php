@@ -6,7 +6,7 @@ use Amp\Deferred;
 use Amp\Future;
 use Amp\Internal;
 use Amp\Pipeline\DisposedException;
-use Revolt\EventLoop\Loop;
+use Revolt\EventLoop;
 use Revolt\EventLoop\Suspension;
 
 /**
@@ -124,7 +124,7 @@ final class EmitSource
         }
 
         // No value has been emitted, suspend fiber to await next value.
-        $this->waiting[$position] = $suspension = Loop::createSuspension();
+        $this->waiting[$position] = $suspension = EventLoop::createSuspension();
         return $suspension->suspend();
     }
 
@@ -168,7 +168,8 @@ final class EmitSource
     public function onDisposal(callable $onDisposal): void
     {
         if ($this->disposed) {
-            Loop::queue($onDisposal, $this->exception);
+            $exception = $this->exception;
+            EventLoop::defer(static fn () => $onDisposal($exception));
             return;
         }
 
@@ -279,7 +280,7 @@ final class EmitSource
         ++$this->emitPosition;
 
         if ($pair === null) {
-            $this->backPressure[$position] = $suspension = Loop::createSuspension();
+            $this->backPressure[$position] = $suspension = EventLoop::createSuspension();
             return $suspension->suspend();
         }
 
@@ -442,8 +443,9 @@ final class EmitSource
         $this->relieveBackPressure($this->exception);
         $this->resolvePending();
 
+        $exception = $this->exception;
         foreach ($onDisposal as $callback) {
-            Loop::queue($callback, $this->exception);
+            EventLoop::defer(static fn () => $callback($exception));
         }
     }
 }

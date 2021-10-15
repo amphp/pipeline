@@ -6,7 +6,7 @@ use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use function Amp\coroutine;
 use function Amp\delay;
-use function Revolt\EventLoop\queue;
+use function Revolt\launch;
 
 class PipelineSourceTest extends AsyncTestCase
 {
@@ -180,7 +180,7 @@ class PipelineSourceTest extends AsyncTestCase
         $invoked = 0;
         foreach (\range(1, 5) as $value) {
             $future = $this->source->emit($value);
-            queue(function () use (&$invoked, $future): void {
+            launch(function () use (&$invoked, $future): void {
                 try {
                     $future->await();
                 } catch (DisposedException $exception) {
@@ -224,6 +224,8 @@ class PipelineSourceTest extends AsyncTestCase
         self::assertTrue($invoked);
 
         $this->source->onDisposal($this->createCallback(1));
+
+        delay(0);
     }
 
     public function testOnDisposalAfterCompletion(): void
@@ -255,9 +257,12 @@ class PipelineSourceTest extends AsyncTestCase
         $this->source->onDisposal($this->createCallback(1));
         self::assertTrue($this->source->isDisposed());
 
-        $this->expectException(DisposedException::class);
-
-        $this->source->emit(1)->await();
+        try {
+            $this->source->emit(1)->await();
+            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
+        } catch (DisposedException $exception) {
+            delay(0); // Trigger disposal callback in defer.
+        }
     }
 
     public function testEmitAfterAutomaticDisposal(): void
@@ -268,9 +273,12 @@ class PipelineSourceTest extends AsyncTestCase
         $this->source->onDisposal($this->createCallback(1));
         self::assertTrue($this->source->isDisposed());
 
-        $this->expectException(DisposedException::class);
-
-        $this->source->emit(1)->await();
+        try {
+            $this->source->emit(1)->await();
+            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
+        } catch (DisposedException $exception) {
+            delay(0); // Trigger disposal callback in defer.
+        }
     }
 
     public function testEmitAfterAutomaticDisposalAfterDelay(): void
@@ -283,9 +291,12 @@ class PipelineSourceTest extends AsyncTestCase
 
         delay(0.01);
 
-        $this->expectException(DisposedException::class);
-
-        $this->source->emit(1)->await();
+        try {
+            $this->source->emit(1)->await();
+            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
+        } catch (DisposedException $exception) {
+            delay(0); // Trigger disposal callback in defer.
+        }
     }
 
     public function testEmitAfterAutomaticDisposalWithPendingContinueFuture(): void
@@ -301,9 +312,12 @@ class PipelineSourceTest extends AsyncTestCase
 
         self::assertTrue($this->source->isDisposed());
 
-        $this->expectException(DisposedException::class);
-
-        $this->source->emit(2)->await();
+        try {
+            $this->source->emit(2)->await();
+            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
+        } catch (DisposedException $exception) {
+            delay(0); // Trigger disposal callback in defer.
+        }
     }
 
     public function testEmitAfterExplicitDisposalWithPendingContinueFuture(): void
@@ -315,23 +329,30 @@ class PipelineSourceTest extends AsyncTestCase
         $this->source->onDisposal($this->createCallback(1));
         self::assertTrue($this->source->isDisposed());
 
-        $this->expectException(DisposedException::class);
-
-        self::assertSame(1, $future->await());
+        try {
+            $future->await();
+            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
+        } catch (DisposedException $exception) {
+            delay(0); // Trigger disposal callback in defer.
+        }
     }
 
     public function testEmitAfterDestruct(): void
     {
-        $this->expectException(DisposedException::class);
-
         $pipeline = $this->source->asPipeline();
         $future = $this->source->emit(1);
         $this->source->onDisposal($this->createCallback(1));
         unset($pipeline);
         $this->source->onDisposal($this->createCallback(1));
         self::assertTrue($this->source->isDisposed());
-        self::assertNull($future->await());
-        $this->source->emit(1)->await();
+        $future->ignore();
+
+        try {
+            $this->source->emit(2)->await();
+            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
+        } catch (DisposedException $exception) {
+            delay(0); // Trigger disposal callback in defer.
+        }
     }
 
     public function testFailWithDisposedException(): void
@@ -347,7 +368,7 @@ class PipelineSourceTest extends AsyncTestCase
 
     public function testTraversable(): void
     {
-        queue(function (): void {
+        launch(function (): void {
             try {
                 $this->source->yield(1);
                 $this->source->yield(2);

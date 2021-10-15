@@ -4,16 +4,16 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Amp\Pipeline\AsyncGenerator;
-use Revolt\EventLoop\Loop;
+use Revolt\EventLoop;
 use function Amp\coroutine;
 use function Amp\delay;
 
 $future = coroutine(function (): void {
     try {
-        $timer = Loop::repeat(0.1, function () {
+        $timer = EventLoop::repeat(0.1, function () {
             echo ".", PHP_EOL; // This repeat timer is to show the loop is not being blocked.
         });
-        Loop::unreference($timer); // Unreference timer so the loop exits automatically when all tasks complete.
+        EventLoop::unreference($timer); // Unreference timer so the loop exits automatically when all tasks complete.
 
         /** @psalm-var AsyncGenerator<int, null, null> $pipeline */
         $pipeline = new AsyncGenerator(function (): \Generator {
