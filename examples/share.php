@@ -6,15 +6,15 @@ require __DIR__ . '/../vendor/autoload.php';
 use Amp\Future;
 use Amp\Pipeline;
 use Amp\Pipeline\Subject;
+use Revolt\EventLoop;
 use function Amp\coroutine;
 use function Amp\delay;
-use function Revolt\launch;
 
 try {
     /** @psalm-var Subject<int> $source */
     $source = new Subject;
 
-    launch(function () use ($source): void {
+    EventLoop::queue(function () use ($source): void {
         // Source emits all values at once without awaiting back-pressure.
         $source->emit(1);
         $source->emit(2);

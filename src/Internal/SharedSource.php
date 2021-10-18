@@ -6,7 +6,7 @@ use Amp\Future;
 use Amp\Pipeline\Pipeline;
 use Amp\Pipeline\Source;
 use Amp\Pipeline\Subject;
-use function Revolt\launch;
+use Revolt\EventLoop;
 
 /**
  * @internal
@@ -25,7 +25,7 @@ final class SharedSource implements Source
     private function disperse(): void {
         $sources = &$this->sources;
         $pipeline = $this->pipeline;
-        launch(static function () use (&$sources, $pipeline): void {
+        EventLoop::queue(static function () use (&$sources, $pipeline): void {
             try {
                 foreach ($pipeline as $item) {
                     $futures = [];

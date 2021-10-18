@@ -4,9 +4,9 @@ namespace Amp\Pipeline;
 
 use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
+use Revolt\EventLoop;
 use function Amp\coroutine;
 use function Amp\delay;
-use function Revolt\launch;
 
 class PipelineSourceTest extends AsyncTestCase
 {
@@ -180,7 +180,7 @@ class PipelineSourceTest extends AsyncTestCase
         $invoked = 0;
         foreach (\range(1, 5) as $value) {
             $future = $this->source->emit($value);
-            launch(function () use (&$invoked, $future): void {
+            EventLoop::queue(function () use (&$invoked, $future): void {
                 try {
                     $future->await();
                 } catch (DisposedException $exception) {
@@ -368,7 +368,7 @@ class PipelineSourceTest extends AsyncTestCase
 
     public function testTraversable(): void
     {
-        launch(function (): void {
+        EventLoop::queue(function (): void {
             try {
                 $this->source->yield(1);
                 $this->source->yield(2);

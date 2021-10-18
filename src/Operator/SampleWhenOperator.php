@@ -7,8 +7,8 @@ use Amp\Future;
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
+use Revolt\EventLoop;
 use function Amp\coroutine;
-use function Revolt\launch;
 
 final class SampleWhenOperator implements Operator
 {
@@ -22,7 +22,7 @@ final class SampleWhenOperator implements Operator
         $deferred = new Deferred;
         $sampled = true;
 
-        launch(function () use (&$sampled, &$current, $deferred, $pipeline): void {
+        EventLoop::queue(function () use (&$sampled, &$current, $deferred, $pipeline): void {
             try {
                 foreach ($pipeline as $current) {
                     $sampled = false;
