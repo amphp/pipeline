@@ -36,11 +36,7 @@ function share(Pipeline $pipeline): Source
  */
 function fromIterable(iterable $iterable): Pipeline
 {
-    return new AsyncGenerator(static function () use ($iterable): \Generator {
-        foreach ($iterable as $value) {
-            yield $value;
-        }
-    });
+    return new AsyncGenerator(static fn () => yield from $iterable);
 }
 
 /**
@@ -110,9 +106,7 @@ function concat(array $pipelines): Pipeline
     return new AsyncGenerator(function () use ($pipelines): \Generator {
         try {
             foreach ($pipelines as $pipeline) {
-                foreach ($pipeline as $value) {
-                    yield $value;
-                }
+                yield from $pipeline;
             }
         } finally {
             foreach ($pipelines as $pipeline) {
@@ -376,7 +370,8 @@ function sampleTime(float $period): Operator
  * @param Pipeline<TValue> $pipeline
  * @param callable(TValue):void $callback
  */
-function each(Pipeline $pipeline, callable $callback): void {
+function each(Pipeline $pipeline, callable $callback): void
+{
     foreach ($pipeline as $value) {
         $callback($value);
     }
@@ -391,7 +386,8 @@ function each(Pipeline $pipeline, callable $callback): void {
  * @param TResult $initial
  * @return TResult
  */
-function reduce(Pipeline $pipeline, callable $accumulator, mixed $initial = null): mixed {
+function reduce(Pipeline $pipeline, callable $accumulator, mixed $initial = null): mixed
+{
     $result = $initial;
     foreach ($pipeline as $value) {
         $result = $accumulator($result, $value);

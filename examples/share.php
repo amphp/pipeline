@@ -35,7 +35,6 @@ try {
     $pipeline2 = $source->asPipeline();
 
     $future1 = coroutine(function () use ($pipeline1) {
-        // Use Amp\Pipeline\toIterator() to use a pipeline with foreach.
         foreach ($pipeline1 as $value) {
             \printf("Pipeline source yielded %d\n", $value);
             delay(0.5); // Listener consumption takes 500 ms.
