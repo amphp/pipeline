@@ -200,6 +200,18 @@ function concurrentOrdered(Semaphore $semaphore, Operator ...$operators): Operat
 }
 
 /**
+ * Removes backpressure on the source pipeline.
+ *
+ * @template TValue
+ *
+ * @return Operator<TValue, TValue>
+ */
+function relieve(): Operator
+{
+    return new Operator\RelieveOperator;
+}
+
+/**
  * @template TValue
  * @template TReturn
  *
