@@ -169,7 +169,7 @@ final class EmitSource
     {
         if ($this->disposed) {
             $exception = $this->exception;
-            EventLoop::defer(static fn () => $onDisposal($exception));
+            EventLoop::queue(static fn () => $onDisposal($exception));
             return;
         }
 
@@ -445,7 +445,7 @@ final class EmitSource
 
         $exception = $this->exception;
         foreach ($onDisposal as $callback) {
-            EventLoop::defer(static fn () => $callback($exception));
+            EventLoop::queue(static fn () => $callback($exception));
         }
     }
 }

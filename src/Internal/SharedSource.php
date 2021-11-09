@@ -19,10 +19,10 @@ final class SharedSource implements Source
     public function __construct(
         private Pipeline $pipeline,
     ) {
-        $this->disperse();
     }
 
-    private function disperse(): void {
+    private function disperse(): void
+    {
         $sources = &$this->sources;
         $pipeline = $this->pipeline;
         EventLoop::queue(static function () use (&$sources, $pipeline): void {
@@ -32,7 +32,7 @@ final class SharedSource implements Source
                     foreach ($sources as $source) {
                         $futures[] = $source->emit($item);
                     }
-                    Future\all($futures);
+                    Future\settle($futures); // A destination pipeline may be disposed.
                 }
 
                 foreach ($sources as $source) {
@@ -50,6 +50,7 @@ final class SharedSource implements Source
 
     public function asPipeline(): Pipeline
     {
+        $disperse = empty($this->sources);
         $this->sources[] = $source = new Subject();
 
         $sources = &$this->sources;
@@ -67,7 +68,7 @@ final class SharedSource implements Source
             }
         });
 
-        if ($this->pipeline->isComplete() || $this->pipeline->isDisposed()) {
+        if ($disperse) {
             $this->disperse();
         }
 
