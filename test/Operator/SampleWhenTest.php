@@ -82,12 +82,12 @@ class SampleWhenTest extends AsyncTestCase
         $source = new Subject;
 
         $delay = Pipeline\merge([
-            Pipeline\fromIterable([1]),
-            Pipeline\fromIterable([2, 3])->pipe(Pipeline\delay(0.1))
+            Pipeline\fromIterable([1]), // Emit the first value immediately.
+            Pipeline\fromIterable([2])->pipe(Pipeline\delay(0.1)) // Delay subsequent value.
         ]);
 
         $pipeline = Pipeline\fromIterable([1, 2, 3])->pipe(
-            Pipeline\delayWhen($delay),
+            Pipeline\delayUntil($delay),
             Pipeline\sampleWhen($source->asPipeline())
         );
 

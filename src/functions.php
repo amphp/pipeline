@@ -3,6 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
+use Amp\Pipeline\Operator\DelayUntilOperator;
 use Amp\Sync\Semaphore;
 use Revolt\EventLoop;
 use function Amp\coroutine;
@@ -250,17 +251,18 @@ function delay(float $timeout): Operator
 }
 
 /**
- * Values emitted from the source pipeline are not emitted on the returned pipline until the $delayWhen pipeline emits.
+ * Values are not consumed from the source pipeline until the $delayUntil pipeline emits. The values emitted from the
+ * returned pipeline are identical to those of the source pipeline.
  * The returned pipeline completes or errors when either the source or $delayWhen completes or errors.
  *
  * @template TValue
  *
- * @param Pipeline<mixed> $delayWhen
+ * @param Pipeline<mixed> $delayUntil
  * @return Operator<TValue, TValue>
  */
-function delayWhen(Pipeline $delayWhen): Operator
+function delayUntil(Pipeline $delayUntil): Operator
 {
-    return new Operator\DelayWhenOperator($delayWhen);
+    return new Operator\DelayUntilOperator($delayUntil);
 }
 
 /**

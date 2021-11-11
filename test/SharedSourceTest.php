@@ -46,14 +46,14 @@ class SharedSourceTest extends AsyncTestCase
             $invoked = true;
         })->ignore();
 
-        delay(0.1);
+        delay(0.1); // Delayed pipeline *should not* have consumed the value yet.
 
         self::assertFalse($invoked);
 
         self::assertSame(1, $future1->await());
         self::assertSame(1, $future2->await());
 
-        delay(0); // Tick event loop to invoke finally callback.
+        delay(0.2); // Ensure delayed pipeline has consumed value.
 
         self::assertTrue($invoked);
 

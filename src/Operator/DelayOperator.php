@@ -17,8 +17,14 @@ final class DelayOperator implements Operator
     public function pipe(Pipeline $pipeline): Pipeline
     {
         return new AsyncGenerator(function () use ($pipeline): \Generator {
-            foreach ($pipeline as $value) {
+            while (true) {
                 delay($this->delay);
+
+                $value = $pipeline->continue(); // Consume value after delay.
+                if ($value === null) {
+                    return;
+                }
+
                 yield $value;
             }
         });
