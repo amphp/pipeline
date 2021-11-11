@@ -17,10 +17,10 @@ class SampleWhenTest extends AsyncTestCase
         $values = [1, 2, 3, 4, 5, 6, 7];
         $expected = [2, 4, 6];
 
-        $sample = Pipeline\fromIterable(\range(0, 10))->pipe(Pipeline\delay(0.21));
+        $sample = Pipeline\fromIterable(\range(0, 10))->pipe(Pipeline\postpone(0.21));
 
         $pipeline = Pipeline\fromIterable($values)->pipe(
-            Pipeline\delay(0.1),
+            Pipeline\postpone(0.1),
             Pipeline\sampleWhen($sample)
         );
 
@@ -41,7 +41,7 @@ class SampleWhenTest extends AsyncTestCase
         $expected = [2, 4, 6];
 
         $pipeline = Pipeline\fromIterable($values)->pipe(
-            Pipeline\delay(0.1),
+            Pipeline\postpone(0.1),
             Pipeline\sampleTime(0.21)
         );
 
@@ -62,7 +62,7 @@ class SampleWhenTest extends AsyncTestCase
 
         $sample = Pipeline\merge([
             Pipeline\fromIterable([1]),
-            Pipeline\fromIterable([2, 3])->pipe(Pipeline\delay(0.1))
+            Pipeline\fromIterable([2, 3])->pipe(Pipeline\postpone(0.1))
         ]);
 
         $pipeline = $source->asPipeline()->pipe(Pipeline\sampleWhen($sample));
@@ -83,11 +83,11 @@ class SampleWhenTest extends AsyncTestCase
 
         $delay = Pipeline\merge([
             Pipeline\fromIterable([1]), // Emit the first value immediately.
-            Pipeline\fromIterable([2])->pipe(Pipeline\delay(0.1)) // Delay subsequent value.
+            Pipeline\fromIterable([2])->pipe(Pipeline\postpone(0.1)) // Postpone subsequent value.
         ]);
 
         $pipeline = Pipeline\fromIterable([1, 2, 3])->pipe(
-            Pipeline\delayUntil($delay),
+            Pipeline\postponeUntil($delay),
             Pipeline\sampleWhen($source->asPipeline())
         );
 

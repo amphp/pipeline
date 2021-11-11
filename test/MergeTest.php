@@ -75,8 +75,8 @@ class MergeTest extends AsyncTestCase
     {
         $pipelines = [];
 
-        $pipelines[] = Pipeline\fromIterable([1, 2, 3, 4, 5])->pipe(Pipeline\delay(0.1));
-        $pipelines[] = Pipeline\fromIterable([6, 7, 8, 9, 10])->pipe(Pipeline\delay(0.1));
+        $pipelines[] = Pipeline\fromIterable([1, 2, 3, 4, 5])->pipe(Pipeline\postpone(0.1));
+        $pipelines[] = Pipeline\fromIterable([6, 7, 8, 9, 10])->pipe(Pipeline\postpone(0.1));
 
         $pipeline = Pipeline\merge($pipelines);
 

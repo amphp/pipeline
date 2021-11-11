@@ -3,10 +3,10 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
-use Amp\Pipeline\Operator\DelayUntilOperator;
 use Amp\Sync\Semaphore;
 use Revolt\EventLoop;
 use function Amp\coroutine;
+use function Amp\delay;
 
 /**
  * Creates a source that can create any number of pipelines by calling {@see Source::asPipeline()}. The new pipelines
@@ -238,31 +238,36 @@ function filter(callable $filter): Operator
 }
 
 /**
- * Delay the emission of each value for the given amount of time.
+ * Postpone (delay) consumption of each value from the source pipeline for the given amount of time.
  *
  * @template TValue
  *
  * @param float $timeout
  * @return Operator<TValue, TValue>
  */
-function delay(float $timeout): Operator
+function postpone(float $timeout): Operator
 {
-    return new Operator\DelayOperator($timeout);
+    return postponeUntil(new AsyncGenerator(static function () use ($timeout): \Generator {
+        while (true) {
+            delay($timeout);
+            yield 0;
+        }
+    }));
 }
 
 /**
- * Values are not consumed from the source pipeline until the $delayUntil pipeline emits. The values emitted from the
- * returned pipeline are identical to those of the source pipeline.
- * The returned pipeline completes or errors when either the source or $delayWhen completes or errors.
+ * Values are not consumed from the source pipeline until the $postponeUntil pipeline emits. The values emitted from
+ * the returned pipeline are identical to those of the source pipeline.
+ * The returned pipeline completes or errors when either the source or $postponeUntil completes or errors.
  *
  * @template TValue
  *
- * @param Pipeline<mixed> $delayUntil
+ * @param Pipeline<mixed> $postponeUntil
  * @return Operator<TValue, TValue>
  */
-function delayUntil(Pipeline $delayUntil): Operator
+function postponeUntil(Pipeline $postponeUntil): Operator
 {
-    return new Operator\DelayUntilOperator($delayUntil);
+    return new Operator\PostponeUntilOperator($postponeUntil);
 }
 
 /**
@@ -369,12 +374,12 @@ function sampleWhen(Pipeline $sampleWhen): Operator
  */
 function sampleTime(float $period): Operator
 {
-    return new Operator\SampleWhenOperator(
+    return sampleWhen(
         (new AsyncGenerator(static function (): \Generator {
             while (true) {
                 yield 0;
             }
-        }))->pipe(delay($period))
+        }))->pipe(postpone($period))
     );
 }
 

@@ -32,7 +32,7 @@ class SharedSourceTest extends AsyncTestCase
         $source = new Subject();
         $share = Pipeline\share($source->asPipeline());
 
-        $pipeline1 = $share->asPipeline()->pipe(Pipeline\delay(0.2));
+        $pipeline1 = $share->asPipeline()->pipe(Pipeline\postpone(0.2));
         $pipeline2 = $share->asPipeline();
 
         $future1 = coroutine(fn () => $pipeline1->continue());
