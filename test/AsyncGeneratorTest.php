@@ -213,7 +213,6 @@ class AsyncGeneratorTest extends AsyncTestCase
             });
 
             while ($generator->continue()) {
-                ;
             }
             self::fail("The exception thrown from the generator should fail the pipeline");
         } catch (TestException $caught) {
@@ -241,7 +240,7 @@ class AsyncGeneratorTest extends AsyncTestCase
         $generator->dispose();
 
         try {
-            self::assertSame(1, $future->await());
+            $future->await();
             self::fail("Pipeline should have been disposed");
         } catch (DisposedException $exception) {
             self::assertTrue($invoked);
@@ -256,12 +255,10 @@ class AsyncGeneratorTest extends AsyncTestCase
         $generator = new AsyncGenerator(function () use (&$exception) {
             try {
                 yield 0;
-            } catch (\Throwable $exception) {
+            } catch (DisposedException $exception) {
                 yield 1;
             }
         });
-
-        $generator->continue();
 
         $generator->dispose();
 
@@ -269,6 +266,26 @@ class AsyncGeneratorTest extends AsyncTestCase
 
         $generator->getReturn();
     }
+
+    public function testGetReturnAfterDisposal(): void
+    {
+        $generator = new AsyncGenerator(function () use (&$exception) {
+            try {
+                yield 0;
+            } catch (DisposedException $exception) {
+                return 1;
+            }
+
+            return 0;
+        });
+
+        $generator->dispose();
+
+        self::expectException(DisposedException::class);
+
+        $generator->getReturn();
+    }
+
 
     public function testGeneratorStartsOnlyAfterCallingContinue(): void
     {
