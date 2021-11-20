@@ -6,13 +6,13 @@ use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
 use Amp\Pipeline\AsyncGenerator;
-use Amp\Pipeline\Subject;
+use Amp\Pipeline\Emitter;
 
 class MapTest extends AsyncTestCase
 {
     public function testNoValuesEmitted(): void
     {
-        $source = new Subject;
+        $source = new Emitter;
 
         /** @noinspection PhpUnusedLocalVariableInspection */
         $pipeline = $source->asPipeline()->pipe(Pipeline\map($this->createCallback(0)));
@@ -66,7 +66,7 @@ class MapTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Subject;
+        $source = new Emitter;
 
         $iterator = $source->asPipeline()->pipe(Pipeline\map($this->createCallback(0)));
 

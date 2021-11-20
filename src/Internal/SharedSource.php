@@ -3,9 +3,9 @@
 namespace Amp\Pipeline\Internal;
 
 use Amp\Future;
+use Amp\Pipeline\Emitter;
 use Amp\Pipeline\Pipeline;
 use Amp\Pipeline\Source;
-use Amp\Pipeline\Subject;
 use Revolt\EventLoop;
 
 /**
@@ -13,7 +13,7 @@ use Revolt\EventLoop;
  */
 final class SharedSource implements Source
 {
-    /** @var Subject[] */
+    /** @var Emitter[] */
     private array $sources = [];
 
     public function __construct(
@@ -51,7 +51,7 @@ final class SharedSource implements Source
     public function asPipeline(): Pipeline
     {
         $disperse = empty($this->sources);
-        $this->sources[] = $source = new Subject();
+        $this->sources[] = $source = new Emitter();
 
         $sources = &$this->sources;
         $pipeline = $this->pipeline;

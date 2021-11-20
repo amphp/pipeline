@@ -7,7 +7,7 @@ use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\DisposedException;
-use Amp\Pipeline\Subject;
+use Amp\Pipeline\Emitter;
 use function Amp\delay;
 use function Amp\launch;
 
@@ -35,7 +35,7 @@ class RelieveTest extends AsyncTestCase
         $this->expectOutputString('1');
 
         $exception = new TestException;
-        $source = new Subject;
+        $source = new Emitter;
 
         $pipeline = $source->asPipeline()->pipe(Pipeline\relieve());
 
@@ -54,7 +54,7 @@ class RelieveTest extends AsyncTestCase
 
     public function testDisposedPipeline(): void
     {
-        $source = new Subject;
+        $source = new Emitter;
 
         $pipeline = $source->asPipeline()->pipe(Pipeline\relieve());
 

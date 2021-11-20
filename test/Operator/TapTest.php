@@ -5,7 +5,7 @@ namespace Amp\Pipeline\Operator;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\Subject;
+use Amp\Pipeline\Emitter;
 
 class TapTest extends AsyncTestCase
 {
@@ -26,7 +26,7 @@ class TapTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Subject;
+        $source = new Emitter;
 
         $invoked = 0;
         $pipeline = $source->asPipeline()->pipe(Pipeline\tap(function () use (&$invoked): void {
@@ -49,7 +49,7 @@ class TapTest extends AsyncTestCase
     public function testTapCallbackThrows(): void
     {
         $exception = new TestException;
-        $source = new Subject;
+        $source = new Emitter;
 
         $pipeline = $source->asPipeline()->pipe(Pipeline\tap(fn() => throw $exception));
 

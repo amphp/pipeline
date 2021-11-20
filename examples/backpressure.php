@@ -3,13 +3,13 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Amp\Pipeline\Subject;
+use Amp\Pipeline\Emitter;
 use Revolt\EventLoop;
 use function Amp\delay;
 
 try {
-    /** @psalm-var Subject<int> $source */
-    $source = new Subject;
+    /** @psalm-var Emitter<int> $source */
+    $source = new Emitter;
     $pipeline = $source->asPipeline();
 
     EventLoop::queue(function () use ($source): void {

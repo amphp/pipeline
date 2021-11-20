@@ -5,13 +5,13 @@ namespace Amp\Pipeline;
 use Amp\Future;
 
 /**
- * PipelineSource is a container for a Pipeline that can emit values using the emit() method and completed using the
+ * Emitter is a container for a Pipeline that can emit values using the emit() method and completed using the
  * complete() and fail() methods. The contained Pipeline may be accessed using the pipeline() method. This object should
  * not be returned as part of a public API, but used internally to create and emit values to a Pipeline.
  *
  * @template TValue
  */
-final class Subject implements Source
+final class Emitter implements Source
 {
     /** @var Internal\EmitSource<TValue, null> Has public emit, complete, and fail methods. */
     private Internal\EmitSource $source;

@@ -5,8 +5,8 @@ namespace Amp\Pipeline;
 use Amp\Future;
 use Amp\Sync\Semaphore;
 use Revolt\EventLoop;
-use function Amp\launch;
 use function Amp\delay;
+use function Amp\launch;
 
 /**
  * Creates a source that can create any number of pipelines by calling {@see Source::asPipeline()}. The new pipelines
@@ -51,7 +51,7 @@ function fromIterable(iterable $iterable): Pipeline
  */
 function merge(array $pipelines): Pipeline
 {
-    $subject = new Subject;
+    $subject = new Emitter;
 
     $futures = [];
     foreach ($pipelines as $pipeline) {

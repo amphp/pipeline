@@ -5,7 +5,7 @@ namespace Amp\Pipeline\Operator;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\Subject;
+use Amp\Pipeline\Emitter;
 use Amp\Sync\LocalSemaphore;
 use function Amp\delay;
 
@@ -13,7 +13,7 @@ class ConcurrentTest extends AsyncTestCase
 {
     public function testNoValuesEmitted(): void
     {
-        $source = new Subject;
+        $source = new Emitter;
 
         $pipeline = $source->asPipeline()->pipe(
             Pipeline\concurrentOrdered(
@@ -70,7 +70,7 @@ class ConcurrentTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Subject;
+        $source = new Emitter;
 
         $pipeline = $source->asPipeline()->pipe(
             Pipeline\concurrentOrdered(

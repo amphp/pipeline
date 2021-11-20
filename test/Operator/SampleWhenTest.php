@@ -5,7 +5,7 @@ namespace Amp\Pipeline\Operator;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\Subject;
+use Amp\Pipeline\Emitter;
 use Revolt\EventLoop;
 
 class SampleWhenTest extends AsyncTestCase
@@ -58,7 +58,7 @@ class SampleWhenTest extends AsyncTestCase
     public function testSourcePipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Subject;
+        $source = new Emitter;
 
         $sample = Pipeline\merge([
             Pipeline\fromIterable([1]),
@@ -79,7 +79,7 @@ class SampleWhenTest extends AsyncTestCase
     public function testSamplePipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Subject;
+        $source = new Emitter;
 
         $delay = Pipeline\merge([
             Pipeline\fromIterable([1]), // Emit the first value immediately.

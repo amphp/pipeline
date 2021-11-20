@@ -3,9 +3,9 @@
 namespace Amp\Pipeline\Operator;
 
 use Amp\Future;
+use Amp\Pipeline\Emitter;
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
-use Amp\Pipeline\Subject;
 use Amp\Sync\Lock;
 use Amp\Sync\Semaphore;
 use Revolt\EventLoop;
@@ -31,14 +31,14 @@ final class ConcurrentOperator implements Operator
 
     public function pipe(Pipeline $pipeline): Pipeline
     {
-        $destination = new Subject();
+        $destination = new Emitter();
 
         EventLoop::queue(function () use ($pipeline, $destination): void {
             $queue = new \SplQueue();
-            $subjects = new \ArrayObject();
+            $emitters = new \ArrayObject();
 
             // Add initial source which will dispose of destination if no values are emitted.
-            $queue->push($this->createSubject($destination, $queue, $subjects));
+            $queue->push($this->createEmitter($destination, $queue, $emitters));
 
             $previous = Future::complete(null);
 
@@ -51,12 +51,12 @@ final class ConcurrentOperator implements Operator
                     }
 
                     if ($queue->isEmpty()) {
-                        $subject = $this->createSubject($destination, $queue, $subjects);
+                        $emitter = $this->createEmitter($destination, $queue, $emitters);
                     } else {
-                        $subject = $queue->shift();
+                        $emitter = $queue->shift();
                     }
 
-                    $previous = $subject->emit([$value, $lock, $previous]);
+                    $previous = $emitter->emit([$value, $lock, $previous]);
                 }
 
                 $previous->await();
@@ -71,8 +71,8 @@ final class ConcurrentOperator implements Operator
                     $destination->error($exception);
                 }
             } finally {
-                foreach ($subjects as $subject) {
-                    $subject->complete();
+                foreach ($emitters as $emitter) {
+                    $emitter->complete();
                 }
             }
         });
@@ -80,13 +80,13 @@ final class ConcurrentOperator implements Operator
         return $destination->asPipeline();
     }
 
-    private function createSubject(Subject $destination, \SplQueue $queue, \ArrayObject $subjects): Subject {
-        $subject = new Subject();
-        $subjects->append($subject);
+    private function createEmitter(Emitter $destination, \SplQueue $queue, \ArrayObject $emitters): Emitter {
+        $emitter = new Emitter();
+        $emitters->append($emitter);
 
-        EventLoop::queue(function () use ($subjects, $subject, $destination, $queue): void {
-            $operatorSubject = new Subject();
-            $operatorPipeline = $operatorSubject->asPipeline();
+        EventLoop::queue(function () use ($emitters, $emitter, $destination, $queue): void {
+            $operatorEmitter = new Emitter();
+            $operatorPipeline = $operatorEmitter->asPipeline();
             foreach ($this->operators as $operator) {
                 $operatorPipeline = $operator->pipe($operatorPipeline);
             }
@@ -97,8 +97,8 @@ final class ConcurrentOperator implements Operator
                  * @var  $lock Lock
                  * @var  $previous Future
                  */
-                foreach ($subject->asPipeline() as [$value, $lock, $previous]) {
-                    $operatorSubject->emit($value)->ignore();
+                foreach ($emitter->asPipeline() as [$value, $lock, $previous]) {
+                    $operatorEmitter->emit($value)->ignore();
                     $previous->ignore();
 
                     try {
@@ -106,7 +106,7 @@ final class ConcurrentOperator implements Operator
                             break;
                         }
                     } finally {
-                        $queue->push($subject);
+                        $queue->push($emitter);
                         $lock->release();
                     }
 
@@ -121,20 +121,20 @@ final class ConcurrentOperator implements Operator
                     $destination->yield($value);
                 }
 
-                $operatorSubject->complete();
+                $operatorEmitter->complete();
 
                 // Only complete the destination once all outstanding pipelines have completed.
-                if ($queue->count() === $subjects->count() && !$destination->isComplete()) {
+                if ($queue->count() === $emitters->count() && !$destination->isComplete()) {
                     $destination->complete();
                 }
             } catch (\Throwable $exception) {
-                $operatorSubject->error($exception);
+                $operatorEmitter->error($exception);
                 if (!$destination->isComplete()) {
                     $destination->error($exception);
                 }
             }
         });
 
-        return $subject;
+        return $emitter;
     }
 }

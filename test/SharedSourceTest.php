@@ -29,7 +29,7 @@ class SharedSourceTest extends AsyncTestCase
 
     public function testBackPressure(): void
     {
-        $source = new Subject();
+        $source = new Emitter();
         $share = Pipeline\share($source->asPipeline());
 
         $pipeline1 = $share->asPipeline()->pipe(Pipeline\postpone(0.2));
@@ -96,7 +96,7 @@ class SharedSourceTest extends AsyncTestCase
     {
         $exception = new TestException();
 
-        $source = new Subject();
+        $source = new Emitter();
         $source->error($exception);
         $pipeline = $source->asPipeline();
 
@@ -108,7 +108,7 @@ class SharedSourceTest extends AsyncTestCase
     {
         $exception = new TestException();
 
-        $source = new Subject();
+        $source = new Emitter();
 
         $future = launch(fn () => \iterator_to_array(Pipeline\share($source->asPipeline())->asPipeline()));
 
@@ -121,7 +121,7 @@ class SharedSourceTest extends AsyncTestCase
 
     public function testShareAfterDisposal(): void
     {
-        $source = new Subject();
+        $source = new Emitter();
 
         $shared = Pipeline\share($source->asPipeline());
         $shared->asPipeline()->dispose();

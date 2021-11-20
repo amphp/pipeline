@@ -10,13 +10,13 @@ use function Amp\launch;
 
 class PipelineSourceTest extends AsyncTestCase
 {
-    /** @var Subject */
-    private Subject $source;
+    /** @var Emitter */
+    private Emitter $source;
 
     public function setUp(): void
     {
         parent::setUp();
-        $this->source = new Subject;
+        $this->source = new Emitter;
     }
 
     public function testEmit(): void

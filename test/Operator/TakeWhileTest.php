@@ -5,7 +5,7 @@ namespace Amp\Pipeline\Operator;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\Subject;
+use Amp\Pipeline\Emitter;
 
 class TakeWhileTest extends AsyncTestCase
 {
@@ -27,7 +27,7 @@ class TakeWhileTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Subject;
+        $source = new Emitter;
 
         $iterator = $source->asPipeline()->pipe(Pipeline\takeWhile(fn ($value) => $value < 3));
 

@@ -2,16 +2,16 @@
 
 namespace Amp\Pipeline\Operator;
 
+use Amp\Pipeline\Emitter;
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
-use Amp\Pipeline\Subject;
 use Revolt\EventLoop;
 
 final class RelieveOperator implements Operator
 {
     public function pipe(Pipeline $pipeline): Pipeline
     {
-        $subject = new Subject;
+        $subject = new Emitter;
 
         EventLoop::queue(static function () use ($pipeline, $subject): void {
             $catch = static function (\Throwable $exception) use ($subject): void {

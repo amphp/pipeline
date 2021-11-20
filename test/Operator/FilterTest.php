@@ -6,13 +6,13 @@ use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
 use Amp\Pipeline\AsyncGenerator;
-use Amp\Pipeline\Subject;
+use Amp\Pipeline\Emitter;
 
 class FilterTest extends AsyncTestCase
 {
     public function testNoValuesEmitted(): void
     {
-        $source = new Subject;
+        $source = new Emitter;
 
         $pipeline = $source->asPipeline()->pipe(Pipeline\filter($this->createCallback(0)));
 
@@ -67,7 +67,7 @@ class FilterTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Subject;
+        $source = new Emitter;
 
         $pipeline = $source->asPipeline()->pipe(Pipeline\filter($this->createCallback(0)));
 
