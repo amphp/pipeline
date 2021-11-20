@@ -45,111 +45,6 @@ class AsyncGeneratorTest extends AsyncTestCase
         self::assertNull($generator->continue());
     }
 
-    public function testSend(): void
-    {
-        $value = 1;
-        $send = 2;
-        $generator = new AsyncGenerator(function () use (&$result, $value) {
-            $result = yield $value;
-        });
-
-        self::assertSame($value, $generator->continue());
-        self::assertNull($generator->send($send));
-        self::assertSame($result, $send);
-    }
-
-    public function testSendBeforeYield(): void
-    {
-        $value = 1;
-        $send = 2;
-        $generator = new AsyncGenerator(function () use (&$result, $value) {
-            delay(0.1); // Wait so send() is called before $yield().
-            $result = yield $value;
-        });
-
-        $future1 = launch(fn () => $generator->continue());
-        $future2 = launch(fn () => $generator->send($send));
-
-        self::assertSame($value, $future1->await());
-        self::assertNull($future2->await());
-        self::assertSame($result, $send);
-    }
-
-    public function testThrow(): void
-    {
-        $value = 1;
-        $exception = new \Exception;
-        $generator = new AsyncGenerator(function () use (&$result, $value) {
-            try {
-                $result = yield $value;
-            } catch (\Throwable $exception) {
-                $result = $exception;
-            }
-        });
-
-        $future1 = launch(fn () => $generator->continue());
-        $future2 = launch(fn () => $generator->throw($exception));
-
-        self::assertSame($value, $future1->await());
-        self::assertNull($future2->await());
-        self::assertSame($result, $exception);
-    }
-
-    public function testThrowBeforeYield(): void
-    {
-        $value = 1;
-        $exception = new \Exception;
-        $generator = new AsyncGenerator(function () use (&$result, $value) {
-            delay(0.1); // Wait so throw() is called before $yield().
-            try {
-                $result = yield $value;
-            } catch (\Throwable $exception) {
-                $result = $exception;
-            }
-        });
-
-        self::assertSame($value, $generator->continue());
-        self::assertNull($generator->throw($exception));
-        self::assertSame($result, $exception);
-    }
-
-    public function testInitialSend(): void
-    {
-        $generator = new AsyncGenerator(function () {
-            yield 0;
-        });
-
-        self::expectException(\Error::class);
-        self::expectExceptionMessage('Must initialize async generator by calling continue() first');
-
-        $generator->send(0);
-    }
-
-    public function testInitialThrow(): void
-    {
-        $generator = new AsyncGenerator(function () {
-            yield 0;
-        });
-
-        self::expectException(\Error::class);
-        self::expectExceptionMessage('Must initialize async generator by calling continue() first');
-
-        $generator->throw(new \Exception);
-    }
-
-    public function testGetResult(): void
-    {
-        $value = 1;
-        $generator = new AsyncGenerator(function () use ($value) {
-            yield 0;
-            return $value;
-        });
-
-        self::assertSame(0, $generator->continue());
-        self::assertNull($generator->continue());
-        self::assertSame($value, $generator->getReturn());
-    }
-
     /**
      * @depends testYield
      */
@@ -231,16 +126,16 @@ class AsyncGeneratorTest extends AsyncTestCase
             }
         });
 
-        $future = launch(static fn () => $generator->getReturn());
-
         self::assertSame(0, $generator->continue());
 
         self::assertFalse($invoked);
 
         $generator->dispose();
 
+        delay(0); // Tick event loop to destroy generator.
+
         try {
-            $future->await();
+            $generator->continue();
             self::fail("Pipeline should have been disposed");
         } catch (DisposedException $exception) {
             self::assertTrue($invoked);
@@ -264,7 +159,7 @@ class AsyncGeneratorTest extends AsyncTestCase
 
         self::expectException(DisposedException::class);
 
-        $generator->getReturn();
+        $generator->continue();
     }
 
     public function testGetReturnAfterDisposal(): void
@@ -283,7 +178,7 @@ class AsyncGeneratorTest extends AsyncTestCase
 
         self::expectException(DisposedException::class);
 
-        $generator->getReturn();
+        $generator->continue();
     }
 
 

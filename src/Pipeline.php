@@ -2,6 +2,8 @@
 
 namespace Amp\Pipeline;
 
+use Amp\CancellationToken;
+
 /**
  * A pipeline is an asynchronous set of ordered values.
  *
@@ -17,11 +19,14 @@ interface Pipeline extends \Traversable
      * This method exists primarily for async consumption of a single value within a launch. In general, a
      * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
      *
+     * @param CancellationToken|null $token Cancels waiting for the next emitted value. If cancelled, the next
+     * emitted value is not lost, but will be sent to the next call to this method.
+     *
      * @return mixed Returns null if the pipeline has completed.
      *
      * @psalm-return TValue|null
      */
-    public function continue(): mixed;
+    public function continue(?CancellationToken $token = null): mixed;
 
     /**
      * Disposes of the pipeline, indicating the consumer is no longer interested in the pipeline output.

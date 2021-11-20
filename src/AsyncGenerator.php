@@ -2,24 +2,19 @@
 
 namespace Amp\Pipeline;
 
-use Amp\Future;
-use function Amp\launch;
+use Amp\CancellationToken;
+use Revolt\EventLoop;
 
 /**
  * @template TValue
- * @template TSend
- * @template TReturn
  *
  * @template-implements Pipeline<TValue>
  * @template-implements \IteratorAggregate<int, TValue>
  */
 final class AsyncGenerator implements Pipeline, \IteratorAggregate
 {
-    /** @var Internal\EmitSource<TValue, TSend> */
+    /** @var Internal\EmitSource<TValue> */
     private Internal\EmitSource $source;
-
-    /** @var Future<TReturn> */
-    private Future $future;
 
     /**
      * @param callable():\Generator $callable
@@ -39,34 +34,23 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
             }
         } catch (\Throwable $exception) {
             $this->source->error($exception);
-            $this->future = Future::error($exception);
-            $this->future->ignore();
             return;
         }
 
-        $this->future = launch(static function () use ($generator, $source): mixed {
+        EventLoop::queue(static function () use ($generator, $source): void {
             try {
                 $yielded = $generator->current();
 
                 while ($generator->valid()) {
-                    try {
-                        $yielded = $generator->send($source->yield($yielded));
-                    } catch (DisposedException $exception) {
-                        throw $exception; // Destroys generator and fails pipeline.
-                    } catch (\Throwable $exception) {
-                        $yielded = $generator->throw($exception);
-                    }
+                    $source->yield($yielded);
+                    $yielded = $generator->send(null);
                 }
+
+                $source->complete();
             } catch (\Throwable $exception) {
                 $source->error($exception);
-                throw $exception;
             }
-
-            $source->complete();
-            return $generator->getReturn();
         });
-
-        $this->future->ignore();
     }
 
     public function __destruct()
@@ -79,45 +63,9 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
      *
      * @psalm-return TValue|null
      */
-    public function continue(): mixed
+    public function continue(?CancellationToken $token = null): mixed
     {
         return $this->source->continue();
-    }
-
-    /**
-     * Sends a value to the async generator, resolving the back-pressure promise with the given value.
-     * The first emitted value must be retrieved using {@see continue()}.
-     *
-     * @param mixed $value Value to send to the async generator.
-     *
-     * @psalm-param TSend $value
-     *
-     * @return mixed Returns null if the pipeline has completed.
-     *
-     * @psalm-return TValue
-     *
-     * @throws \Error If the first emitted value has not been retrieved using {@see continue()}.
-     */
-    public function send(mixed $value): mixed
-    {
-        return $this->source->send($value);
-    }
-
-    /**
-     * Throws an exception into the async generator, failing the back-pressure promise with the given exception.
-     * The first emitted value must be retrieved using {@see continue()}.
-     *
-     * @param \Throwable $exception Exception to throw into the async generator.
-     *
-     * @return mixed Returns null if the pipeline has completed.
-     *
-     * @psalm-return TValue
-     *
-     * @throws \Error If the first emitted value has not been retrieved using {@see continue()}.
-     */
-    public function throw(\Throwable $exception): mixed
-    {
-        return $this->source->throw($exception);
     }
 
     /**
@@ -128,14 +76,6 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
     public function dispose(): void
     {
         $this->source->dispose();
-    }
-
-    /**
-     * @return TReturn
-     */
-    public function getReturn(): mixed
-    {
-        return $this->future->await();
     }
 
     /**

@@ -2,13 +2,15 @@
 
 namespace Amp\Pipeline;
 
+use Amp\CancellationTokenSource;
+use Amp\CancelledException;
 use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use Revolt\EventLoop;
 use function Amp\delay;
 use function Amp\launch;
 
-class PipelineSourceTest extends AsyncTestCase
+class EmitterTest extends AsyncTestCase
 {
     /** @var Emitter */
     private Emitter $source;
@@ -432,5 +434,62 @@ class PipelineSourceTest extends AsyncTestCase
 
         self::assertTrue($future1->isComplete());
         self::assertTrue($future2->isComplete());
+    }
+
+    public function testCancellation(): void
+    {
+        $pipeline = $this->source->asPipeline();
+
+        $tokenSource = new CancellationTokenSource();
+
+        $future1 = launch(fn () => $pipeline->continue());
+        $future2 = launch(fn () => $pipeline->continue($tokenSource->getToken()));
+        $future3 = launch(fn () => $pipeline->continue());
+        $future4 = launch(fn () => $pipeline->continue());
+
+        $tokenSource->cancel();
+
+        delay(0); // Tick event loop to trigger cancellation callback.
+
+        $this->source->emit(1);
+        $this->source->emit(2);
+        $this->source->emit(3);
+
+        self::assertSame(1, $future1->await());
+        self::assertSame(2, $future3->await());
+        self::assertSame(3, $future4->await());
+
+        $this->source->complete();
+
+        $this->expectException(CancelledException::class);
+        $future2->await();
+    }
+
+    public function testCancellationAfterEmitted(): void
+    {
+        $pipeline = $this->source->asPipeline();
+
+        $tokenSource = new CancellationTokenSource();
+
+        $future1 = launch(fn () => $pipeline->continue());
+        $future2 = launch(fn () => $pipeline->continue($tokenSource->getToken()));
+        $future3 = launch(fn () => $pipeline->continue());
+        $future4 = launch(fn () => $pipeline->continue());
+
+        $this->source->emit(1);
+        $this->source->emit(2);
+        $this->source->emit(3);
+
+        $tokenSource->cancel();
+
+        delay(0); // Tick event loop to trigger cancellation callback.
+
+        self::assertSame(1, $future1->await());
+        self::assertSame(2, $future2->await());
+        self::assertSame(3, $future3->await());
+
+        $this->source->complete();
+
+        self::assertNull($future4->await());
     }
 }

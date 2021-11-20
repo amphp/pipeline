@@ -2,6 +2,7 @@
 
 namespace Amp\Pipeline\Internal;
 
+use Amp\CancellationToken;
 use Amp\Deferred;
 use Amp\Future;
 use Amp\Internal;
@@ -16,19 +17,17 @@ use Revolt\EventLoop\Suspension;
  * @internal
  *
  * @template TValue
- * @template TSend
  */
 final class EmitSource
 {
+    private const CONTINUE = [null];
+
     private bool $completed = false;
 
     private ?\Throwable $exception = null;
 
     /** @var array<int, mixed> */
     private array $emittedValues = [];
-
-    /** @var array<int, array{?\Throwable, mixed}> */
-    private array $sendValues = [];
 
     /** @var array<int, Deferred|Suspension> */
     private array $backPressure = [];
@@ -50,43 +49,7 @@ final class EmitSource
     /**
      * @return TValue
      */
-    public function continue(): mixed
-    {
-        return $this->next(null, null);
-    }
-
-    /**
-     * @param TSend $value
-     *
-     * @return TValue
-     */
-    public function send(mixed $value): mixed
-    {
-        if ($this->consumePosition === 0) {
-            throw new \Error("Must initialize async generator by calling continue() first");
-        }
-
-        return $this->next(null, $value);
-    }
-
-    /**
-     * @return TValue
-     */
-    public function throw(\Throwable $exception): mixed
-    {
-        if ($this->consumePosition === 0) {
-            throw new \Error("Must initialize async generator by calling continue() first");
-        }
-
-        return $this->next($exception, null);
-    }
-
-    /**
-     * @param TSend|null $value
-     *
-     * @return TValue
-     */
-    private function next(?\Throwable $exception, mixed $value): mixed
+    public function continue(?CancellationToken $token = null): mixed
     {
         $position = $this->consumePosition++ - 1;
 
@@ -94,18 +57,9 @@ final class EmitSource
         if (isset($this->backPressure[$position])) {
             $placeholder = $this->backPressure[$position];
             unset($this->backPressure[$position]);
-            if ($exception) {
-                $placeholder instanceof Suspension
-                    ? $placeholder->throw($exception)
-                    : $placeholder->error($exception);
-            } else {
-                $placeholder instanceof Suspension
-                    ? $placeholder->resume($value)
-                    : $placeholder->complete($value);
-            }
-        } elseif ($position >= 0) {
-            // Send-values are indexed as $this->consumePosition - 1.
-            $this->sendValues[$position] = [$exception, $value];
+            $placeholder instanceof Suspension
+                ? $placeholder->resume()
+                : $placeholder->complete();
         }
 
         ++$position; // Move forward to next emitted value if available.
@@ -124,8 +78,30 @@ final class EmitSource
         }
 
         // No value has been emitted, suspend fiber to await next value.
-        $this->waiting[$position] = $suspension = EventLoop::createSuspension();
-        return $suspension->suspend();
+        $this->waiting[] = $suspension = EventLoop::createSuspension();
+
+        if ($token) {
+            $waiting = &$this->waiting;
+            $id = $token->subscribe(static function (\Throwable $exception) use (
+                &$waiting,
+                $suspension,
+                $position,
+            ): void {
+                foreach ($waiting as $key => $pending) {
+                    if ($pending === $suspension) {
+                        unset($waiting[$key]);
+                        $suspension->throw($exception);
+                        return;
+                    }
+                }
+            });
+        }
+
+        try {
+            return $suspension->suspend();
+        } finally {
+            $token?->unsubscribe($id);
+        }
     }
 
     /**
@@ -202,22 +178,17 @@ final class EmitSource
             throw new \TypeError("Pipelines cannot emit futures");
         }
 
-        if (isset($this->waiting[$position])) {
-            $suspension = $this->waiting[$position];
-            unset($this->waiting[$position]);
+        if (!empty($this->waiting)) {
+            $suspension = \array_shift($this->waiting);
             $suspension->resume($value);
 
             if ($this->disposed && empty($this->waiting)) {
-                \assert(empty($this->sendValues)); // If $this->waiting is empty, $this->sendValues must be.
                 $this->triggerDisposal();
-                return [null, null]; // Subsequent push() calls will throw.
+                return self::CONTINUE; // Subsequent push() calls will throw.
             }
 
-            // Send-values are indexed as $this->consumePosition - 1, so use $position for the next value.
-            if (isset($this->sendValues[$position])) {
-                $pair = $this->sendValues[$position];
-                unset($this->sendValues[$position]);
-                return $pair;
+            if ($this->consumePosition > $position + 1) {
+                return self::CONTINUE;
             }
 
             return null;
@@ -226,7 +197,7 @@ final class EmitSource
         if ($this->disposed) {
             \assert(isset($this->exception), "Failure exception must be set when disposed");
             // Pipeline has been disposed and no Fibers are still pending.
-            return [$this->exception, null];
+            return [$this->exception];
         }
 
         $this->emittedValues[$position] = $value;
@@ -240,57 +211,53 @@ final class EmitSource
      *
      * @param TValue $value Value to emit from the pipeline.
      *
-     * @return Future<TSend> Resolves with the value sent to the pipeline.
+     * @return Future Resolves once the value has been consumed on the pipeline.
      */
     public function emit(mixed $value): Future
     {
         $position = $this->emitPosition;
 
-        $pair = $this->push($value, $position);
+        $next = $this->push($value, $position);
 
         ++$this->emitPosition;
 
-        if ($pair === null) {
+        if ($next === null) {
             $this->backPressure[$position] = $deferred = new Deferred;
             return $deferred->getFuture();
         }
 
-        [$exception, $value] = $pair;
+        [$exception] = $next;
 
         if ($exception) {
             return Future::error($exception);
         }
 
-        return Future::complete($value);
+        return Future::complete();
     }
 
     /**
      * Emits a value from the pipeline, suspending execution until the value is consumed.
      *
      * @param TValue $value Value to emit from the pipeline.
-     *
-     * @return TSend Returns the value sent to the pipeline.
      */
-    public function yield(mixed $value): mixed
+    public function yield(mixed $value): void
     {
         $position = $this->emitPosition;
 
-        $pair = $this->push($value, $position);
+        $next = $this->push($value, $position);
 
         ++$this->emitPosition;
 
-        if ($pair === null) {
+        if ($next === null) {
             $this->backPressure[$position] = $suspension = EventLoop::createSuspension();
-            return $suspension->suspend();
+            $suspension->suspend();
         }
 
-        [$exception, $value] = $pair;
+        [$exception] = $next;
 
         if ($exception) {
             throw $exception;
         }
-
-        return $value;
     }
 
     /**
