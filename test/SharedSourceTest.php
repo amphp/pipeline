@@ -5,8 +5,8 @@ namespace Amp\Pipeline;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use function Amp\coroutine;
 use function Amp\delay;
+use function Amp\launch;
 
 class SharedSourceTest extends AsyncTestCase
 {
@@ -20,8 +20,8 @@ class SharedSourceTest extends AsyncTestCase
         $pipeline1 = $source->asPipeline();
         $pipeline2 = $source->asPipeline();
 
-        $future1 = coroutine(fn () => \iterator_to_array($pipeline1));
-        $future2 = coroutine(fn () => \iterator_to_array($pipeline2));
+        $future1 = launch(fn () => \iterator_to_array($pipeline1));
+        $future2 = launch(fn () => \iterator_to_array($pipeline2));
 
         self::assertSame($expected, $future1->await());
         self::assertSame($expected, $future2->await());
@@ -35,11 +35,11 @@ class SharedSourceTest extends AsyncTestCase
         $pipeline1 = $share->asPipeline()->pipe(Pipeline\postpone(0.2));
         $pipeline2 = $share->asPipeline();
 
-        $future1 = coroutine(fn () => $pipeline1->continue());
-        $future2 = coroutine(fn () => $pipeline2->continue());
+        $future1 = launch(fn () => $pipeline1->continue());
+        $future2 = launch(fn () => $pipeline2->continue());
 
-        $future3 = coroutine(fn () => $pipeline1->continue());
-        $future4 = coroutine(fn () => $pipeline2->continue());
+        $future3 = launch(fn () => $pipeline1->continue());
+        $future4 = launch(fn () => $pipeline2->continue());
 
         $invoked = false;
         $source->emit(1)->finally(function () use (&$invoked): void {
@@ -110,7 +110,7 @@ class SharedSourceTest extends AsyncTestCase
 
         $source = new Subject();
 
-        $future = coroutine(fn () => \iterator_to_array(Pipeline\share($source->asPipeline())->asPipeline()));
+        $future = launch(fn () => \iterator_to_array(Pipeline\share($source->asPipeline())->asPipeline()));
 
         $source->emit(1);
         $source->error($exception);

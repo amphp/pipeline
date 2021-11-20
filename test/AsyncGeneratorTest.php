@@ -5,8 +5,8 @@ namespace Amp\Pipeline;
 use Amp\Deferred;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use function Amp\coroutine;
 use function Amp\delay;
+use function Amp\launch;
 
 class AsyncGeneratorTest extends AsyncTestCase
 {
@@ -67,8 +67,8 @@ class AsyncGeneratorTest extends AsyncTestCase
             $result = yield $value;
         });
 
-        $future1 = coroutine(fn () => $generator->continue());
-        $future2 = coroutine(fn () => $generator->send($send));
+        $future1 = launch(fn () => $generator->continue());
+        $future2 = launch(fn () => $generator->send($send));
 
         self::assertSame($value, $future1->await());
         self::assertNull($future2->await());
@@ -87,8 +87,8 @@ class AsyncGeneratorTest extends AsyncTestCase
             }
         });
 
-        $future1 = coroutine(fn () => $generator->continue());
-        $future2 = coroutine(fn () => $generator->throw($exception));
+        $future1 = launch(fn () => $generator->continue());
+        $future2 = launch(fn () => $generator->throw($exception));
 
         self::assertSame($value, $future1->await());
         self::assertNull($future2->await());
@@ -202,7 +202,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     /**
      * @depends testYield
      */
-    public function testAsyncGeneratorCoroutineThrows(): void
+    public function testAsyncGeneratorlaunchThrows(): void
     {
         $exception = new TestException;
 
@@ -231,7 +231,7 @@ class AsyncGeneratorTest extends AsyncTestCase
             }
         });
 
-        $future = coroutine(static fn () => $generator->getReturn());
+        $future = launch(static fn () => $generator->getReturn());
 
         self::assertSame(0, $generator->continue());
 

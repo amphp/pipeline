@@ -5,8 +5,8 @@ namespace Amp\Pipeline;
 use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use Revolt\EventLoop;
-use function Amp\coroutine;
 use function Amp\delay;
+use function Amp\launch;
 
 class PipelineSourceTest extends AsyncTestCase
 {
@@ -28,7 +28,7 @@ class PipelineSourceTest extends AsyncTestCase
 
         self::assertSame($value, $pipeline->continue());
 
-        $continue = coroutine(fn (
+        $continue = launch(fn (
         ) => $pipeline->continue()); // Promise will not resolve until another value is emitted or pipeline completed.
 
         self::assertInstanceOf(Future::class, $future);
@@ -126,13 +126,13 @@ class PipelineSourceTest extends AsyncTestCase
 
         $pipeline = $this->source->asPipeline();
 
-        $future = coroutine(fn () => $pipeline->continue());
+        $future = launch(fn () => $pipeline->continue());
 
         $backPressure = $this->source->emit($value);
 
         self::assertSame($value, $future->await());
 
-        $future = coroutine(fn () => $pipeline->continue());
+        $future = launch(fn () => $pipeline->continue());
         $future->ignore();
 
         self::assertNull($backPressure->await());
@@ -165,7 +165,7 @@ class PipelineSourceTest extends AsyncTestCase
     {
         $pipeline = $this->source->asPipeline();
 
-        $future = coroutine(fn () => $pipeline->continue());
+        $future = launch(fn () => $pipeline->continue());
         self::assertInstanceOf(Future::class, $future);
 
         $this->source->complete();
@@ -302,7 +302,7 @@ class PipelineSourceTest extends AsyncTestCase
     public function testEmitAfterAutomaticDisposalWithPendingContinueFuture(): void
     {
         $pipeline = $this->source->asPipeline();
-        $future = coroutine(fn () => $pipeline->continue());
+        $future = launch(fn () => $pipeline->continue());
         $this->source->onDisposal($this->createCallback(1));
         unset($pipeline); // Trigger automatic disposal.
         $this->source->onDisposal($this->createCallback(1));
@@ -323,7 +323,7 @@ class PipelineSourceTest extends AsyncTestCase
     public function testEmitAfterExplicitDisposalWithPendingContinueFuture(): void
     {
         $pipeline = $this->source->asPipeline();
-        $future = coroutine(fn () => $pipeline->continue());
+        $future = launch(fn () => $pipeline->continue());
         $this->source->onDisposal($this->createCallback(1));
         $pipeline->dispose();
         $this->source->onDisposal($this->createCallback(1));

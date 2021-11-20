@@ -4,8 +4,8 @@ namespace Amp\Pipeline\Operator;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline;
+use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Subject;
 
 class MapTest extends AsyncTestCase
