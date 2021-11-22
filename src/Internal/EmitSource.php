@@ -174,12 +174,10 @@ final class EmitSource
             throw new \TypeError("Pipelines cannot emit NULL");
         }
 
-        if ($value instanceof Future) {
-            throw new \TypeError("Pipelines cannot emit futures");
-        }
-
         if (!empty($this->waiting)) {
-            $suspension = \array_shift($this->waiting);
+            $key = \array_key_first($this->waiting);
+            $suspension = $this->waiting[$key];
+            unset($this->waiting[$key]);
             $suspension->resume($value);
 
             if ($this->disposed && empty($this->waiting)) {
@@ -215,11 +213,8 @@ final class EmitSource
      */
     public function emit(mixed $value): Future
     {
-        $position = $this->emitPosition;
-
+        $position = $this->emitPosition++;
         $next = $this->push($value, $position);
-
-        ++$this->emitPosition;
 
         if ($next === null) {
             $this->backPressure[$position] = $deferred = new Deferred;
@@ -242,15 +237,13 @@ final class EmitSource
      */
     public function yield(mixed $value): void
     {
-        $position = $this->emitPosition;
-
+        $position = $this->emitPosition++;
         $next = $this->push($value, $position);
-
-        ++$this->emitPosition;
 
         if ($next === null) {
             $this->backPressure[$position] = $suspension = EventLoop::createSuspension();
             $suspension->suspend();
+            return;
         }
 
         [$exception] = $next;

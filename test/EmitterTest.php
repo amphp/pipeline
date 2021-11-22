@@ -83,17 +83,6 @@ class EmitterTest extends AsyncTestCase
         $this->source->emit(null)->await();
     }
 
-    /**
-     * @depends testEmit
-     */
-    public function testEmittingFuture(): void
-    {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Pipelines cannot emit futures');
-
-        $this->source->emit(Future::complete(null))->await();
-    }
-
     public function testDoubleComplete(): void
     {
         $this->expectException(\Error::class);
