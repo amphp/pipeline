@@ -64,7 +64,7 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
      */
     public function isComplete(): bool
     {
-        return $this->source->isComplete();
+        return $this->source->atEnd();
     }
 
     /**
@@ -72,7 +72,7 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
      */
     public function isDisposed(): bool
     {
-        return $this->source->isDisposed();
+        return $this->source->atEnd() && $this->source->isDisposed();
     }
 
     /**

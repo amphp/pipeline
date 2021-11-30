@@ -390,9 +390,11 @@ class EmitterTest extends AsyncTestCase
         self::assertFalse($future1->isComplete());
 
         $pipeline = $this->source->asPipeline();
+        self::assertFalse($pipeline->isComplete());
         self::assertSame(1, $pipeline->continue());
+        self::assertFalse($pipeline->isComplete());
         self::assertSame(2, $pipeline->continue());
-
+        self::assertTrue($pipeline->isComplete());
 
         self::assertTrue($future1->isComplete());
         self::assertFalse($future2->isComplete());
