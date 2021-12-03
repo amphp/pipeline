@@ -11,17 +11,17 @@ class AsyncGeneratorTest extends AsyncTestCase
 {
     private const TIMEOUT = 0.1;
 
-    public function testNonGeneratorCallable(): void
+    public function testNonGeneratorClosure(): void
     {
         self::expectException(\TypeError::class);
-        self::expectExceptionMessage('The callable did not return a Generator');
+        self::expectExceptionMessage('The closure did not return a Generator');
 
         $generator = new AsyncGenerator(static fn () => null);
 
         $generator->continue();
     }
 
-    public function testThrowingCallable(): void
+    public function testThrowingClosure(): void
     {
         $exception = new \Exception;
 

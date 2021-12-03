@@ -12,13 +12,10 @@ use Amp\Pipeline\Pipeline;
  */
 final class SkipWhileOperator implements Operator
 {
-    private $predicate;
-
     /**
-     * @param callable(TValue):bool $predicate
+     * @param \Closure(TValue):bool $predicate
      */
-    public function __construct(callable $predicate) {
-        $this->predicate = $predicate;
+    public function __construct(private \Closure $predicate) {
     }
 
     public function pipe(Pipeline $pipeline): Pipeline

@@ -13,14 +13,11 @@ use Amp\Pipeline\Pipeline;
  */
 final class TapOperator implements Operator
 {
-    private $tap;
-
     /**
-     * @param callable(TValue):void $tap
+     * @param \Closure(TValue):void $tap
      */
-    public function __construct(callable $tap)
+    public function __construct(private \Closure $tap)
     {
-        $this->tap = $tap;
     }
 
     /**

@@ -13,14 +13,11 @@ use Amp\Pipeline\Pipeline;
  */
 final class FinalizeOperator implements Operator
 {
-    private $onComplete;
-
     /**
-     * @param callable():void $onComplete
+     * @param \Closure():void $onComplete
      */
-    public function __construct(callable $onComplete)
+    public function __construct(private \Closure $finalize)
     {
-        $this->onComplete = $onComplete;
     }
 
     /**
@@ -33,7 +30,7 @@ final class FinalizeOperator implements Operator
             try {
                 yield from $pipeline;
             } finally {
-                ($this->onComplete)();
+                ($this->finalize)();
             }
         });
     }

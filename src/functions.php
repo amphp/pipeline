@@ -104,7 +104,7 @@ function concat(array $pipelines): Pipeline
         }
     }
 
-    return new AsyncGenerator(function () use ($pipelines): \Generator {
+    return new AsyncGenerator(static function () use ($pipelines): \Generator {
         try {
             foreach ($pipelines as $pipeline) {
                 yield from $pipeline;
@@ -216,11 +216,11 @@ function relieve(): Operator
  * @template TValue
  * @template TReturn
  *
- * @param callable(TValue):TReturn $map
+ * @param \Closure(TValue):TReturn $map
  *
  * @return Operator<TValue, TReturn>
  */
-function map(callable $map): Operator
+function map(\Closure $map): Operator
 {
     return new Operator\MapOperator($map);
 }
@@ -228,11 +228,11 @@ function map(callable $map): Operator
 /**
  * @template TValue
  *
- * @param callable(TValue):bool $filter
+ * @param \Closure(TValue):bool $filter
  *
  * @return Operator<TValue, TValue>
  */
-function filter(callable $filter): Operator
+function filter(\Closure $filter): Operator
 {
     return new Operator\FilterOperator($filter);
 }
@@ -242,14 +242,14 @@ function filter(callable $filter): Operator
  *
  * @template TValue
  *
- * @param float $timeout
+ * @param float $delay
  * @return Operator<TValue, TValue>
  */
-function postpone(float $timeout): Operator
+function postpone(float $delay): Operator
 {
-    return postponeUntil(new AsyncGenerator(static function () use ($timeout): \Generator {
+    return postponeUntil(new AsyncGenerator(static function () use ($delay): \Generator {
         while (true) {
-            delay($timeout);
+            delay($delay);
             yield 0;
         }
     }));
@@ -289,10 +289,10 @@ function skip(int $count): Operator
  *
  * @template TValue
  *
- * @param callable(TValue):bool $predicate
+ * @param \Closure(TValue):bool $predicate
  * @return Operator<TValue, TValue>
  */
-function skipWhile(callable $predicate): Operator
+function skipWhile(\Closure $predicate): Operator
 {
     return new Operator\SkipWhileOperator($predicate);
 }
@@ -315,10 +315,10 @@ function take(int $count): Operator
  *
  * @template TValue
  *
- * @param callable(TValue):bool $predicate
+ * @param \Closure(TValue):bool $predicate
  * @return Operator<TValue, TValue>
  */
-function takeWhile(callable $predicate): Operator
+function takeWhile(\Closure $predicate): Operator
 {
     return new Operator\TakeWhileOperator($predicate);
 }
@@ -329,10 +329,10 @@ function takeWhile(callable $predicate): Operator
  *
  * @template TValue
  *
- * @param callable(TValue):void $tap
+ * @param \Closure(TValue):void $tap
  * @return Operator<TValue, TValue>
  */
-function tap(callable $tap): Operator
+function tap(\Closure $tap): Operator
 {
     return new Operator\TapOperator($tap);
 }
@@ -342,10 +342,10 @@ function tap(callable $tap): Operator
  *
  * @template TValue
  *
- * @param callable():void $finally
+ * @param \Closure():void $finally
  * @return Operator<TValue, TValue>
  */
-function finalize(callable $finally): Operator
+function finalize(\Closure $finally): Operator
 {
     return new Operator\FinalizeOperator($finally);
 }
@@ -387,12 +387,12 @@ function sampleTime(float $period): Operator
  * @template TValue
  *
  * @param Pipeline<TValue> $pipeline
- * @param callable(TValue):void $callback
+ * @param \Closure(TValue):void $each
  */
-function each(Pipeline $pipeline, callable $callback): void
+function each(Pipeline $pipeline, \Closure $each): void
 {
     foreach ($pipeline as $value) {
-        $callback($value);
+        $each($value);
     }
 }
 
@@ -401,11 +401,11 @@ function each(Pipeline $pipeline, callable $callback): void
  * @template TResult
  *
  * @param Pipeline<TValue> $pipeline
- * @param callable(TResult, TValue):TResult $accumulator
+ * @param \Closure(TResult, TValue):TResult $accumulator
  * @param TResult $initial
  * @return TResult
  */
-function reduce(Pipeline $pipeline, callable $accumulator, mixed $initial = null): mixed
+function reduce(Pipeline $pipeline, \Closure $accumulator, mixed $initial = null): mixed
 {
     $result = $initial;
     foreach ($pipeline as $value) {

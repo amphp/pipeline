@@ -17,20 +17,20 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
     private Internal\EmitSource $source;
 
     /**
-     * @param callable():\Generator $callable
+     * @param \Closure():\Generator $closure
      *
-     * @throws \Error Thrown if the callable throws any exception.
-     * @throws \TypeError Thrown if the callable does not return a Generator.
+     * @throws \Error Thrown if the closure throws any exception.
+     * @throws \TypeError Thrown if the closure does not return a Generator.
      */
-    public function __construct(callable $callable)
+    public function __construct(\Closure $closure)
     {
         $this->source = $source = new Internal\EmitSource;
 
         try {
-            $generator = $callable();
+            $generator = $closure();
 
             if (!$generator instanceof \Generator) {
-                throw new \TypeError("The callable did not return a Generator");
+                throw new \TypeError("The closure did not return a Generator");
             }
         } catch (\Throwable $exception) {
             $this->source->error($exception);

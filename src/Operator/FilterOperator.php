@@ -13,14 +13,11 @@ use Amp\Pipeline\Pipeline;
  */
 final class FilterOperator implements Operator
 {
-    private $filter;
-
     /**
-     * @param callable(TValue):bool $filter
+     * @param \Closure(TValue):bool $filter
      */
-    public function __construct(callable $filter)
+    public function __construct(private \Closure $filter)
     {
-        $this->filter = $filter;
     }
 
     /**

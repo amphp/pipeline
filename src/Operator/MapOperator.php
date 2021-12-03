@@ -14,14 +14,11 @@ use Amp\Pipeline\Pipeline;
  */
 final class MapOperator implements Operator
 {
-    private $onEmit;
-
     /**
-     * @param callable(TValue):TMapped $onEmit
+     * @param \Closure(TValue):TMapped $onEmit
      */
-    public function __construct(callable $onEmit)
+    public function __construct(private \Closure $map)
     {
-        $this->onEmit = $onEmit;
     }
 
     /**
@@ -32,7 +29,7 @@ final class MapOperator implements Operator
     {
         return new AsyncGenerator(function () use ($pipeline): \Generator {
             foreach ($pipeline as $value) {
-                yield ($this->onEmit)($value);
+                yield ($this->map)($value);
             }
         });
     }
