@@ -2,8 +2,8 @@
 
 namespace Amp\Pipeline\Internal;
 
-use Amp\CancellationToken;
-use Amp\Deferred;
+use Amp\Cancellation;
+use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\Internal;
 use Amp\Pipeline\DisposedException;
@@ -29,7 +29,7 @@ final class EmitSource
     /** @var array<int, mixed> */
     private array $emittedValues = [];
 
-    /** @var array<int, Deferred|Suspension> */
+    /** @var array<int, DeferredFuture|Suspension> */
     private array $backPressure = [];
 
     /** @var Suspension[] */
@@ -49,7 +49,7 @@ final class EmitSource
     /**
      * @return TValue
      */
-    public function continue(?CancellationToken $token = null): mixed
+    public function continue(?Cancellation $cancellation = null): mixed
     {
         $position = $this->consumePosition++ - 1;
 
@@ -80,9 +80,9 @@ final class EmitSource
         // No value has been emitted, suspend fiber to await next value.
         $this->waiting[] = $suspension = EventLoop::createSuspension();
 
-        if ($token) {
+        if ($cancellation) {
             $waiting = &$this->waiting;
-            $id = $token->subscribe(static function (\Throwable $exception) use (
+            $id = $cancellation->subscribe(static function (\Throwable $exception) use (
                 &$waiting,
                 $suspension,
                 $position,
@@ -100,7 +100,7 @@ final class EmitSource
         try {
             return $suspension->suspend();
         } finally {
-            $token?->unsubscribe($id);
+            $cancellation?->unsubscribe($id);
         }
     }
 
@@ -217,7 +217,7 @@ final class EmitSource
         $next = $this->push($value, $position);
 
         if ($next === null) {
-            $this->backPressure[$position] = $deferred = new Deferred;
+            $this->backPressure[$position] = $deferred = new DeferredFuture;
             return $deferred->getFuture();
         }
 

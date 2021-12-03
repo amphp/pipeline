@@ -5,10 +5,10 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Amp\Pipeline\AsyncGenerator;
 use Revolt\EventLoop;
-use function Amp\launch;
+use function Amp\async;
 use function Amp\delay;
 
-$future = launch(function (): void {
+$future = async(function (): void {
     try {
         $timer = EventLoop::repeat(0.1, function () {
             echo ".", PHP_EOL; // This repeat timer is to show the loop is not being blocked.

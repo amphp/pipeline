@@ -7,7 +7,7 @@ use Amp\Future;
 use Amp\Pipeline;
 use Amp\Pipeline\Emitter;
 use Revolt\EventLoop;
-use function Amp\launch;
+use function Amp\async;
 use function Amp\delay;
 
 try {
@@ -34,14 +34,14 @@ try {
     $pipeline1 = $source->asPipeline();
     $pipeline2 = $source->asPipeline();
 
-    $future1 = launch(function () use ($pipeline1) {
+    $future1 = async(function () use ($pipeline1) {
         foreach ($pipeline1 as $value) {
             \printf("Pipeline source yielded %d\n", $value);
             delay(0.5); // Listener consumption takes 500 ms.
         }
     });
 
-    $future2 = launch(function () use ($pipeline2) {
+    $future2 = async(function () use ($pipeline2) {
         foreach ($pipeline2 as $value) {
             \printf("Pipeline source yielded %d\n", $value);
             delay(0.1); // Listener consumption takes only 100 ms, but is limited by 500 ms loop above.

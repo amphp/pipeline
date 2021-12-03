@@ -2,7 +2,7 @@
 
 namespace Amp\Pipeline\Internal;
 
-use Amp\CancellationToken;
+use Amp\Cancellation;
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
 
@@ -34,9 +34,9 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
     /**
      * @inheritDoc
      */
-    public function continue(?CancellationToken $token = null): mixed
+    public function continue(?Cancellation $cancellation = null): mixed
     {
-        return $this->source->continue($token);
+        return $this->source->continue($cancellation);
     }
 
     /**

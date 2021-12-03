@@ -2,13 +2,13 @@
 
 namespace Amp\Pipeline\Operator;
 
-use Amp\Deferred;
+use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
 use Revolt\EventLoop;
-use function Amp\launch;
+use function Amp\async;
 
 final class SampleWhenOperator implements Operator
 {
@@ -19,7 +19,7 @@ final class SampleWhenOperator implements Operator
 
     public function pipe(Pipeline $pipeline): Pipeline
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $sampled = true;
 
         EventLoop::queue(function () use (&$sampled, &$current, $deferred, $pipeline): void {
@@ -37,7 +37,7 @@ final class SampleWhenOperator implements Operator
             while (
                 Future\race([
                     $deferred->getFuture(),
-                    launch(fn() => $this->sampleWhen->continue())
+                    async(fn() => $this->sampleWhen->continue())
                 ]) !== null
             ) {
                 if ($sampled) {

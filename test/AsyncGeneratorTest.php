@@ -2,11 +2,10 @@
 
 namespace Amp\Pipeline;
 
-use Amp\Deferred;
+use Amp\DeferredFuture;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use function Amp\delay;
-use function Amp\launch;
 
 class AsyncGeneratorTest extends AsyncTestCase
 {
@@ -51,7 +50,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     public function testFailingPromise(): void
     {
         $exception = new TestException;
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
 
         $generator = new AsyncGenerator(function () use ($deferred) {
             yield $deferred->getFuture()->await();
@@ -97,7 +96,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     /**
      * @depends testYield
      */
-    public function testAsyncGeneratorlaunchThrows(): void
+    public function testAsyncGeneratorasyncThrows(): void
     {
         $exception = new TestException;
 

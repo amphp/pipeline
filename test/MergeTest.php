@@ -6,8 +6,8 @@ use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
+use function Amp\async;
 use function Amp\delay;
-use function Amp\launch;
 
 class MergeTest extends AsyncTestCase
 {
@@ -121,7 +121,7 @@ class MergeTest extends AsyncTestCase
 
     private function asyncValue(float $delay, mixed $value): Future
     {
-        return launch(static function () use ($delay, $value): mixed {
+        return async(static function () use ($delay, $value): mixed {
             delay($delay);
             return $value;
         });

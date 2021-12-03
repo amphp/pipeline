@@ -2,13 +2,13 @@
 
 namespace Amp\Pipeline;
 
-use Amp\CancellationTokenSource;
+use Amp\DeferredCancellation;
 use Amp\CancelledException;
 use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use Revolt\EventLoop;
+use function Amp\async;
 use function Amp\delay;
-use function Amp\launch;
 
 class EmitterTest extends AsyncTestCase
 {
@@ -30,7 +30,7 @@ class EmitterTest extends AsyncTestCase
 
         self::assertSame($value, $pipeline->continue());
 
-        $continue = launch(fn (
+        $continue = async(fn (
         ) => $pipeline->continue()); // Promise will not resolve until another value is emitted or pipeline completed.
 
         self::assertInstanceOf(Future::class, $future);
@@ -117,13 +117,13 @@ class EmitterTest extends AsyncTestCase
 
         $pipeline = $this->source->asPipeline();
 
-        $future = launch(fn () => $pipeline->continue());
+        $future = async(fn () => $pipeline->continue());
 
         $backPressure = $this->source->emit($value);
 
         self::assertSame($value, $future->await());
 
-        $future = launch(fn () => $pipeline->continue());
+        $future = async(fn () => $pipeline->continue());
         $future->ignore();
 
         self::assertNull($backPressure->await());
@@ -156,7 +156,7 @@ class EmitterTest extends AsyncTestCase
     {
         $pipeline = $this->source->asPipeline();
 
-        $future = launch(fn () => $pipeline->continue());
+        $future = async(fn () => $pipeline->continue());
         self::assertInstanceOf(Future::class, $future);
 
         $this->source->complete();
@@ -293,7 +293,7 @@ class EmitterTest extends AsyncTestCase
     public function testEmitAfterAutomaticDisposalWithPendingContinueFuture(): void
     {
         $pipeline = $this->source->asPipeline();
-        $future = launch(fn () => $pipeline->continue());
+        $future = async(fn () => $pipeline->continue());
         $this->source->onDisposal($this->createCallback(1));
         unset($pipeline); // Trigger automatic disposal.
         $this->source->onDisposal($this->createCallback(1));
@@ -314,7 +314,7 @@ class EmitterTest extends AsyncTestCase
     public function testEmitAfterExplicitDisposalWithPendingContinueFuture(): void
     {
         $pipeline = $this->source->asPipeline();
-        $future = launch(fn () => $pipeline->continue());
+        $future = async(fn () => $pipeline->continue());
         $this->source->onDisposal($this->createCallback(1));
         $pipeline->dispose();
         $this->source->onDisposal($this->createCallback(1));
@@ -431,14 +431,14 @@ class EmitterTest extends AsyncTestCase
     {
         $pipeline = $this->source->asPipeline();
 
-        $tokenSource = new CancellationTokenSource();
+        $cancellationSource = new DeferredCancellation();
 
-        $future1 = launch(fn () => $pipeline->continue());
-        $future2 = launch(fn () => $pipeline->continue($tokenSource->getToken()));
-        $future3 = launch(fn () => $pipeline->continue());
-        $future4 = launch(fn () => $pipeline->continue());
+        $future1 = async(fn () => $pipeline->continue());
+        $future2 = async(fn () => $pipeline->continue($cancellationSource->getCancellation()));
+        $future3 = async(fn () => $pipeline->continue());
+        $future4 = async(fn () => $pipeline->continue());
 
-        $tokenSource->cancel();
+        $cancellationSource->cancel();
 
         delay(0); // Tick event loop to trigger cancellation callback.
 
@@ -460,18 +460,18 @@ class EmitterTest extends AsyncTestCase
     {
         $pipeline = $this->source->asPipeline();
 
-        $tokenSource = new CancellationTokenSource();
+        $cancellationSource = new DeferredCancellation();
 
-        $future1 = launch(fn () => $pipeline->continue());
-        $future2 = launch(fn () => $pipeline->continue($tokenSource->getToken()));
-        $future3 = launch(fn () => $pipeline->continue());
-        $future4 = launch(fn () => $pipeline->continue());
+        $future1 = async(fn () => $pipeline->continue());
+        $future2 = async(fn () => $pipeline->continue($cancellationSource->getCancellation()));
+        $future3 = async(fn () => $pipeline->continue());
+        $future4 = async(fn () => $pipeline->continue());
 
         $this->source->emit(1);
         $this->source->emit(2);
         $this->source->emit(3);
 
-        $tokenSource->cancel();
+        $cancellationSource->cancel();
 
         delay(0); // Tick event loop to trigger cancellation callback.
 

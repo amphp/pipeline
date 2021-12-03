@@ -8,8 +8,8 @@ use Amp\Pipeline;
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\DisposedException;
 use Amp\Pipeline\Emitter;
+use function Amp\async;
 use function Amp\delay;
-use function Amp\launch;
 
 class RelieveTest extends AsyncTestCase
 {
@@ -58,7 +58,7 @@ class RelieveTest extends AsyncTestCase
 
         $pipeline = $source->asPipeline()->pipe(Pipeline\relieve());
 
-        $future = launch(fn () => $pipeline->continue());
+        $future = async(fn () => $pipeline->continue());
 
         $source->yield(1);
 

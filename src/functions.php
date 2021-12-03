@@ -5,8 +5,8 @@ namespace Amp\Pipeline;
 use Amp\Future;
 use Amp\Sync\Semaphore;
 use Revolt\EventLoop;
+use function Amp\async;
 use function Amp\delay;
-use function Amp\launch;
 
 /**
  * Creates a source that can create any number of pipelines by calling {@see Source::asPipeline()}. The new pipelines
@@ -59,7 +59,7 @@ function merge(array $pipelines): Pipeline
             throw new \TypeError(\sprintf('Must provide only instances of %s to %s', Pipeline::class, __FUNCTION__));
         }
 
-        $futures[] = launch(static function () use ($subject, $pipeline): void {
+        $futures[] = async(static function () use ($subject, $pipeline): void {
             foreach ($pipeline as $value) {
                 if ($subject->isComplete()) {
                     return;
@@ -140,7 +140,7 @@ function zip(array $pipelines): Pipeline
             $keys = \array_keys($pipelines);
             while (true) {
                 $next = Future\all(\array_map(
-                    static fn (Pipeline $pipeline) => launch(static fn () => $pipeline->continue()),
+                    static fn (Pipeline $pipeline) => async(static fn () => $pipeline->continue()),
                     $pipelines
                 ));
 

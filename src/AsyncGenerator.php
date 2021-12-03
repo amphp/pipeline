@@ -2,7 +2,7 @@
 
 namespace Amp\Pipeline;
 
-use Amp\CancellationToken;
+use Amp\Cancellation;
 use Revolt\EventLoop;
 
 /**
@@ -63,7 +63,7 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
      *
      * @psalm-return TValue|null
      */
-    public function continue(?CancellationToken $token = null): mixed
+    public function continue(?Cancellation $cancellation = null): mixed
     {
         return $this->source->continue();
     }
