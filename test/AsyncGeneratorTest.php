@@ -14,7 +14,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     public function testNonGeneratorClosure(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('The closure did not return a Generator');
+        $this->expectExceptionMessage('Return value must be of type Generator, null returned');
 
         $generator = new AsyncGenerator(static fn () => null);
 

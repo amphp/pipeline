@@ -29,7 +29,9 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
             $generator = $closure();
 
             if (!$generator instanceof \Generator) {
-                throw new \TypeError("The closure did not return a Generator");
+                throw new \TypeError(
+                    "Return value must be of type Generator, " . \get_debug_type($generator) . " returned"
+                );
             }
         } catch (\Throwable $exception) {
             $this->source->error($exception);
@@ -77,9 +79,6 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
         $this->source->dispose();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function pipe(Operator ...$operators): Pipeline
     {
         $pipeline = $this;
@@ -89,25 +88,16 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
         return $pipeline;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function isComplete(): bool
     {
-        return $this->source->atEnd();
+        return $this->source->isConsumed();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function isDisposed(): bool
     {
-        return $this->source->atEnd() && $this->source->isDisposed();
+        return $this->source->isConsumed() && $this->source->isDisposed();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function getIterator(): \Traversable
     {
         while (null !== $value = $this->source->continue()) {

@@ -264,7 +264,7 @@ final class EmitSource
     /**
      * @return bool True if the pipeline has no values pending and has been completed.
      */
-    public function atEnd(): bool
+    public function isConsumed(): bool
     {
         return empty($this->emittedValues) && $this->completed;
     }
