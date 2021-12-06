@@ -57,7 +57,7 @@ class FilterTest extends AsyncTestCase
             }
         });
 
-        $pipeline = $generator->pipe(Pipeline\filter(fn() => throw $exception));
+        $pipeline = $generator->pipe(Pipeline\filter(fn () => throw $exception));
 
         $this->expectExceptionObject($exception);
 

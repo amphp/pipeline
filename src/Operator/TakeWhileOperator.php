@@ -15,7 +15,8 @@ final class TakeWhileOperator implements Operator
     /**
      * @param \Closure(TValue):bool $predicate
      */
-    public function __construct(private \Closure $predicate) {
+    public function __construct(private \Closure $predicate)
+    {
     }
 
     public function pipe(Pipeline $pipeline): Pipeline

@@ -2,8 +2,8 @@
 
 namespace Amp\Pipeline;
 
-use Amp\DeferredCancellation;
 use Amp\CancelledException;
+use Amp\DeferredCancellation;
 use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use Revolt\EventLoop;
@@ -399,7 +399,7 @@ class EmitterTest extends AsyncTestCase
         self::assertTrue($future1->isComplete());
         self::assertFalse($future2->isComplete());
 
-        self::assertSame(null, $pipeline->continue());
+        self::assertNull($pipeline->continue());
 
         delay(0.01);
 

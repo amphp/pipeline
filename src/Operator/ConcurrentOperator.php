@@ -79,7 +79,8 @@ final class ConcurrentOperator implements Operator
         return $destination->asPipeline();
     }
 
-    private function createEmitter(Emitter $destination, \SplQueue $queue, \ArrayObject $emitters): Emitter {
+    private function createEmitter(Emitter $destination, \SplQueue $queue, \ArrayObject $emitters): Emitter
+    {
         $emitter = new Emitter();
         $emitters->append($emitter);
 

@@ -44,7 +44,7 @@ final class SampleWhenOperator implements Operator
             while (
                 Future\race([
                     $deferred->getFuture(),
-                    async(fn() => $this->sampleWhen->continue())
+                    async(fn () => $this->sampleWhen->continue())
                 ]) !== null
             ) {
                 if ($sampled) {

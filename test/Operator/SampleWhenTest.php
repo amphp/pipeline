@@ -68,7 +68,7 @@ class SampleWhenTest extends AsyncTestCase
         $pipeline = $source->asPipeline()->pipe(Pipeline\sampleWhen($sample));
 
         $source->emit(1)->ignore();
-        EventLoop::queue(fn() => $source->error($exception));
+        EventLoop::queue(fn () => $source->error($exception));
 
         self::assertSame(1, $pipeline->continue());
 
@@ -92,7 +92,7 @@ class SampleWhenTest extends AsyncTestCase
         );
 
         $source->emit(1)->ignore();
-        EventLoop::queue(fn() => $source->error($exception));
+        EventLoop::queue(fn () => $source->error($exception));
 
         self::assertSame(1, $pipeline->continue());
 

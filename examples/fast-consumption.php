@@ -28,7 +28,7 @@ try {
 
     // Pipeline consumer attempts to consume 11 values at once. Only 10 will be emitted.
     $futures = [];
-    for ($i = 0; $i < 11 && ($futures[] = async(fn(): ?int => $pipeline->continue())); ++$i) ;
+    for ($i = 0; $i < 11 && ($futures[] = async(fn (): ?int => $pipeline->continue())); ++$i) ;
 
     foreach ($futures as $key => $future) {
         if (null === $yielded = $future->await()) {

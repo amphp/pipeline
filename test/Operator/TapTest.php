@@ -51,7 +51,7 @@ class TapTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $pipeline = $source->asPipeline()->pipe(Pipeline\tap(fn() => throw $exception));
+        $pipeline = $source->asPipeline()->pipe(Pipeline\tap(fn () => throw $exception));
 
         $source->emit(1)->ignore();
 
