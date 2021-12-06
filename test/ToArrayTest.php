@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Test\Pipeline;
+namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\Pipeline;

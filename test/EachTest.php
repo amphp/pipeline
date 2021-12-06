@@ -8,15 +8,6 @@ use Amp\Pipeline;
 
 class EachTest extends AsyncTestCase
 {
-    public function testReduce(): void
-    {
-        $values = [1, 2, 3, 4, 5];
-
-        $pipeline = Pipeline\fromIterable($values);
-
-        Pipeline\each($pipeline, $this->createCallback(\count($values)));
-    }
-
     public function testPipelineFails(): void
     {
         $exception = new TestException;
@@ -28,5 +19,14 @@ class EachTest extends AsyncTestCase
         $this->expectExceptionObject($exception);
 
         Pipeline\each($source->asPipeline(), $this->createCallback(1));
+    }
+
+    public function testReduce(): void
+    {
+        $values = [1, 2, 3, 4, 5];
+
+        $pipeline = Pipeline\fromIterable($values);
+
+        Pipeline\each($pipeline, $this->createCallback(\count($values)));
     }
 }

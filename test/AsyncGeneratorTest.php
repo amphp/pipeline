@@ -13,8 +13,8 @@ class AsyncGeneratorTest extends AsyncTestCase
 
     public function testNonGeneratorClosure(): void
     {
-        self::expectException(\TypeError::class);
-        self::expectExceptionMessage('The closure did not return a Generator');
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('The closure did not return a Generator');
 
         $generator = new AsyncGenerator(static fn () => null);
 
@@ -25,7 +25,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     {
         $exception = new \Exception;
 
-        self::expectExceptionObject($exception);
+        $this->expectExceptionObject($exception);
 
         $generator = new AsyncGenerator(static fn () => throw $exception);
 
@@ -96,7 +96,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     /**
      * @depends testYield
      */
-    public function testAsyncGeneratorasyncThrows(): void
+    public function testAsyncGeneratorThrows(): void
     {
         $exception = new TestException;
 
@@ -156,7 +156,7 @@ class AsyncGeneratorTest extends AsyncTestCase
 
         $generator->dispose();
 
-        self::expectException(DisposedException::class);
+        $this->expectException(DisposedException::class);
 
         $generator->continue();
     }
@@ -175,7 +175,7 @@ class AsyncGeneratorTest extends AsyncTestCase
 
         $generator->dispose();
 
-        self::expectException(DisposedException::class);
+        $this->expectException(DisposedException::class);
 
         $generator->continue();
     }

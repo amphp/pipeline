@@ -45,7 +45,12 @@ class ZipTest extends AsyncTestCase
     public function testZipWithDelayedYields(): void
     {
         $pipelines = [];
-        $values1 = [$this->asyncValue(0.01, 1), $this->asyncValue(0.05, 2), $this->asyncValue(0.07, 3), $this->asyncValue(0.1, 4)];
+        $values1 = [
+            $this->asyncValue(0.01, 1),
+            $this->asyncValue(0.05, 2),
+            $this->asyncValue(0.07, 3),
+            $this->asyncValue(0.1, 4),
+        ];
         $values2 = [$this->asyncValue(0.02, 4), $this->asyncValue(0.04, 5), $this->asyncValue(0.06, 6)];
         $expected = [[1, 4], [2, 5], [3, 6]];
 
@@ -115,7 +120,6 @@ class ZipTest extends AsyncTestCase
     {
         $this->expectException(\TypeError::class);
 
-        /** @noinspection PhpParamsInspection */
         Pipeline\zip([1]);
     }
 

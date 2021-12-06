@@ -12,7 +12,6 @@ use function Amp\delay;
 
 class EmitterTest extends AsyncTestCase
 {
-    /** @var Emitter */
     private Emitter $source;
 
     public function setUp(): void
@@ -23,7 +22,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testEmit(): void
     {
-        $value = 'Emited Value';
+        $value = 'Emitted Value';
 
         $future = $this->source->emit($value);
         $pipeline = $this->source->asPipeline();
