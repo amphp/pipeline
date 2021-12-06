@@ -49,7 +49,7 @@ final class SharedSource implements Source
         });
     }
 
-    public function asPipeline(): Pipeline
+    public function pipe(): Pipeline
     {
         $disperse = empty($this->emitters);
         $this->emitters[] = $emitter = new Emitter();
@@ -74,6 +74,6 @@ final class SharedSource implements Source
             $this->disperse();
         }
 
-        return $emitter->asPipeline();
+        return $emitter->pipe();
     }
 }

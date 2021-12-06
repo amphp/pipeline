@@ -31,7 +31,7 @@ class SkipTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->asPipeline()->pipe(Pipeline\skip(1));
+        $iterator = $source->pipe()->pipe(Pipeline\skip(1));
 
         $source->error($exception);
 

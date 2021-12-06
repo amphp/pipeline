@@ -9,7 +9,7 @@ use function Amp\async;
 use function Amp\delay;
 
 /**
- * Creates a source that can create any number of pipelines by calling {@see Source::asPipeline()}. The new pipelines
+ * Creates a source that can create any number of pipelines by calling {@see Source::pipe()}. The new pipelines
  * will each emit values identical to that of the given pipeline. The original pipeline is only disposed if all
  * downstream pipelines are disposed.
  *
@@ -87,7 +87,7 @@ function merge(array $pipelines): Pipeline
         }
     });
 
-    return $emitter->asPipeline();
+    return $emitter->pipe();
 }
 
 /**

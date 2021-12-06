@@ -29,10 +29,10 @@ try {
         $emitter->complete();
     });
 
-    $source = Pipeline\share($emitter->asPipeline());
+    $source = Pipeline\share($emitter->pipe());
 
-    $pipeline1 = $source->asPipeline();
-    $pipeline2 = $source->asPipeline();
+    $pipeline1 = $source->pipe();
+    $pipeline2 = $source->pipe();
 
     $future1 = async(function () use ($pipeline1) {
         foreach ($pipeline1 as $value) {

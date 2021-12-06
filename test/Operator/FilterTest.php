@@ -14,7 +14,7 @@ class FilterTest extends AsyncTestCase
     {
         $source = new Emitter;
 
-        $pipeline = $source->asPipeline()->pipe(Pipeline\filter($this->createCallback(0)));
+        $pipeline = $source->pipe()->pipe(Pipeline\filter($this->createCallback(0)));
 
         $source->complete();
 
@@ -69,7 +69,7 @@ class FilterTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $pipeline = $source->asPipeline()->pipe(Pipeline\filter($this->createCallback(0)));
+        $pipeline = $source->pipe()->pipe(Pipeline\filter($this->createCallback(0)));
 
         $source->error($exception);
 

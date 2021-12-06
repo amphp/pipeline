@@ -37,7 +37,7 @@ class RelieveTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $pipeline = $source->asPipeline()->pipe(Pipeline\relieve());
+        $pipeline = $source->pipe()->pipe(Pipeline\relieve());
 
         $source->emit(1);
         $source->error($exception);
@@ -56,7 +56,7 @@ class RelieveTest extends AsyncTestCase
     {
         $source = new Emitter;
 
-        $pipeline = $source->asPipeline()->pipe(Pipeline\relieve());
+        $pipeline = $source->pipe()->pipe(Pipeline\relieve());
 
         $future = async(fn () => $pipeline->continue());
 

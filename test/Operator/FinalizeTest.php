@@ -29,7 +29,7 @@ class FinalizeTest extends AsyncTestCase
         $source = new Emitter;
 
         $invoked = 0;
-        $pipeline = $source->asPipeline()->pipe(Pipeline\finalize(function () use (&$invoked): void {
+        $pipeline = $source->pipe()->pipe(Pipeline\finalize(function () use (&$invoked): void {
             $invoked++;
         }));
 
@@ -50,7 +50,7 @@ class FinalizeTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $pipeline = $source->asPipeline()->pipe(Pipeline\finalize(fn () => throw $exception));
+        $pipeline = $source->pipe()->pipe(Pipeline\finalize(fn () => throw $exception));
 
         $source->complete();
 

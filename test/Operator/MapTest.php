@@ -15,7 +15,7 @@ class MapTest extends AsyncTestCase
         $source = new Emitter;
 
         /** @noinspection PhpUnusedLocalVariableInspection */
-        $pipeline = $source->asPipeline()->pipe(Pipeline\map($this->createCallback(0)));
+        $pipeline = $source->pipe()->pipe(Pipeline\map($this->createCallback(0)));
 
         $source->complete();
     }
@@ -68,7 +68,7 @@ class MapTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->asPipeline()->pipe(Pipeline\map($this->createCallback(0)));
+        $iterator = $source->pipe()->pipe(Pipeline\map($this->createCallback(0)));
 
         $source->error($exception);
 

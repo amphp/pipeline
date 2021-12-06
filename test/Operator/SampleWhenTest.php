@@ -65,7 +65,7 @@ class SampleWhenTest extends AsyncTestCase
             Pipeline\fromIterable([2, 3])->pipe(Pipeline\postpone(0.1))
         ]);
 
-        $pipeline = $source->asPipeline()->pipe(Pipeline\sampleWhen($sample));
+        $pipeline = $source->pipe()->pipe(Pipeline\sampleWhen($sample));
 
         $source->emit(1)->ignore();
         EventLoop::queue(fn () => $source->error($exception));
@@ -88,7 +88,7 @@ class SampleWhenTest extends AsyncTestCase
 
         $pipeline = Pipeline\fromIterable([1, 2, 3])->pipe(
             Pipeline\postponeUntil($delay),
-            Pipeline\sampleWhen($source->asPipeline())
+            Pipeline\sampleWhen($source->pipe())
         );
 
         $source->emit(1)->ignore();

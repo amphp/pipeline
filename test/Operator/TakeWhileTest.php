@@ -29,7 +29,7 @@ class TakeWhileTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->asPipeline()->pipe(Pipeline\takeWhile(fn ($value) => $value < 3));
+        $iterator = $source->pipe()->pipe(Pipeline\takeWhile(fn ($value) => $value < 3));
 
         $source->error($exception);
 

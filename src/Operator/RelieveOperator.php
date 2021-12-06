@@ -43,6 +43,6 @@ final class RelieveOperator implements Operator
             }
         });
 
-        return $emitter->asPipeline();
+        return $emitter->pipe();
     }
 }

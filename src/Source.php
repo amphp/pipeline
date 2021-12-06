@@ -10,5 +10,5 @@ interface Source
     /**
      * @return Pipeline<TValue>
      */
-    public function asPipeline(): Pipeline;
+    public function pipe(): Pipeline;
 }

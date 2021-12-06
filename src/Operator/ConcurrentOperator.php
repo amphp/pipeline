@@ -76,7 +76,7 @@ final class ConcurrentOperator implements Operator
             }
         });
 
-        return $destination->asPipeline();
+        return $destination->pipe();
     }
 
     private function createEmitter(Emitter $destination, \SplQueue $queue, \ArrayObject $emitters): Emitter
@@ -86,7 +86,7 @@ final class ConcurrentOperator implements Operator
 
         EventLoop::queue(function () use ($emitters, $emitter, $destination, $queue): void {
             $operatorEmitter = new Emitter();
-            $operatorPipeline = $operatorEmitter->asPipeline();
+            $operatorPipeline = $operatorEmitter->pipe();
             foreach ($this->operators as $operator) {
                 $operatorPipeline = $operator->pipe($operatorPipeline);
             }
@@ -97,7 +97,7 @@ final class ConcurrentOperator implements Operator
                  * @var Lock $lock
                  * @var Future $previous
                  */
-                foreach ($emitter->asPipeline() as [$value, $lock, $previous]) {
+                foreach ($emitter->pipe() as [$value, $lock, $previous]) {
                     $operatorEmitter->emit($value)->ignore();
                     $previous->ignore();
 

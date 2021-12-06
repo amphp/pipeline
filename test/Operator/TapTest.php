@@ -29,7 +29,7 @@ class TapTest extends AsyncTestCase
         $source = new Emitter;
 
         $invoked = 0;
-        $pipeline = $source->asPipeline()->pipe(Pipeline\tap(function () use (&$invoked): void {
+        $pipeline = $source->pipe()->pipe(Pipeline\tap(function () use (&$invoked): void {
             $invoked++;
         }));
 
@@ -51,7 +51,7 @@ class TapTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $pipeline = $source->asPipeline()->pipe(Pipeline\tap(fn () => throw $exception));
+        $pipeline = $source->pipe()->pipe(Pipeline\tap(fn () => throw $exception));
 
         $source->emit(1)->ignore();
 

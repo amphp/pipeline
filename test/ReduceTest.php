@@ -29,6 +29,6 @@ class ReduceTest extends AsyncTestCase
 
         $this->expectExceptionObject($exception);
 
-        $result = Pipeline\reduce($source->asPipeline(), $this->createCallback(1));
+        $result = Pipeline\reduce($source->pipe(), $this->createCallback(1));
     }
 }

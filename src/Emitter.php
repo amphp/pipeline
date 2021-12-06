@@ -39,11 +39,13 @@ final class Emitter implements Source
      *
      * @throws \Error If this method is called more than once.
      */
-    public function asPipeline(): Pipeline
+    public function pipe(): Pipeline
     {
         if ($this->used) {
-            throw new \Error('A pipeline may be started only once; use Subject->asPipeline()->share() to'
-                . ' create multiple pipelines using this subject as the source');
+            throw new \Error(
+                'A pipeline may be started only once; ' .
+                'Use share($emitter->pipe()) to create multiple pipelines using this emitter as the source'
+            );
         }
 
         $this->used = true;

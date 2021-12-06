@@ -17,8 +17,8 @@ class SharedSourceTest extends AsyncTestCase
         $pipeline = Pipeline\fromIterable($expected);
         $source = Pipeline\share($pipeline);
 
-        $pipeline1 = $source->asPipeline();
-        $pipeline2 = $source->asPipeline();
+        $pipeline1 = $source->pipe();
+        $pipeline2 = $source->pipe();
 
         $future1 = async(fn () => \iterator_to_array($pipeline1));
         $future2 = async(fn () => \iterator_to_array($pipeline2));
@@ -30,10 +30,10 @@ class SharedSourceTest extends AsyncTestCase
     public function testBackPressure(): void
     {
         $source = new Emitter();
-        $share = Pipeline\share($source->asPipeline());
+        $share = Pipeline\share($source->pipe());
 
-        $pipeline1 = $share->asPipeline()->pipe(Pipeline\postpone(0.2));
-        $pipeline2 = $share->asPipeline();
+        $pipeline1 = $share->pipe()->pipe(Pipeline\postpone(0.2));
+        $pipeline2 = $share->pipe();
 
         $future1 = async(fn () => $pipeline1->continue());
         $future2 = async(fn () => $pipeline2->continue());
@@ -70,8 +70,8 @@ class SharedSourceTest extends AsyncTestCase
         $pipeline = Pipeline\fromIterable($expected);
         $source = Pipeline\share($pipeline);
 
-        $pipeline1 = $source->asPipeline();
-        $pipeline2 = $source->asPipeline();
+        $pipeline1 = $source->pipe();
+        $pipeline2 = $source->pipe();
         $pipeline2->dispose();
 
         delay(0); // Tick event loop to trigger disposal callback.
@@ -89,7 +89,7 @@ class SharedSourceTest extends AsyncTestCase
 
         $source = Pipeline\share($pipeline);
 
-        self::assertSame([], \iterator_to_array($source->asPipeline()));
+        self::assertSame([], \iterator_to_array($source->pipe()));
     }
 
     public function testShareAfterFail(): void
@@ -98,10 +98,10 @@ class SharedSourceTest extends AsyncTestCase
 
         $source = new Emitter();
         $source->error($exception);
-        $pipeline = $source->asPipeline();
+        $pipeline = $source->pipe();
 
         $this->expectExceptionObject($exception);
-        \iterator_to_array(Pipeline\share($pipeline)->asPipeline());
+        \iterator_to_array(Pipeline\share($pipeline)->pipe());
     }
 
     public function testShareThenFail(): void
@@ -110,7 +110,7 @@ class SharedSourceTest extends AsyncTestCase
 
         $source = new Emitter();
 
-        $future = async(fn () => \iterator_to_array(Pipeline\share($source->asPipeline())->asPipeline()));
+        $future = async(fn () => \iterator_to_array(Pipeline\share($source->pipe())->pipe()));
 
         $source->emit(1);
         $source->error($exception);
@@ -123,12 +123,12 @@ class SharedSourceTest extends AsyncTestCase
     {
         $source = new Emitter();
 
-        $shared = Pipeline\share($source->asPipeline());
-        $shared->asPipeline()->dispose();
+        $shared = Pipeline\share($source->pipe());
+        $shared->pipe()->dispose();
 
         delay(0); // Tick event loop to trigger disposal callback.
 
         $this->expectException(DisposedException::class);
-        \iterator_to_array($shared->asPipeline());
+        \iterator_to_array($shared->pipe());
     }
 }

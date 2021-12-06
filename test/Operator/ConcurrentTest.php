@@ -15,7 +15,7 @@ class ConcurrentTest extends AsyncTestCase
     {
         $source = new Emitter;
 
-        $pipeline = $source->asPipeline()->pipe(
+        $pipeline = $source->pipe()->pipe(
             Pipeline\concurrentOrdered(
                 new LocalSemaphore(3),
                 Pipeline\map($this->createCallback(0)),
@@ -72,7 +72,7 @@ class ConcurrentTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $pipeline = $source->asPipeline()->pipe(
+        $pipeline = $source->pipe()->pipe(
             Pipeline\concurrentOrdered(
                 new LocalSemaphore(3),
                 Pipeline\tap($this->createCallback(1)),

@@ -29,7 +29,7 @@ class TakeTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->asPipeline()->pipe(Pipeline\take(2));
+        $iterator = $source->pipe()->pipe(Pipeline\take(2));
 
         $source->error($exception);
 

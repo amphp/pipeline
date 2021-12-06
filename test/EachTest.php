@@ -18,7 +18,7 @@ class EachTest extends AsyncTestCase
 
         $this->expectExceptionObject($exception);
 
-        Pipeline\each($source->asPipeline(), $this->createCallback(1));
+        Pipeline\each($source->pipe(), $this->createCallback(1));
     }
 
     public function testReduce(): void

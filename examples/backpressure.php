@@ -10,7 +10,7 @@ use function Amp\delay;
 try {
     /** @psalm-var Emitter<int> $source */
     $emitter = new Emitter;
-    $pipeline = $emitter->asPipeline();
+    $pipeline = $emitter->pipe();
 
     EventLoop::queue(function () use ($emitter): void {
         delay(0.5);

@@ -25,7 +25,7 @@ class EmitterTest extends AsyncTestCase
         $value = 'Emitted Value';
 
         $future = $this->source->emit($value);
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         self::assertSame($value, $pipeline->continue());
 
@@ -50,7 +50,7 @@ class EmitterTest extends AsyncTestCase
         $this->source->error($exception = new \Exception);
         self::assertTrue($this->source->isComplete());
 
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         try {
             $pipeline->continue();
@@ -102,19 +102,19 @@ class EmitterTest extends AsyncTestCase
 
     public function testDoubleStart(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         $this->expectException(\Error::class);
         $this->expectExceptionMessage('A pipeline may be started only once');
 
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
     }
 
     public function testEmitAfterContinue(): void
     {
         $value = 'Emited Value';
 
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         $future = async(fn () => $pipeline->continue());
 
@@ -132,7 +132,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testContinueAfterComplete(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         $this->source->complete();
 
@@ -141,7 +141,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testContinueAfterFail(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         $this->source->error(new \Exception('Pipeline failed'));
 
@@ -153,7 +153,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testCompleteAfterContinue(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         $future = async(fn () => $pipeline->continue());
         self::assertInstanceOf(Future::class, $future);
@@ -165,7 +165,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testDestroyingPipelineRelievesBackPressure(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         $invoked = 0;
         foreach (\range(1, 5) as $value) {
@@ -206,7 +206,7 @@ class EmitterTest extends AsyncTestCase
 
         self::assertFalse($invoked);
 
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         $pipeline->dispose();
 
         delay(0);
@@ -229,7 +229,7 @@ class EmitterTest extends AsyncTestCase
 
         $this->source->complete();
 
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         $pipeline->dispose();
 
         self::assertFalse($invoked);
@@ -242,7 +242,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testEmitAfterDisposal(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         $this->source->onDisposal($this->createCallback(1));
         $pipeline->dispose();
         $this->source->onDisposal($this->createCallback(1));
@@ -258,7 +258,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testEmitAfterAutomaticDisposal(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         $this->source->onDisposal($this->createCallback(1));
         unset($pipeline); // Trigger automatic disposal.
         $this->source->onDisposal($this->createCallback(1));
@@ -274,7 +274,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testEmitAfterAutomaticDisposalAfterDelay(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         $this->source->onDisposal($this->createCallback(1));
         unset($pipeline); // Trigger automatic disposal.
         $this->source->onDisposal($this->createCallback(1));
@@ -292,7 +292,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testEmitAfterAutomaticDisposalWithPendingContinueFuture(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         $future = async(fn () => $pipeline->continue());
         $this->source->onDisposal($this->createCallback(1));
         unset($pipeline); // Trigger automatic disposal.
@@ -313,7 +313,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testEmitAfterExplicitDisposalWithPendingContinueFuture(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         $future = async(fn () => $pipeline->continue());
         $this->source->onDisposal($this->createCallback(1));
         $pipeline->dispose();
@@ -330,7 +330,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testEmitAfterDestruct(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         $future = $this->source->emit(1);
         $this->source->onDisposal($this->createCallback(1));
         unset($pipeline);
@@ -372,7 +372,7 @@ class EmitterTest extends AsyncTestCase
 
         $values = [];
 
-        foreach ($this->source->asPipeline() as $value) {
+        foreach ($this->source->pipe() as $value) {
             $values[] = $value;
         }
 
@@ -389,7 +389,7 @@ class EmitterTest extends AsyncTestCase
 
         self::assertFalse($future1->isComplete());
 
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         self::assertFalse($pipeline->isComplete());
         self::assertSame(1, $pipeline->continue());
         self::assertFalse($pipeline->isComplete());
@@ -418,7 +418,7 @@ class EmitterTest extends AsyncTestCase
 
         self::assertFalse($future1->isComplete());
 
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
         unset($pipeline);
 
         delay(0.01);
@@ -429,7 +429,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testCancellation(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         $cancellationSource = new DeferredCancellation();
 
@@ -458,7 +458,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testCancellationAfterEmitted(): void
     {
-        $pipeline = $this->source->asPipeline();
+        $pipeline = $this->source->pipe();
 
         $cancellationSource = new DeferredCancellation();
 
