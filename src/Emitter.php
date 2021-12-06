@@ -14,7 +14,7 @@ use Amp\Future;
  */
 final class Emitter implements Source
 {
-    /** @var Internal\EmitSource<TValue, null> Has public emit, complete, and fail methods. */
+    /** @var Internal\EmitSource<TValue> Has public emit, complete, and fail methods. */
     private Internal\EmitSource $source;
 
     private bool $used = false;
@@ -96,11 +96,11 @@ final class Emitter implements Source
     }
 
     /**
-     * @param callable():void $onDisposal
+     * @param \Closure(DisposedException):void $onDisposal
      *
      * @return void
      */
-    public function onDisposal(callable $onDisposal): void
+    public function onDisposal(\Closure $onDisposal): void
     {
         $this->source->onDisposal($onDisposal);
     }

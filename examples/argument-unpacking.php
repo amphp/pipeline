@@ -15,7 +15,7 @@ $future = async(function (): void {
         });
         EventLoop::unreference($timer); // Unreference timer so the loop exits automatically when all tasks complete.
 
-        /** @psalm-var AsyncGenerator<int, null, null> $pipeline */
+        /** @psalm-var AsyncGenerator<int> $pipeline */
         $pipeline = new AsyncGenerator(function (): \Generator {
             yield 1;
             delay(0.5);

@@ -8,7 +8,7 @@ use function Amp\async;
 use function Amp\delay;
 
 try {
-    /** @psalm-var AsyncGenerator<int, null, null> $pipeline */
+    /** @psalm-var AsyncGenerator<int> $pipeline */
     $pipeline = new AsyncGenerator(function (): \Generator {
         yield 1;
         delay(0.5);

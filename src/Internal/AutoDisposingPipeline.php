@@ -18,7 +18,7 @@ use Amp\Pipeline\Pipeline;
  */
 final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
 {
-    /** @var EmitSource<TValue, null> */
+    /** @var EmitSource<TValue> */
     private EmitSource $source;
 
     public function __construct(EmitSource $source)
@@ -48,7 +48,11 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
     }
 
     /**
-     * @inheritDoc
+     * @template TResult
+     *
+     * @param Operator ...$operators
+     *
+     * @return Pipeline<TResult>
      */
     public function pipe(Operator ...$operators): Pipeline
     {
@@ -56,6 +60,8 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
         foreach ($operators as $operator) {
             $pipeline = $operator->pipe($pipeline);
         }
+
+        /** @var Pipeline<TResult> $pipeline */
         return $pipeline;
     }
 

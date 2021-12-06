@@ -79,12 +79,21 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
         $this->source->dispose();
     }
 
+    /**
+     * @template TResult
+     *
+     * @param Operator ...$operators
+     *
+     * @return Pipeline<TResult>
+     */
     public function pipe(Operator ...$operators): Pipeline
     {
         $pipeline = $this;
         foreach ($operators as $operator) {
             $pipeline = $operator->pipe($pipeline);
         }
+
+        /** @var Pipeline<TResult> $pipeline */
         return $pipeline;
     }
 

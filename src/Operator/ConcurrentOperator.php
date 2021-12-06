@@ -93,9 +93,9 @@ final class ConcurrentOperator implements Operator
 
             try {
                 /**
-                 * @var  $value TValue
-                 * @var  $lock Lock
-                 * @var  $previous Future
+                 * @var TValue $value
+                 * @var Lock $lock
+                 * @var Future $previous
                  */
                 foreach ($emitter->asPipeline() as [$value, $lock, $previous]) {
                     $operatorEmitter->emit($value)->ignore();

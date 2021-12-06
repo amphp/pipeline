@@ -100,6 +100,7 @@ final class EmitSource
         try {
             return $suspension->suspend();
         } finally {
+            /** @psalm-suppress PossiblyUndefinedVariable $id will be defined if $cancellation is not null. */
             $cancellation?->unsubscribe($id);
         }
     }
@@ -135,16 +136,17 @@ final class EmitSource
     }
 
     /**
-     * @param callable():void $onDisposal
+     * @param \Closure(DisposedException):void $onDisposal
      *
      * @return void
      *
      * @see Pipeline::onDisposal()
      */
-    public function onDisposal(callable $onDisposal): void
+    public function onDisposal(\Closure $onDisposal): void
     {
         if ($this->disposed) {
             $exception = $this->exception;
+            \assert($exception instanceof DisposedException);
             EventLoop::queue(static fn () => $onDisposal($exception));
             return;
         }

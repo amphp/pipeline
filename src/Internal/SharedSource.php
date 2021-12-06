@@ -31,11 +31,8 @@ final class SharedSource implements Source
         EventLoop::queue(static function () use (&$sources, $pipeline): void {
             try {
                 foreach ($pipeline as $item) {
-                    $futures = [];
-                    foreach ($sources as $source) {
-                        $futures[] = $source->emit($item);
-                    }
-                    Future\settle($futures); // A destination pipeline may be disposed.
+                    // Using Future\settle() because a destination pipeline may be disposed.
+                    Future\settle(\array_map(static fn (Emitter $source) => $source->emit($item), $sources));
                 }
 
                 foreach ($sources as $source) {

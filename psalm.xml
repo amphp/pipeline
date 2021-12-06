@@ -9,11 +9,8 @@
         xsi:schemaLocation="https://getpsalm.org/schema/config/vendor/vimeo/psalm/config.xsd"
 >
     <projectFiles>
-        <directory name="examples"/>
-        <directory name="src"/>
-        <ignoreFiles>
-            <directory name="vendor"/>
-        </ignoreFiles>
+        <directory name="examples" />
+        <directory name="src" />
     </projectFiles>
 
     <issueHandlers>
@@ -31,22 +28,14 @@
 
         <DocblockTypeContradiction>
             <errorLevel type="suppress">
-                <directory name="src"/>
+                <directory name="src" />
             </errorLevel>
         </DocblockTypeContradiction>
 
-        <!--        <MissingClosureParamType>-->
-        <!--            <errorLevel type="suppress">-->
-        <!--                <directory name="examples"/>-->
-        <!--                <directory name="src"/>-->
-        <!--            </errorLevel>-->
-        <!--        </MissingClosureParamType>-->
-
-        <!--        <MissingClosureReturnType>-->
-        <!--            <errorLevel type="suppress">-->
-        <!--                <directory name="examples"/>-->
-        <!--                <directory name="src"/>-->
-        <!--            </errorLevel>-->
-        <!--        </MissingClosureReturnType>-->
+        <MissingClosureReturnType>
+            <errorLevel type="suppress">
+                <directory name="src" />
+            </errorLevel>
+        </MissingClosureReturnType>
     </issueHandlers>
 </psalm>
