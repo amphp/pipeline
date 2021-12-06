@@ -95,7 +95,7 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
 
     public function isDisposed(): bool
     {
-        return $this->source->isConsumed() && $this->source->isDisposed();
+        return $this->source->isDisposed();
     }
 
     public function getIterator(): \Traversable
