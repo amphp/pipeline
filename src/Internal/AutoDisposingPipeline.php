@@ -31,17 +31,11 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
         $this->source->destroy();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function continue(?Cancellation $cancellation = null): mixed
     {
         return $this->source->continue($cancellation);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function dispose(): void
     {
         $this->source->dispose();
@@ -57,6 +51,7 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
     public function pipe(Operator ...$operators): Pipeline
     {
         $pipeline = $this;
+
         foreach ($operators as $operator) {
             $pipeline = $operator->pipe($pipeline);
         }
@@ -65,25 +60,17 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
         return $pipeline;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function isComplete(): bool
     {
         return $this->source->isConsumed();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function isDisposed(): bool
     {
         return $this->source->isDisposed();
     }
 
     /**
-     * @inheritDoc
-     *
      * @psalm-return \Traversable<int, TValue>
      */
     public function getIterator(): \Traversable
