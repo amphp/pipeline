@@ -17,7 +17,7 @@ use Revolt\EventLoop;
 final class SharedSource implements Source
 {
     /** @var Emitter[] */
-    private array $sources = [];
+    private array $emitters = [];
 
     public function __construct(
         private Pipeline $pipeline,
@@ -26,44 +26,46 @@ final class SharedSource implements Source
 
     private function disperse(): void
     {
-        $sources = &$this->sources;
+        $emitters = &$this->emitters;
         $pipeline = $this->pipeline;
-        EventLoop::queue(static function () use (&$sources, $pipeline): void {
+
+        EventLoop::queue(static function () use (&$emitters, $pipeline): void {
             try {
                 foreach ($pipeline as $item) {
                     // Using Future\settle() because a destination pipeline may be disposed.
-                    Future\settle(\array_map(static fn (Emitter $source) => $source->emit($item), $sources));
+                    Future\settle(\array_map(static fn (Emitter $emitter) => $emitter->emit($item), $emitters));
                 }
 
-                foreach ($sources as $source) {
-                    $source->complete();
+                foreach ($emitters as $emitter) {
+                    $emitter->complete();
                 }
             } catch (\Throwable $exception) {
-                foreach ($sources as $source) {
-                    $source->error($exception);
+                foreach ($emitters as $emitter) {
+                    $emitter->error($exception);
                 }
             } finally {
-                $sources = [];
+                $emitters = [];
             }
         });
     }
 
     public function asPipeline(): Pipeline
     {
-        $disperse = empty($this->sources);
-        $this->sources[] = $source = new Emitter();
+        $disperse = empty($this->emitters);
+        $this->emitters[] = $emitter = new Emitter();
 
-        $sources = &$this->sources;
+        $emitters = &$this->emitters;
         $pipeline = $this->pipeline;
-        $source->onDisposal(static function () use (&$sources, $source, $pipeline): void {
-            foreach ($sources as $index => $active) {
-                if ($active === $source) {
-                    unset($sources[$index]);
+
+        $emitter->onDisposal(static function () use (&$emitters, $emitter, $pipeline): void {
+            foreach ($emitters as $index => $active) {
+                if ($active === $emitter) {
+                    unset($emitters[$index]);
                     break;
                 }
             }
 
-            if (empty($sources)) {
+            if (empty($emitters)) {
                 $pipeline->dispose();
             }
         });
@@ -72,6 +74,6 @@ final class SharedSource implements Source
             $this->disperse();
         }
 
-        return $source->asPipeline();
+        return $emitter->asPipeline();
     }
 }
