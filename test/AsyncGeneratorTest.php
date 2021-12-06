@@ -6,6 +6,7 @@ use Amp\DeferredFuture;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use function Amp\delay;
+use function Amp\now;
 
 class AsyncGeneratorTest extends AsyncTestCase
 {
@@ -60,7 +61,7 @@ class AsyncGeneratorTest extends AsyncTestCase
 
         try {
             $generator->continue();
-            self::fail("Awaiting a failed promise should fail the pipeline");
+            self::fail("Awaiting a failed future should fail the pipeline");
         } catch (TestException $reason) {
             self::assertSame($reason, $exception);
         }
@@ -75,11 +76,11 @@ class AsyncGeneratorTest extends AsyncTestCase
         $yields = 5;
 
         $generator = new AsyncGenerator(function () use (&$time, $yields) {
-            $time = \microtime(true);
+            $time = now();
             for ($i = 0; $i < $yields; ++$i) {
                 yield $i;
             }
-            $time = \microtime(true) - $time;
+            $time = now() - $time;
         });
 
         while (null !== $yielded = $generator->continue()) {
@@ -106,8 +107,9 @@ class AsyncGeneratorTest extends AsyncTestCase
                 throw $exception;
             });
 
-            while ($generator->continue()) {
-            }
+            $generator->continue();
+            $generator->continue();
+
             self::fail("The exception thrown from the generator should fail the pipeline");
         } catch (TestException $caught) {
             self::assertSame($exception, $caught);
@@ -146,10 +148,10 @@ class AsyncGeneratorTest extends AsyncTestCase
      */
     public function testYieldAfterDisposal(): void
     {
-        $generator = new AsyncGenerator(function () use (&$exception) {
+        $generator = new AsyncGenerator(function () {
             try {
                 yield 0;
-            } catch (DisposedException $exception) {
+            } catch (DisposedException) {
                 yield 1;
             }
         });
@@ -163,10 +165,10 @@ class AsyncGeneratorTest extends AsyncTestCase
 
     public function testGetReturnAfterDisposal(): void
     {
-        $generator = new AsyncGenerator(function () use (&$exception) {
+        $generator = new AsyncGenerator(function () {
             try {
                 yield 0;
-            } catch (DisposedException $exception) {
+            } catch (DisposedException) {
                 return 1;
             }
 
