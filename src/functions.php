@@ -49,30 +49,37 @@ function fromIterable(iterable $iterable): Pipeline
  */
 function merge(array $pipelines): Pipeline
 {
-    $subject = new Emitter;
+    $emitter = new Emitter;
 
     $futures = [];
-    foreach ($pipelines as $pipeline) {
+    foreach ($pipelines as $key => $pipeline) {
         if (!$pipeline instanceof Pipeline) {
-            throw new \TypeError(\sprintf('Must provide only instances of %s to %s', Pipeline::class, __FUNCTION__));
+            throw new \TypeError(\sprintf(
+                'Argument #1 ($pipelines) must be of type array<%s>, %s given at key %s',
+                Pipeline::class,
+                \get_debug_type($pipeline),
+                $key
+            ));
         }
 
-        $futures[] = async(static function () use ($subject, $pipeline): void {
+        $futures[] = async(static function () use ($emitter, $pipeline): void {
             foreach ($pipeline as $value) {
-                if ($subject->isComplete()) {
+                if ($emitter->isComplete()) {
                     return;
                 }
-                $subject->yield($value);
+
+                $emitter->yield($value);
             }
         });
     }
 
-    EventLoop::queue(static function () use ($subject, $futures, $pipelines): void {
+    EventLoop::queue(static function () use ($emitter, $futures, $pipelines): void {
         try {
             Future\all($futures);
-            $subject->complete();
+
+            $emitter->complete();
         } catch (\Throwable $exception) {
-            $subject->error($exception);
+            $emitter->error($exception);
         } finally {
             foreach ($pipelines as $pipeline) {
                 $pipeline->dispose();
@@ -80,7 +87,7 @@ function merge(array $pipelines): Pipeline
         }
     });
 
-    return $subject->asPipeline();
+    return $emitter->asPipeline();
 }
 
 /**

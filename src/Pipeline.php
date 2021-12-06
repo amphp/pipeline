@@ -16,7 +16,7 @@ interface Pipeline extends \Traversable
      * Returns the emitted value if the pipeline has emitted a value or null if the pipeline has completed.
      * If the pipeline fails, the exception will be thrown from this method.
      *
-     * This method exists primarily for async consumption of a single value within a async. In general, a
+     * This method exists primarily for async consumption of a single value within a coroutine. In general, a
      * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
      *
      * @param Cancellation|null $cancellation Cancels waiting for the next emitted value. If cancelled, the next
@@ -29,7 +29,7 @@ interface Pipeline extends \Traversable
     public function continue(?Cancellation $cancellation = null): mixed;
 
     /**
-     * Disposes of the pipeline, indicating the consumer is no longer interested in the pipeline output.
+     * Disposes the pipeline, indicating the consumer is no longer interested in the pipeline output.
      *
      * @return void
      */
