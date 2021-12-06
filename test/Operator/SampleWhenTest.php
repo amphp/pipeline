@@ -12,15 +12,15 @@ class SampleWhenTest extends AsyncTestCase
 {
     public function testValuesEmitted(): void
     {
-        $this->setTimeout(1);
+        $this->setTimeout(3);
 
-        $values = [1, 2, 3, 4, 5, 6, 7];
+        $values = [1, 2, 3, 4, 5, 6];
         $expected = [2, 4, 6];
 
-        $sample = Pipeline\fromIterable(\range(0, 10))->pipe(Pipeline\postpone(0.21));
+        $sample = Pipeline\fromIterable(\range(0, 10))->pipe(Pipeline\postpone(0.7));
 
         $pipeline = Pipeline\fromIterable($values)->pipe(
-            Pipeline\postpone(0.1),
+            Pipeline\postpone(0.3),
             Pipeline\sampleWhen($sample)
         );
 
@@ -35,14 +35,14 @@ class SampleWhenTest extends AsyncTestCase
 
     public function testSampleTime(): void
     {
-        $this->setTimeout(1);
+        $this->setTimeout(3);
 
-        $values = [1, 2, 3, 4, 5, 6, 7];
+        $values = [1, 2, 3, 4, 5, 6];
         $expected = [2, 4, 6];
 
         $pipeline = Pipeline\fromIterable($values)->pipe(
-            Pipeline\postpone(0.1),
-            Pipeline\sampleTime(0.21)
+            Pipeline\postpone(0.3),
+            Pipeline\sampleTime(0.7)
         );
 
         $count = 0;
