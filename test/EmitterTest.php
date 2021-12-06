@@ -234,9 +234,10 @@ class EmitterTest extends AsyncTestCase
 
         self::assertFalse($invoked);
 
-        $this->source->onDisposal($this->createCallback(0));
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('Can\'t attach onDisposal handlers once completed');
 
-        delay(0);
+        $this->source->onDisposal($this->createCallback(0));
     }
 
     public function testEmitAfterDisposal(): void

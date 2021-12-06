@@ -26,7 +26,7 @@ final class EmitSource
 
     private ?\Throwable $exception = null;
 
-    /** @var array<int, mixed> */
+    /** @var array<int, TValue> */
     private array $emittedValues = [];
 
     /** @var array<int, DeferredFuture|Suspension> */
@@ -84,8 +84,7 @@ final class EmitSource
             $waiting = &$this->waiting;
             $id = $cancellation->subscribe(static function (\Throwable $exception) use (
                 &$waiting,
-                $suspension,
-                $position,
+                $suspension
             ): void {
                 foreach ($waiting as $key => $pending) {
                     if ($pending === $suspension) {
@@ -144,14 +143,14 @@ final class EmitSource
      */
     public function onDisposal(\Closure $onDisposal): void
     {
+        if ($this->completed) {
+            throw new \Error('Can\'t attach onDisposal handlers once completed');
+        }
+
         if ($this->disposed) {
             $exception = $this->exception;
             \assert($exception instanceof DisposedException);
             EventLoop::queue(static fn () => $onDisposal($exception));
-            return;
-        }
-
-        if ($this->completed) {
             return;
         }
 
