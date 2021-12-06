@@ -12,24 +12,24 @@ use function Amp\delay;
 
 try {
     /** @psalm-var Emitter<int> $source */
-    $source = new Emitter;
+    $emitter = new Emitter;
 
-    EventLoop::queue(function () use ($source): void {
+    EventLoop::queue(function () use ($emitter): void {
         // Source emits all values at once without awaiting back-pressure.
-        $source->emit(1);
-        $source->emit(2);
-        $source->emit(3);
-        $source->emit(4);
-        $source->emit(5);
-        $source->emit(6);
-        $source->emit(7);
-        $source->emit(8);
-        $source->emit(9);
-        $source->emit(10);
-        $source->complete();
+        $emitter->emit(1);
+        $emitter->emit(2);
+        $emitter->emit(3);
+        $emitter->emit(4);
+        $emitter->emit(5);
+        $emitter->emit(6);
+        $emitter->emit(7);
+        $emitter->emit(8);
+        $emitter->emit(9);
+        $emitter->emit(10);
+        $emitter->complete();
     });
 
-    $source = Pipeline\share($source->asPipeline());
+    $source = Pipeline\share($emitter->asPipeline());
 
     $pipeline1 = $source->asPipeline();
     $pipeline2 = $source->asPipeline();

@@ -9,26 +9,26 @@ use function Amp\delay;
 
 try {
     /** @psalm-var Emitter<int> $source */
-    $source = new Emitter;
-    $pipeline = $source->asPipeline();
+    $emitter = new Emitter;
+    $pipeline = $emitter->asPipeline();
 
-    EventLoop::queue(function () use ($source): void {
+    EventLoop::queue(function () use ($emitter): void {
         delay(0.5);
-        $source->yield(1);
+        $emitter->yield(1);
         delay(1.5);
-        $source->yield(2);
+        $emitter->yield(2);
         delay(1);
-        $source->yield(3);
+        $emitter->yield(3);
         delay(2);
-        $source->yield(4);
-        $source->yield(5);
-        $source->yield(6);
-        $source->yield(7);
+        $emitter->yield(4);
+        $emitter->yield(5);
+        $emitter->yield(6);
+        $emitter->yield(7);
         delay(2);
-        $source->yield(8);
-        $source->yield(9);
-        $source->yield(10);
-        $source->complete();
+        $emitter->yield(8);
+        $emitter->yield(9);
+        $emitter->yield(10);
+        $emitter->complete();
     });
 
     foreach ($pipeline as $value) {

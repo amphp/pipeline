@@ -39,7 +39,7 @@ final class ConcurrentOperator implements Operator
             // Add initial source which will dispose of destination if no values are emitted.
             $queue->push($this->createEmitter($destination, $queue, $emitters));
 
-            $previous = Future::complete(null);
+            $previous = Future::complete();
 
             try {
                 foreach ($pipeline as $value) {
