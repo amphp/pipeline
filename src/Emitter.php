@@ -10,6 +10,7 @@ use Amp\Future;
  * not be returned as part of a public API, but used internally to create and emit values to a Pipeline.
  *
  * @template TValue
+ * @template-implements Source<TValue>
  */
 final class Emitter implements Source
 {

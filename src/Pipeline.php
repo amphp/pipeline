@@ -39,7 +39,7 @@ interface Pipeline extends \Traversable
      * @template TResult
      *
      * @param Operator ...$operators
-     * @return Pipeline<TValue|TResult>
+     * @return Pipeline<TResult>
      */
     public function pipe(Operator ...$operators): Pipeline;
 

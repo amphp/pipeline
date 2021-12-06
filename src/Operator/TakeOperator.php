@@ -6,6 +6,10 @@ use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
 
+/**
+ * @template TValue
+ * @template-implements Operator<TValue, TValue>
+ */
 final class TakeOperator implements Operator
 {
     public function __construct(

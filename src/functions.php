@@ -29,9 +29,7 @@ function share(Pipeline $pipeline): Source
  *
  * @template TValue
  *
- * @param iterable $iterable Elements to emit.
- *
- * @psalm-param iterable<array-key, TValue> $iterable
+ * @param iterable<array-key, TValue> $iterable Elements to emit.
  *
  * @return Pipeline<TValue>
  */
@@ -125,6 +123,7 @@ function concat(array $pipelines): Pipeline
  * @template TValue
  *
  * @param array<TKey, Pipeline<TValue>> $pipelines
+ *
  * @return Pipeline<array<TKey, TValue>>
  */
 function zip(array $pipelines): Pipeline
@@ -168,8 +167,7 @@ function zip(array $pipelines): Pipeline
  * @template TResult
  *
  * @param Semaphore $semaphore Semaphore limiting the concurrency, e.g. {@see LocalSemaphore}.
- * @param Operator<TValue, TResult> ...$operators Set of operators to act upon each value emitted.
- *     See {@see Pipeline::pipe()}.
+ * @param Operator ...$operators Set of operators to act upon each value emitted. See {@see Pipeline::pipe()}.
  *
  * @return Operator<TValue, TResult>
  */
@@ -190,8 +188,7 @@ function concurrentUnordered(Semaphore $semaphore, Operator ...$operators): Oper
  * @template TResult
  *
  * @param Semaphore $semaphore Semaphore limiting the concurrency, e.g. {@see LocalSemaphore}.
- * @param Operator<TValue, TResult> ...$operators Set of operators to act upon each value emitted.
- *     See {@see Pipeline::pipe()}.
+ * @param Operator ...$operators Set of operators to act upon each value emitted. See {@see Pipeline::pipe()}.
  *
  * @return Operator<TValue, TResult>
  */

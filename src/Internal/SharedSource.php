@@ -10,6 +10,9 @@ use Revolt\EventLoop;
 
 /**
  * @internal
+ *
+ * @template TValue
+ * @template-implements Source<TValue>
  */
 final class SharedSource implements Source
 {

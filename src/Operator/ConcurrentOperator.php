@@ -12,7 +12,6 @@ use Revolt\EventLoop;
 
 /**
  * @template TValue
- *
  * @template-implements Operator<TValue, TValue>
  */
 final class ConcurrentOperator implements Operator

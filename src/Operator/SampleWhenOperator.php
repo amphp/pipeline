@@ -10,8 +10,15 @@ use Amp\Pipeline\Pipeline;
 use Revolt\EventLoop;
 use function Amp\async;
 
+/**
+ * @template TValue
+ * @template-implements Operator<TValue, TValue>
+ */
 final class SampleWhenOperator implements Operator
 {
+    /**
+     * @param Pipeline<mixed> $sampleWhen
+     */
     public function __construct(
         private Pipeline $sampleWhen
     ) {

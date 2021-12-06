@@ -7,7 +7,6 @@ use Revolt\EventLoop;
 
 /**
  * @template TValue
- *
  * @template-implements Pipeline<TValue>
  * @template-implements \IteratorAggregate<int, TValue>
  */

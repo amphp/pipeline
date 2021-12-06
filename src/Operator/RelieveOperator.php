@@ -7,6 +7,10 @@ use Amp\Pipeline\Operator;
 use Amp\Pipeline\Pipeline;
 use Revolt\EventLoop;
 
+/**
+ * @template TValue
+ * @template-implements Operator<TValue, TValue>
+ */
 final class RelieveOperator implements Operator
 {
     public function pipe(Pipeline $pipeline): Pipeline

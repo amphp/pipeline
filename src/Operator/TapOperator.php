@@ -8,7 +8,6 @@ use Amp\Pipeline\Pipeline;
 
 /**
  * @template TValue
- *
  * @template-implements Operator<TValue, TValue>
  */
 final class TapOperator implements Operator
