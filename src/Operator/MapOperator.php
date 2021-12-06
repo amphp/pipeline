@@ -15,7 +15,7 @@ use Amp\Pipeline\Pipeline;
 final class MapOperator implements Operator
 {
     /**
-     * @param \Closure(TValue):TMapped $onEmit
+     * @param \Closure(TValue):TMapped $map
      */
     public function __construct(private \Closure $map)
     {

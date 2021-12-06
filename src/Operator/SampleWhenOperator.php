@@ -34,7 +34,7 @@ final class SampleWhenOperator implements Operator
                 foreach ($pipeline as $current) {
                     $sampled = false;
                 }
-                $deferred->complete(null);
+                $deferred->complete();
             } catch (\Throwable $exception) {
                 $deferred->error($exception);
             }

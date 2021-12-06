@@ -15,34 +15,34 @@ final class RelieveOperator implements Operator
 {
     public function pipe(Pipeline $pipeline): Pipeline
     {
-        $subject = new Emitter;
+        $emitter = new Emitter;
 
-        EventLoop::queue(static function () use ($pipeline, $subject): void {
-            $catch = static function (\Throwable $exception) use ($subject): void {
-                if (!$subject->isComplete()) {
-                    $subject->error($exception);
+        EventLoop::queue(static function () use ($pipeline, $emitter): void {
+            $catch = static function (\Throwable $exception) use ($emitter): void {
+                if (!$emitter->isComplete()) {
+                    $emitter->error($exception);
                 }
             };
 
             try {
                 foreach ($pipeline as $value) {
-                    if ($subject->isComplete()) {
+                    if ($emitter->isComplete()) {
                         return;
                     }
 
-                    $subject->emit($value)->catch($catch)->ignore();
+                    $emitter->emit($value)->catch($catch)->ignore();
                 }
 
-                if (!$subject->isComplete()) {
-                    $subject->complete();
+                if (!$emitter->isComplete()) {
+                    $emitter->complete();
                 }
             } catch (\Throwable $exception) {
-                if (!$subject->isComplete()) {
-                    $subject->error($exception);
+                if (!$emitter->isComplete()) {
+                    $emitter->error($exception);
                 }
             }
         });
 
-        return $subject->asPipeline();
+        return $emitter->asPipeline();
     }
 }
