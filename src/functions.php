@@ -92,7 +92,7 @@ function merge(array $pipelines): Pipeline
 
 /**
  * Concatenates the given pipelines into a single pipeline, emitting from a single pipeline at a time. The
- * prior pipeline must complete before values are emitted from any subsequent pipelines. Streams are concatenated
+ * prior pipeline must complete before values are emitted from any subsequent pipelines. Pipelines are concatenated
  * in the order given (iteration order of the array).
  *
  * @template TValue
@@ -103,9 +103,14 @@ function merge(array $pipelines): Pipeline
  */
 function concat(array $pipelines): Pipeline
 {
-    foreach ($pipelines as $pipeline) {
+    foreach ($pipelines as $key => $pipeline) {
         if (!$pipeline instanceof Pipeline) {
-            throw new \TypeError(\sprintf('Must provide only instances of %s to %s', Pipeline::class, __FUNCTION__));
+            throw new \TypeError(\sprintf(
+                'Argument #1 ($pipelines) must be of type array<%s>, %s given at key %s',
+                Pipeline::class,
+                \get_debug_type($pipeline),
+                $key
+            ));
         }
     }
 
@@ -135,9 +140,14 @@ function concat(array $pipelines): Pipeline
  */
 function zip(array $pipelines): Pipeline
 {
-    foreach ($pipelines as $pipeline) {
+    foreach ($pipelines as $key => $pipeline) {
         if (!$pipeline instanceof Pipeline) {
-            throw new \TypeError(\sprintf('Must provide only instances of %s to %s', Pipeline::class, __FUNCTION__));
+            throw new \TypeError(\sprintf(
+                'Argument #1 ($pipelines) must be of type array<%s>, %s given at key %s',
+                Pipeline::class,
+                \get_debug_type($pipeline),
+                $key
+            ));
         }
     }
 
