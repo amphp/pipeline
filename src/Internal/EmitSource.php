@@ -376,10 +376,12 @@ final class EmitSource
     {
         \assert($this->disposed && $this->exception, "Pipeline was not disposed on triggering disposal");
 
+        /** @psalm-suppress RedundantCondition */
         if (isset($this->backPressure)) {
             $this->relieveBackPressure($this->exception);
         }
 
+        /** @psalm-suppress RedundantCondition */
         if (isset($this->waiting)) {
             $this->resolvePending();
         }
