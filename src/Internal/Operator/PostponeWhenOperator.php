@@ -8,7 +8,7 @@ use Amp\Pipeline\Pipeline;
 
 /**
  * @template TValue
- * @template-implements Operator<TValue, TValue>
+ * @template-implements PipelineOperator<TValue, TValue>
  *
  * @internal
  */

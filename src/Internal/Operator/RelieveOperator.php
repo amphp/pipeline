@@ -9,7 +9,7 @@ use Revolt\EventLoop;
 
 /**
  * @template TValue
- * @template-implements Operator<TValue, TValue>
+ * @template-implements PipelineOperator<TValue, TValue>
  *
  * @internal
  */
