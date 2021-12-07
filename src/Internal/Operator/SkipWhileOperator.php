@@ -3,8 +3,8 @@
 namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\AsyncGenerator;
-use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
+use Amp\Pipeline\PipelineOperator;
 
 /**
  * @template TValue

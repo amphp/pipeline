@@ -3,8 +3,8 @@
 namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
-use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
+use Amp\Pipeline\PipelineOperator;
 
 /**
  * Wraps an EmitSource instance that has public methods to emit, complete, and fail into an object that only allows

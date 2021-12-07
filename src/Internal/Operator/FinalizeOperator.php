@@ -3,8 +3,8 @@
 namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\Emitter;
-use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
+use Amp\Pipeline\PipelineOperator;
 use function Amp\async;
 
 /**

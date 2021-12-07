@@ -4,8 +4,8 @@ namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Future;
 use Amp\Pipeline\Emitter;
-use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
+use Amp\Pipeline\PipelineOperator;
 use Amp\Sync\Lock;
 use Amp\Sync\Semaphore;
 use Revolt\EventLoop;

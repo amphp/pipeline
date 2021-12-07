@@ -5,8 +5,8 @@ namespace Amp\Pipeline\Internal\Operator;
 use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\Pipeline\AsyncGenerator;
-use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
+use Amp\Pipeline\PipelineOperator;
 use Revolt\EventLoop;
 use function Amp\async;
 
