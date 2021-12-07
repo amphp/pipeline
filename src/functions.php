@@ -277,12 +277,13 @@ function postpone(float $delay): PipelineOperator
  *
  * @template TValue
  *
- * @param Pipeline<mixed> $postponeUntil
+ * @param Pipeline<mixed> $postponeWhen
+ *
  * @return PipelineOperator<TValue, TValue>
  */
-function postponeWhen(Pipeline $postponeUntil): PipelineOperator
+function postponeWhen(Pipeline $postponeWhen): PipelineOperator
 {
-    return new Internal\Operator\PostponeWhenOperator($postponeUntil);
+    return new Internal\Operator\PostponeWhenOperator($postponeWhen);
 }
 
 /**
