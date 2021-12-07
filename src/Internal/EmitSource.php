@@ -43,9 +43,6 @@ final class EmitSource
 
     private bool $disposed = false;
 
-    /** @var callable[]|null */
-    private ?array $onDisposal = [];
-
     /**
      * @return TValue
      */
@@ -132,29 +129,6 @@ final class EmitSource
                 $this->triggerDisposal();
             }
         }
-    }
-
-    /**
-     * @param \Closure(DisposedException):void $onDisposal
-     *
-     * @return void
-     *
-     * @see Pipeline::onDisposal()
-     */
-    public function onDisposal(\Closure $onDisposal): void
-    {
-        if ($this->completed) {
-            throw new \Error('Can\'t attach onDisposal handlers once completed');
-        }
-
-        if ($this->disposed) {
-            $exception = $this->exception;
-            \assert($exception instanceof DisposedException);
-            EventLoop::queue(static fn () => $onDisposal($exception));
-            return;
-        }
-
-        $this->onDisposal[] = $onDisposal;
     }
 
     /**
@@ -390,31 +364,24 @@ final class EmitSource
             if ($exception) {
                 $suspension->throw($exception);
             } else {
-                $suspension->resume(null);
+                $suspension->resume();
             }
         }
     }
 
     /**
-     * Invokes all pending {@see onDisposal()} callbacks and fails pending {@see continue()} promises.
+     * Fails pending {@see continue()} promises.
      */
     private function triggerDisposal(): void
     {
         \assert($this->disposed && $this->exception, "Pipeline was not disposed on triggering disposal");
 
-        if ($this->onDisposal === null) {
-            return;
+        if (isset($this->backPressure)) {
+            $this->relieveBackPressure($this->exception);
         }
 
-        $onDisposal = $this->onDisposal;
-        $this->onDisposal = null;
-
-        $this->relieveBackPressure($this->exception);
-        $this->resolvePending();
-
-        $exception = $this->exception;
-        foreach ($onDisposal as $callback) {
-            EventLoop::queue(static fn () => $callback($exception));
+        if (isset($this->waiting)) {
+            $this->resolvePending();
         }
     }
 }
