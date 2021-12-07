@@ -17,7 +17,7 @@
         "void",
         "object",
         "postpone",
-        "postponeUntil",
+        "postponeWhen",
         "sampleWhen"
     ],
     "php-core-extensions": [
