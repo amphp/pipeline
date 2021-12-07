@@ -10,7 +10,7 @@ use Amp\Pipeline\Pipeline;
  * @template TValue
  * @template-implements Operator<TValue, TValue>
  */
-final class PostponeUntilOperator implements Operator
+final class PostponeWhenOperator implements Operator
 {
     public function __construct(
         private Pipeline $postpone

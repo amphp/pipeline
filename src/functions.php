@@ -281,7 +281,7 @@ function postpone(float $delay): Operator
  */
 function postponeWhen(Pipeline $postponeUntil): Operator
 {
-    return new Operator\PostponeUntilOperator($postponeUntil);
+    return new Operator\PostponeWhenOperator($postponeUntil);
 }
 
 /**
