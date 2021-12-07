@@ -386,7 +386,7 @@ function sampleWhen(Pipeline $sampleWhen): Operator
  * @param float $period
  * @return Operator<TValue, TValue>
  */
-function sampleTime(float $period): Operator
+function sampleInterval(float $period): Operator
 {
     return sampleWhen(
         (new AsyncGenerator(static function (): \Generator {

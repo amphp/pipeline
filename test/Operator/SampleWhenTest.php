@@ -33,7 +33,7 @@ class SampleWhenTest extends AsyncTestCase
         self::assertSame(3, $count);
     }
 
-    public function testSampleTime(): void
+    public function testSampleInterval(): void
     {
         $this->setTimeout(3);
 
@@ -42,7 +42,7 @@ class SampleWhenTest extends AsyncTestCase
 
         $pipeline = Pipeline\fromIterable($values)->pipe(
             Pipeline\postpone(0.3),
-            Pipeline\sampleTime(0.7)
+            Pipeline\sampleInterval(0.7)
         );
 
         $count = 0;
