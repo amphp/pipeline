@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Pipeline\Operator;
+namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Operator;
@@ -9,8 +9,9 @@ use Amp\Pipeline\Pipeline;
 /**
  * @template TValue
  * @template TMapped
- *
  * @template-implements Operator<TValue, TMapped>
+ *
+ * @internal
  */
 final class MapOperator implements Operator
 {

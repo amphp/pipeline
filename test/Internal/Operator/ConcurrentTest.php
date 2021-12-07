@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Pipeline\Operator;
+namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;

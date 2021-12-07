@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Pipeline\Operator;
+namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\DeferredFuture;
 use Amp\Future;
@@ -13,6 +13,8 @@ use function Amp\async;
 /**
  * @template TValue
  * @template-implements Operator<TValue, TValue>
+ *
+ * @internal
  */
 final class SampleWhenOperator implements Operator
 {

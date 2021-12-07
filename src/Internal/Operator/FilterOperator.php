@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Pipeline\Operator;
+namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Operator;
@@ -9,13 +9,15 @@ use Amp\Pipeline\Pipeline;
 /**
  * @template TValue
  * @template-implements Operator<TValue, TValue>
+ *
+ * @internal
  */
-final class TapOperator implements Operator
+final class FilterOperator implements Operator
 {
     /**
-     * @param \Closure(TValue):void $tap
+     * @param \Closure(TValue):bool $filter
      */
-    public function __construct(private \Closure $tap)
+    public function __construct(private \Closure $filter)
     {
     }
 
@@ -27,8 +29,9 @@ final class TapOperator implements Operator
     {
         return new AsyncGenerator(function () use ($pipeline): \Generator {
             foreach ($pipeline as $value) {
-                ($this->tap)($value);
-                yield $value;
+                if (($this->filter)($value)) {
+                    yield $value;
+                }
             }
         });
     }

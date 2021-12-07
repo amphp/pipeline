@@ -1,26 +1,26 @@
 <?php
 
-namespace Amp\Pipeline\Operator;
+namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
 use Amp\Pipeline\Emitter;
 
-class TapTest extends AsyncTestCase
+class FinalizeTest extends AsyncTestCase
 {
     public function testValuesEmitted(): void
     {
         $values = [1, 2, 3];
 
         $invoked = 0;
-        $pipeline = Pipeline\fromIterable($values)->pipe(Pipeline\tap(function () use (&$invoked): void {
+        $pipeline = Pipeline\fromIterable($values)->pipe(Pipeline\finalize(function () use (&$invoked): void {
             $invoked++;
         }));
 
         Pipeline\discard($pipeline);
 
-        self::assertSame(3, $invoked);
+        self::assertSame(1, $invoked);
     }
 
     public function testPipelineFails(): void
@@ -29,11 +29,10 @@ class TapTest extends AsyncTestCase
         $source = new Emitter;
 
         $invoked = 0;
-        $pipeline = $source->pipe()->pipe(Pipeline\tap(function () use (&$invoked): void {
+        $pipeline = $source->pipe()->pipe(Pipeline\finalize(function () use (&$invoked): void {
             $invoked++;
         }));
 
-        $source->emit(1)->ignore();
         $source->error($exception);
 
         try {
@@ -46,14 +45,14 @@ class TapTest extends AsyncTestCase
         self::assertSame(1, $invoked);
     }
 
-    public function testTapCallbackThrows(): void
+    public function testFinalizeCallbackThrows(): void
     {
         $exception = new TestException;
         $source = new Emitter;
 
-        $pipeline = $source->pipe()->pipe(Pipeline\tap(fn () => throw $exception));
+        $pipeline = $source->pipe()->pipe(Pipeline\finalize(fn () => throw $exception));
 
-        $source->emit(1)->ignore();
+        $source->complete();
 
         $this->expectExceptionObject($exception);
 

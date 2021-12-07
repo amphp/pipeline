@@ -190,7 +190,7 @@ function zip(array $pipelines): Pipeline
  */
 function concurrentUnordered(Semaphore $semaphore, Operator ...$operators): Operator
 {
-    return new Operator\ConcurrentOperator($semaphore, $operators, false);
+    return new Internal\Operator\ConcurrentOperator($semaphore, $operators, false);
 }
 
 /**
@@ -211,7 +211,7 @@ function concurrentUnordered(Semaphore $semaphore, Operator ...$operators): Oper
  */
 function concurrentOrdered(Semaphore $semaphore, Operator ...$operators): Operator
 {
-    return new Operator\ConcurrentOperator($semaphore, $operators, true);
+    return new Internal\Operator\ConcurrentOperator($semaphore, $operators, true);
 }
 
 /**
@@ -223,7 +223,7 @@ function concurrentOrdered(Semaphore $semaphore, Operator ...$operators): Operat
  */
 function relieve(): Operator
 {
-    return new Operator\RelieveOperator;
+    return new Internal\Operator\RelieveOperator;
 }
 
 /**
@@ -236,7 +236,7 @@ function relieve(): Operator
  */
 function map(\Closure $map): Operator
 {
-    return new Operator\MapOperator($map);
+    return new Internal\Operator\MapOperator($map);
 }
 
 /**
@@ -248,7 +248,7 @@ function map(\Closure $map): Operator
  */
 function filter(\Closure $filter): Operator
 {
-    return new Operator\FilterOperator($filter);
+    return new Internal\Operator\FilterOperator($filter);
 }
 
 /**
@@ -281,7 +281,7 @@ function postpone(float $delay): Operator
  */
 function postponeWhen(Pipeline $postponeUntil): Operator
 {
-    return new Operator\PostponeWhenOperator($postponeUntil);
+    return new Internal\Operator\PostponeWhenOperator($postponeUntil);
 }
 
 /**
@@ -294,7 +294,7 @@ function postponeWhen(Pipeline $postponeUntil): Operator
  */
 function skip(int $count): Operator
 {
-    return new Operator\SkipOperator($count);
+    return new Internal\Operator\SkipOperator($count);
 }
 
 /**
@@ -308,7 +308,7 @@ function skip(int $count): Operator
  */
 function skipWhile(\Closure $predicate): Operator
 {
-    return new Operator\SkipWhileOperator($predicate);
+    return new Internal\Operator\SkipWhileOperator($predicate);
 }
 
 /**
@@ -321,7 +321,7 @@ function skipWhile(\Closure $predicate): Operator
  */
 function take(int $count): Operator
 {
-    return new Operator\TakeOperator($count);
+    return new Internal\Operator\TakeOperator($count);
 }
 
 /**
@@ -334,7 +334,7 @@ function take(int $count): Operator
  */
 function takeWhile(\Closure $predicate): Operator
 {
-    return new Operator\TakeWhileOperator($predicate);
+    return new Internal\Operator\TakeWhileOperator($predicate);
 }
 
 /**
@@ -348,7 +348,7 @@ function takeWhile(\Closure $predicate): Operator
  */
 function tap(\Closure $tap): Operator
 {
-    return new Operator\TapOperator($tap);
+    return new Internal\Operator\TapOperator($tap);
 }
 
 /**
@@ -361,7 +361,7 @@ function tap(\Closure $tap): Operator
  */
 function finalize(\Closure $finally): Operator
 {
-    return new Operator\FinalizeOperator($finally);
+    return new Internal\Operator\FinalizeOperator($finally);
 }
 
 /**
@@ -377,7 +377,7 @@ function finalize(\Closure $finally): Operator
  */
 function sampleWhen(Pipeline $sampleWhen): Operator
 {
-    return new Operator\SampleWhenOperator($sampleWhen);
+    return new Internal\Operator\SampleWhenOperator($sampleWhen);
 }
 
 /**

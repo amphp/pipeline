@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Pipeline\Operator;
+namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Operator;
@@ -8,8 +8,9 @@ use Amp\Pipeline\Pipeline;
 
 /**
  * @template TValue
- *
  * @template-implements Operator<TValue, TValue>
+ *
+ * @internal
  */
 final class FinalizeOperator implements Operator
 {

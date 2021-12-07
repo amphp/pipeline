@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Pipeline\Operator;
+namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\Emitter;
 use Amp\Pipeline\Operator;
@@ -10,6 +10,8 @@ use Revolt\EventLoop;
 /**
  * @template TValue
  * @template-implements Operator<TValue, TValue>
+ *
+ * @internal
  */
 final class RelieveOperator implements Operator
 {
