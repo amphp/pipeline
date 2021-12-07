@@ -98,16 +98,6 @@ final class Emitter implements Source
     }
 
     /**
-     * @param \Closure(DisposedException):void $onDisposal
-     *
-     * @return void
-     */
-    public function onDisposal(\Closure $onDisposal): void
-    {
-        $this->source->onDisposal($onDisposal);
-    }
-
-    /**
      * Completes the pipeline.
      *
      * @return void

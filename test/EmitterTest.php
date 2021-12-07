@@ -197,55 +197,10 @@ class EmitterTest extends AsyncTestCase
         $this->source->complete(); // Should throw.
     }
 
-    public function testOnDisposal(): void
-    {
-        $invoked = false;
-        $this->source->onDisposal(function () use (&$invoked) {
-            $invoked = true;
-        });
-
-        self::assertFalse($invoked);
-
-        $pipeline = $this->source->pipe();
-        $pipeline->dispose();
-
-        delay(0);
-
-        self::assertTrue($invoked);
-
-        $this->source->onDisposal($this->createCallback(1));
-
-        delay(0);
-    }
-
-    public function testOnDisposalAfterCompletion(): void
-    {
-        $invoked = false;
-        $this->source->onDisposal(function () use (&$invoked) {
-            $invoked = true;
-        });
-
-        self::assertFalse($invoked);
-
-        $this->source->complete();
-
-        $pipeline = $this->source->pipe();
-        $pipeline->dispose();
-
-        self::assertFalse($invoked);
-
-        $this->expectException(\Error::class);
-        $this->expectExceptionMessage('Can\'t attach onDisposal handlers once completed');
-
-        $this->source->onDisposal($this->createCallback(0));
-    }
-
     public function testEmitAfterDisposal(): void
     {
         $pipeline = $this->source->pipe();
-        $this->source->onDisposal($this->createCallback(1));
         $pipeline->dispose();
-        $this->source->onDisposal($this->createCallback(1));
         self::assertTrue($this->source->isDisposed());
 
         try {
@@ -259,9 +214,7 @@ class EmitterTest extends AsyncTestCase
     public function testEmitAfterAutomaticDisposal(): void
     {
         $pipeline = $this->source->pipe();
-        $this->source->onDisposal($this->createCallback(1));
         unset($pipeline); // Trigger automatic disposal.
-        $this->source->onDisposal($this->createCallback(1));
         self::assertTrue($this->source->isDisposed());
 
         try {
@@ -275,9 +228,7 @@ class EmitterTest extends AsyncTestCase
     public function testEmitAfterAutomaticDisposalAfterDelay(): void
     {
         $pipeline = $this->source->pipe();
-        $this->source->onDisposal($this->createCallback(1));
         unset($pipeline); // Trigger automatic disposal.
-        $this->source->onDisposal($this->createCallback(1));
         self::assertTrue($this->source->isDisposed());
 
         delay(0.01);
@@ -294,9 +245,7 @@ class EmitterTest extends AsyncTestCase
     {
         $pipeline = $this->source->pipe();
         $future = async(fn () => $pipeline->continue());
-        $this->source->onDisposal($this->createCallback(1));
         unset($pipeline); // Trigger automatic disposal.
-        $this->source->onDisposal($this->createCallback(1));
         self::assertFalse($this->source->isDisposed());
         $this->source->emit(1)->ignore();
         self::assertSame(1, $future->await());
@@ -315,9 +264,7 @@ class EmitterTest extends AsyncTestCase
     {
         $pipeline = $this->source->pipe();
         $future = async(fn () => $pipeline->continue());
-        $this->source->onDisposal($this->createCallback(1));
         $pipeline->dispose();
-        $this->source->onDisposal($this->createCallback(1));
         self::assertTrue($this->source->isDisposed());
 
         try {
@@ -332,9 +279,7 @@ class EmitterTest extends AsyncTestCase
     {
         $pipeline = $this->source->pipe();
         $future = $this->source->emit(1);
-        $this->source->onDisposal($this->createCallback(1));
         unset($pipeline);
-        $this->source->onDisposal($this->createCallback(1));
         self::assertTrue($this->source->isDisposed());
         $future->ignore();
 

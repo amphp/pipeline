@@ -126,6 +126,8 @@ class SharedSourceTest extends AsyncTestCase
         $shared = Pipeline\share($source->pipe());
         $shared->pipe()->dispose();
 
+        $source->emit(1)->ignore();
+
         delay(0); // Tick event loop to trigger disposal callback.
 
         $this->expectException(DisposedException::class);

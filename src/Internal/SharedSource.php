@@ -32,8 +32,20 @@ final class SharedSource implements Source
         EventLoop::queue(static function () use (&$emitters, $pipeline): void {
             try {
                 foreach ($pipeline as $item) {
-                    // Using Future\settle() because a destination pipeline may be disposed.
-                    Future\settle(\array_map(static fn (Emitter $emitter) => $emitter->emit($item), $emitters));
+                    Future\all(\array_map(static fn (Emitter $emitter) => $emitter->emit($item)->catch(
+                        static function () use (&$emitters, $emitter, $pipeline): void {
+                            foreach ($emitters as $index => $active) {
+                                if ($active === $emitter) {
+                                    unset($emitters[$index]);
+                                    break;
+                                }
+                            }
+
+                            if (empty($emitters)) {
+                                $pipeline->dispose();
+                            }
+                        }
+                    ), $emitters));
                 }
 
                 foreach ($emitters as $emitter) {
@@ -53,22 +65,6 @@ final class SharedSource implements Source
     {
         $disperse = empty($this->emitters);
         $this->emitters[] = $emitter = new Emitter();
-
-        $emitters = &$this->emitters;
-        $pipeline = $this->pipeline;
-
-        $emitter->onDisposal(static function () use (&$emitters, $emitter, $pipeline): void {
-            foreach ($emitters as $index => $active) {
-                if ($active === $emitter) {
-                    unset($emitters[$index]);
-                    break;
-                }
-            }
-
-            if (empty($emitters)) {
-                $pipeline->dispose();
-            }
-        });
 
         if ($disperse) {
             $this->disperse();
