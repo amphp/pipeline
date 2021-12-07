@@ -87,7 +87,7 @@ class SampleWhenTest extends AsyncTestCase
         ]);
 
         $pipeline = Pipeline\fromIterable([1, 2, 3])->pipe(
-            Pipeline\postponeUntil($delay),
+            Pipeline\postponeWhen($delay),
             Pipeline\sampleWhen($source->pipe())
         );
 

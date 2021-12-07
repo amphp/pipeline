@@ -261,7 +261,7 @@ function filter(\Closure $filter): Operator
  */
 function postpone(float $delay): Operator
 {
-    return postponeUntil(new AsyncGenerator(static function () use ($delay): \Generator {
+    return postponeWhen(new AsyncGenerator(static function () use ($delay): \Generator {
         while (true) {
             delay($delay);
             yield 0;
@@ -279,7 +279,7 @@ function postpone(float $delay): Operator
  * @param Pipeline<mixed> $postponeUntil
  * @return Operator<TValue, TValue>
  */
-function postponeUntil(Pipeline $postponeUntil): Operator
+function postponeWhen(Pipeline $postponeUntil): Operator
 {
     return new Operator\PostponeUntilOperator($postponeUntil);
 }
