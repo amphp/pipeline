@@ -2,9 +2,10 @@
 
 namespace Amp\Pipeline\Internal\Operator;
 
-use Amp\Pipeline\AsyncGenerator;
+use Amp\Pipeline\Emitter;
 use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
+use function Amp\async;
 
 /**
  * @template TValue
@@ -15,7 +16,7 @@ use Amp\Pipeline\Pipeline;
 final class FinalizeOperator implements PipelineOperator
 {
     /**
-     * @param \Closure():void $onComplete
+     * @param \Closure():void $finalize
      */
     public function __construct(private \Closure $finalize)
     {
@@ -27,12 +28,38 @@ final class FinalizeOperator implements PipelineOperator
      */
     public function pipe(Pipeline $pipeline): Pipeline
     {
-        return new AsyncGenerator(function () use ($pipeline): \Generator {
+        $emitter = new Emitter();
+        $finalize = $this->finalize;
+
+        async(static function () use ($emitter, $pipeline, $finalize): void {
+            $exception = null;
+
             try {
-                yield from $pipeline;
+                foreach ($pipeline as $value) {
+                    $emitter->yield($value);
+                }
+            } catch (\Throwable $exception) {
+                // $exception used in finally closure.
             } finally {
-                ($this->finalize)();
+                async(static function () use ($emitter, $finalize, $exception): void {
+                    try {
+                        try {
+                            if ($exception) {
+                                // Rethrow so $exception is attached as previous if $finalize throws.
+                                throw $exception;
+                            }
+                        } finally {
+                            $finalize();
+                        }
+
+                        $emitter->complete();
+                    } catch (\Throwable $exception) {
+                        $emitter->error($exception);
+                    }
+                });
             }
         });
+
+        return $emitter->pipe();
     }
 }
