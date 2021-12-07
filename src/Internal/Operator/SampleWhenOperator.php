@@ -5,7 +5,7 @@ namespace Amp\Pipeline\Internal\Operator;
 use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\Pipeline\AsyncGenerator;
-use Amp\Pipeline\Operator;
+use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
 use Revolt\EventLoop;
 use function Amp\async;
@@ -16,7 +16,7 @@ use function Amp\async;
  *
  * @internal
  */
-final class SampleWhenOperator implements Operator
+final class SampleWhenOperator implements PipelineOperator
 {
     /**
      * @param Pipeline<mixed> $sampleWhen

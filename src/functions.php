@@ -184,11 +184,11 @@ function zip(array $pipelines): Pipeline
  * @template TResult
  *
  * @param Semaphore $semaphore Semaphore limiting the concurrency, e.g. {@see LocalSemaphore}.
- * @param Operator ...$operators Set of operators to act upon each value emitted. See {@see Pipeline::pipe()}.
+ * @param PipelineOperator ...$operators Set of operators to act upon each value emitted. See {@see Pipeline::pipe()}.
  *
- * @return Operator<TValue, TResult>
+ * @return PipelineOperator<TValue, TResult>
  */
-function concurrentUnordered(Semaphore $semaphore, Operator ...$operators): Operator
+function concurrentUnordered(Semaphore $semaphore, PipelineOperator ...$operators): PipelineOperator
 {
     return new Internal\Operator\ConcurrentOperator($semaphore, $operators, false);
 }
@@ -205,11 +205,11 @@ function concurrentUnordered(Semaphore $semaphore, Operator ...$operators): Oper
  * @template TResult
  *
  * @param Semaphore $semaphore Semaphore limiting the concurrency, e.g. {@see LocalSemaphore}.
- * @param Operator ...$operators Set of operators to act upon each value emitted. See {@see Pipeline::pipe()}.
+ * @param PipelineOperator ...$operators Set of operators to act upon each value emitted. See {@see Pipeline::pipe()}.
  *
- * @return Operator<TValue, TResult>
+ * @return PipelineOperator<TValue, TResult>
  */
-function concurrentOrdered(Semaphore $semaphore, Operator ...$operators): Operator
+function concurrentOrdered(Semaphore $semaphore, PipelineOperator ...$operators): PipelineOperator
 {
     return new Internal\Operator\ConcurrentOperator($semaphore, $operators, true);
 }
@@ -219,9 +219,9 @@ function concurrentOrdered(Semaphore $semaphore, Operator ...$operators): Operat
  *
  * @template TValue
  *
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function relieve(): Operator
+function relieve(): PipelineOperator
 {
     return new Internal\Operator\RelieveOperator;
 }
@@ -232,9 +232,9 @@ function relieve(): Operator
  *
  * @param \Closure(TValue):TReturn $map
  *
- * @return Operator<TValue, TReturn>
+ * @return PipelineOperator<TValue, TReturn>
  */
-function map(\Closure $map): Operator
+function map(\Closure $map): PipelineOperator
 {
     return new Internal\Operator\MapOperator($map);
 }
@@ -244,9 +244,9 @@ function map(\Closure $map): Operator
  *
  * @param \Closure(TValue):bool $filter
  *
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function filter(\Closure $filter): Operator
+function filter(\Closure $filter): PipelineOperator
 {
     return new Internal\Operator\FilterOperator($filter);
 }
@@ -257,9 +257,10 @@ function filter(\Closure $filter): Operator
  * @template TValue
  *
  * @param float $delay
- * @return Operator<TValue, TValue>
+ *
+ * @return PipelineOperator<TValue, TValue>
  */
-function postpone(float $delay): Operator
+function postpone(float $delay): PipelineOperator
 {
     return postponeWhen(new AsyncGenerator(static function () use ($delay): \Generator {
         while (true) {
@@ -277,9 +278,9 @@ function postpone(float $delay): Operator
  * @template TValue
  *
  * @param Pipeline<mixed> $postponeUntil
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function postponeWhen(Pipeline $postponeUntil): Operator
+function postponeWhen(Pipeline $postponeUntil): PipelineOperator
 {
     return new Internal\Operator\PostponeWhenOperator($postponeUntil);
 }
@@ -290,9 +291,9 @@ function postponeWhen(Pipeline $postponeUntil): Operator
  * @template TValue
  *
  * @param int $count
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function skip(int $count): Operator
+function skip(int $count): PipelineOperator
 {
     return new Internal\Operator\SkipOperator($count);
 }
@@ -304,9 +305,9 @@ function skip(int $count): Operator
  * @template TValue
  *
  * @param \Closure(TValue):bool $predicate
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function skipWhile(\Closure $predicate): Operator
+function skipWhile(\Closure $predicate): PipelineOperator
 {
     return new Internal\Operator\SkipWhileOperator($predicate);
 }
@@ -317,9 +318,9 @@ function skipWhile(\Closure $predicate): Operator
  * @template TValue
  *
  * @param int $count
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function take(int $count): Operator
+function take(int $count): PipelineOperator
 {
     return new Internal\Operator\TakeOperator($count);
 }
@@ -330,9 +331,9 @@ function take(int $count): Operator
  * @template TValue
  *
  * @param \Closure(TValue):bool $predicate
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function takeWhile(\Closure $predicate): Operator
+function takeWhile(\Closure $predicate): PipelineOperator
 {
     return new Internal\Operator\TakeWhileOperator($predicate);
 }
@@ -344,9 +345,9 @@ function takeWhile(\Closure $predicate): Operator
  * @template TValue
  *
  * @param \Closure(TValue):void $tap
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function tap(\Closure $tap): Operator
+function tap(\Closure $tap): PipelineOperator
 {
     return new Internal\Operator\TapOperator($tap);
 }
@@ -357,9 +358,9 @@ function tap(\Closure $tap): Operator
  * @template TValue
  *
  * @param \Closure():void $finally
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function finalize(\Closure $finally): Operator
+function finalize(\Closure $finally): PipelineOperator
 {
     return new Internal\Operator\FinalizeOperator($finally);
 }
@@ -373,9 +374,9 @@ function finalize(\Closure $finally): Operator
  * @template TValue
  *
  * @param Pipeline<mixed> $sampleWhen
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function sampleWhen(Pipeline $sampleWhen): Operator
+function sampleWhen(Pipeline $sampleWhen): PipelineOperator
 {
     return new Internal\Operator\SampleWhenOperator($sampleWhen);
 }
@@ -384,9 +385,9 @@ function sampleWhen(Pipeline $sampleWhen): Operator
  * @template TValue
  *
  * @param float $period
- * @return Operator<TValue, TValue>
+ * @return PipelineOperator<TValue, TValue>
  */
-function sampleInterval(float $period): Operator
+function sampleInterval(float $period): PipelineOperator
 {
     return sampleWhen(
         (new AsyncGenerator(static function (): \Generator {

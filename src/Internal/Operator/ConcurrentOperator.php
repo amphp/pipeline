@@ -4,7 +4,7 @@ namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Future;
 use Amp\Pipeline\Emitter;
-use Amp\Pipeline\Operator;
+use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
 use Amp\Sync\Lock;
 use Amp\Sync\Semaphore;
@@ -16,11 +16,11 @@ use Revolt\EventLoop;
  *
  * @internal
  */
-final class ConcurrentOperator implements Operator
+final class ConcurrentOperator implements PipelineOperator
 {
     /**
      * @param Semaphore $semaphore Concurrency limited to number of locks provided by the semaphore.
-     * @param Operator[] $operators Set of operators to apply to each concurrent pipeline.
+     * @param PipelineOperator[] $operators Set of operators to apply to each concurrent pipeline.
      * @param bool $ordered True to maintain order of emissions on output pipeline.
      */
     public function __construct(

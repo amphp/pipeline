@@ -3,7 +3,7 @@
 namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\AsyncGenerator;
-use Amp\Pipeline\Operator;
+use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
 
 /**
@@ -12,7 +12,7 @@ use Amp\Pipeline\Pipeline;
  *
  * @internal
  */
-final class FinalizeOperator implements Operator
+final class FinalizeOperator implements PipelineOperator
 {
     /**
      * @param \Closure():void $onComplete

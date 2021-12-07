@@ -3,7 +3,7 @@
 namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\Emitter;
-use Amp\Pipeline\Operator;
+use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
 use Revolt\EventLoop;
 
@@ -13,7 +13,7 @@ use Revolt\EventLoop;
  *
  * @internal
  */
-final class RelieveOperator implements Operator
+final class RelieveOperator implements PipelineOperator
 {
     public function pipe(Pipeline $pipeline): Pipeline
     {

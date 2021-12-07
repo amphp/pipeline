@@ -82,11 +82,11 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
     /**
      * @template TResult
      *
-     * @param Operator ...$operators
+     * @param PipelineOperator ...$operators
      *
      * @return Pipeline<TResult>
      */
-    public function pipe(Operator ...$operators): Pipeline
+    public function pipe(PipelineOperator ...$operators): Pipeline
     {
         $pipeline = $this;
         foreach ($operators as $operator) {

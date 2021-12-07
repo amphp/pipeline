@@ -38,10 +38,11 @@ interface Pipeline extends \Traversable
     /**
      * @template TResult
      *
-     * @param Operator ...$operators
+     * @param PipelineOperator ...$operators
+     *
      * @return Pipeline<TResult>
      */
-    public function pipe(Operator ...$operators): Pipeline;
+    public function pipe(PipelineOperator ...$operators): Pipeline;
 
     /**
      * @return bool True if the pipeline has completed, either successfully or with an error.

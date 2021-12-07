@@ -3,7 +3,7 @@
 namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
-use Amp\Pipeline\Operator;
+use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
 
 /**
@@ -44,11 +44,11 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
     /**
      * @template TResult
      *
-     * @param Operator ...$operators
+     * @param PipelineOperator ...$operators
      *
      * @return Pipeline<TResult>
      */
-    public function pipe(Operator ...$operators): Pipeline
+    public function pipe(PipelineOperator ...$operators): Pipeline
     {
         $pipeline = $this;
 

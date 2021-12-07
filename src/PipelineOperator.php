@@ -6,7 +6,7 @@ namespace Amp\Pipeline;
  * @template TValue
  * @template TResult
  */
-interface Operator
+interface PipelineOperator
 {
     /**
      * @param Pipeline<TValue> $pipeline

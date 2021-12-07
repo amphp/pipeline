@@ -3,7 +3,7 @@
 namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\AsyncGenerator;
-use Amp\Pipeline\Operator;
+use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
 
 /**
@@ -12,7 +12,7 @@ use Amp\Pipeline\Pipeline;
  *
  * @internal
  */
-final class TapOperator implements Operator
+final class TapOperator implements PipelineOperator
 {
     /**
      * @param \Closure(TValue):void $tap

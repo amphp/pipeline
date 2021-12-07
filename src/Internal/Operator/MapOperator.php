@@ -3,7 +3,7 @@
 namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\Pipeline\AsyncGenerator;
-use Amp\Pipeline\Operator;
+use Amp\Pipeline\PipelineOperator;
 use Amp\Pipeline\Pipeline;
 
 /**
@@ -13,7 +13,7 @@ use Amp\Pipeline\Pipeline;
  *
  * @internal
  */
-final class MapOperator implements Operator
+final class MapOperator implements PipelineOperator
 {
     /**
      * @param \Closure(TValue):TMapped $map
