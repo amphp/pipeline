@@ -35,7 +35,7 @@ function share(Pipeline $pipeline): Source
  */
 function fromIterable(iterable $iterable): Pipeline
 {
-    return new AsyncGenerator(static fn () => yield from $iterable);
+    return $iterable instanceof Pipeline ? $iterable : new AsyncGenerator(static fn () => yield from $iterable);
 }
 
 /**
