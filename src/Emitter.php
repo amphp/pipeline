@@ -19,9 +19,13 @@ final class Emitter implements Source
 
     private bool $used = false;
 
-    public function __construct()
+    /**
+     * @param int $bufferSize Allowed number of items to internally buffer before awaiting backpressure from the
+     * consumer of the pipeline.
+     */
+    public function __construct(int $bufferSize = 0)
     {
-        $this->source = new Internal\EmitSource;
+        $this->source = new Internal\EmitSource($bufferSize);
     }
 
     public function __destruct()

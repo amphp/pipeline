@@ -43,6 +43,13 @@ final class EmitSource
 
     private bool $disposed = false;
 
+    private int $bufferSize;
+
+    public function __construct(int $bufferSize = 0)
+    {
+        $this->bufferSize = $bufferSize;
+    }
+
     /**
      * @return TValue
      */
@@ -163,7 +170,11 @@ final class EmitSource
 
         $this->emittedValues[$position] = $value;
 
-        return null;
+        if (\count($this->emittedValues) > $this->bufferSize) {
+            return null;
+        }
+
+        return self::CONTINUE;
     }
 
     /**
