@@ -122,6 +122,7 @@ class AsyncGeneratorTest extends AsyncTestCase
         $generator = new AsyncGenerator(function () use (&$invoked) {
             try {
                 yield 0;
+                yield 1;
             } finally {
                 $invoked = true;
             }
@@ -136,6 +137,7 @@ class AsyncGeneratorTest extends AsyncTestCase
         delay(0); // Tick event loop to destroy generator.
 
         try {
+            $generator->continue();
             $generator->continue();
             self::fail("Pipeline should have been disposed");
         } catch (DisposedException $exception) {

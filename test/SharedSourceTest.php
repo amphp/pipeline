@@ -41,12 +41,17 @@ class SharedSourceTest extends AsyncTestCase
         $future3 = async(fn () => $pipeline1->continue());
         $future4 = async(fn () => $pipeline2->continue());
 
+        $future5 = async(fn () => $pipeline1->continue());
+        $future6 = async(fn () => $pipeline2->continue());
+
+        $source->emit(1)->ignore();
+
         $invoked = false;
-        $source->emit(1)->finally(function () use (&$invoked): void {
+        $source->emit(2)->finally(function () use (&$invoked): void {
             $invoked = true;
         })->ignore();
 
-        delay(0.1); // Delayed pipeline *should not* have consumed the value yet.
+        delay(0.1); // Delayed pipeline *should not* have consumed the second value yet.
 
         self::assertFalse($invoked);
 
@@ -59,8 +64,11 @@ class SharedSourceTest extends AsyncTestCase
 
         $source->complete();
 
-        self::assertNull($future3->await());
-        self::assertNull($future4->await());
+        self::assertSame(2, $future3->await());
+        self::assertSame(2, $future4->await());
+
+        self::assertNull($future5->await());
+        self::assertNull($future6->await());
     }
 
     public function testDisposeShare(): void

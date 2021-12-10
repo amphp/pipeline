@@ -29,7 +29,7 @@ class MergeTest extends AsyncTestCase
     public function testMerge(array $array, array $expected): void
     {
         $pipelines = \array_map(static function (array $iterator): Pipeline\Pipeline {
-            return Pipeline\fromIterable($iterator);
+            return Pipeline\fromIterable($iterator)->pipe(Pipeline\postpone(0.01));
         }, $array);
 
         $pipeline = Pipeline\merge($pipelines);

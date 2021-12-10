@@ -27,10 +27,12 @@ class EmitterTest extends AsyncTestCase
         $future = $this->source->emit($value);
         $pipeline = $this->source->pipe();
 
+        self::assertFalse($future->isComplete());
         self::assertSame($value, $pipeline->continue());
+        self::assertTrue($future->isComplete());
 
-        $continue = async(fn (
-        ) => $pipeline->continue()); // Promise will not resolve until another value is emitted or pipeline completed.
+        // Future will not complete until another value is emitted or pipeline completed.
+        $continue = async(fn () => $pipeline->continue());
 
         self::assertInstanceOf(Future::class, $future);
         self::assertNull($future->await());
@@ -337,18 +339,15 @@ class EmitterTest extends AsyncTestCase
         $pipeline = $this->source->pipe();
         self::assertFalse($pipeline->isComplete());
         self::assertSame(1, $pipeline->continue());
+        self::assertTrue($future1->isComplete());
+        self::assertFalse($future2->isComplete());
         self::assertFalse($pipeline->isComplete());
         self::assertSame(2, $pipeline->continue());
         self::assertTrue($pipeline->isComplete());
-
         self::assertTrue($future1->isComplete());
-        self::assertFalse($future2->isComplete());
-
-        self::assertNull($pipeline->continue());
-
-        delay(0.01);
-
         self::assertTrue($future2->isComplete());
+        self::assertTrue($pipeline->isComplete());
+        self::assertNull($pipeline->continue());
     }
 
     public function testBackPressureOnDisposal(): void

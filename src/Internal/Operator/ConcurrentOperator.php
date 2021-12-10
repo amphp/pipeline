@@ -2,6 +2,7 @@
 
 namespace Amp\Pipeline\Internal\Operator;
 
+use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\Pipeline\Emitter;
 use Amp\Pipeline\Pipeline;
@@ -57,7 +58,9 @@ final class ConcurrentOperator implements PipelineOperator
                         $emitter = $queue->shift();
                     }
 
-                    $previous = $emitter->emit([$value, $lock, $previous]);
+                    $deferred = new DeferredFuture();
+                    $emitter->emit([$value, $lock, $previous, $deferred]);
+                    $previous = $deferred->getFuture();
                 }
 
                 $previous->await();
@@ -93,13 +96,16 @@ final class ConcurrentOperator implements PipelineOperator
                 $operatorPipeline = $operator->pipe($operatorPipeline);
             }
 
+            $deferred = null;
+
             try {
                 /**
                  * @var TValue $value
                  * @var Lock $lock
                  * @var Future $previous
+                 * @var DeferredFuture $deferred
                  */
-                foreach ($emitter->pipe() as [$value, $lock, $previous]) {
+                foreach ($emitter->pipe() as [$value, $lock, $previous, $deferred]) {
                     $operatorEmitter->emit($value)->ignore();
                     $previous->ignore();
 
@@ -116,6 +122,8 @@ final class ConcurrentOperator implements PipelineOperator
                         $previous->await();
                     }
 
+                    $deferred->complete();
+
                     if ($destination->isComplete()) {
                         break;
                     }
@@ -130,6 +138,9 @@ final class ConcurrentOperator implements PipelineOperator
                     $destination->complete();
                 }
             } catch (\Throwable $exception) {
+                if ($deferred && !$deferred->isComplete()) {
+                    $deferred?->error($exception);
+                }
                 $operatorEmitter->error($exception);
                 if (!$destination->isComplete()) {
                     $destination->error($exception);

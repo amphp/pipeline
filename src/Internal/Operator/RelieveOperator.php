@@ -20,10 +20,11 @@ final class RelieveOperator implements PipelineOperator
         $emitter = new Emitter;
 
         EventLoop::queue(static function () use ($pipeline, $emitter): void {
-            $catch = static function (\Throwable $exception) use ($emitter): void {
+            $catch = static function (\Throwable $exception) use ($emitter, $pipeline): void {
                 if (!$emitter->isComplete()) {
                     $emitter->error($exception);
                 }
+                $pipeline->dispose();
             };
 
             try {

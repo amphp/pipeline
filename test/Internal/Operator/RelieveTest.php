@@ -64,10 +64,14 @@ class RelieveTest extends AsyncTestCase
 
         self::assertSame(1, $future->await());
 
-        unset($pipeline);
+        $source->yield(2);
+
+        $pipeline->dispose();
+
+        delay(0.1);
 
         $this->expectException(DisposedException::class);
 
-        $source->yield(2);
+        $source->yield(3);
     }
 }

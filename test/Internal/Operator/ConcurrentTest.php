@@ -99,7 +99,7 @@ class ConcurrentTest extends AsyncTestCase
         $pipeline = $source->pipe(
             Pipeline\concurrentOrdered(
                 new LocalSemaphore(3),
-                Pipeline\tap($this->createCallback(2)),
+                Pipeline\tap($this->createCallback(4)),
             )
         );
 

@@ -48,7 +48,7 @@ final class EmitSource
      */
     public function continue(?Cancellation $cancellation = null): mixed
     {
-        $position = $this->consumePosition++ - 1;
+        $position = $this->consumePosition++;
 
         // Relieve backpressure from prior emit.
         if (isset($this->backPressure[$position])) {
@@ -58,8 +58,6 @@ final class EmitSource
                 ? $placeholder->resume()
                 : $placeholder->complete();
         }
-
-        ++$position; // Move forward to next emitted value if available.
 
         if (isset($this->emittedValues[$position])) {
             $value = $this->emittedValues[$position];
@@ -160,7 +158,7 @@ final class EmitSource
                 return self::CONTINUE; // Subsequent push() calls will throw.
             }
 
-            if ($this->consumePosition > $position + 1) {
+            if ($this->consumePosition > $position) {
                 return self::CONTINUE;
             }
 
@@ -344,8 +342,8 @@ final class EmitSource
                     : $placeholder->error($exception);
             } else {
                 $placeholder instanceof Suspension
-                    ? $placeholder->resume(null)
-                    : $placeholder->complete(null);
+                    ? $placeholder->resume()
+                    : $placeholder->complete();
             }
         }
     }
