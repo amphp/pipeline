@@ -36,13 +36,13 @@ function share(Pipeline $pipeline): Source
  */
 function fromIterable(\Closure|iterable $iterable): Pipeline
 {
+    $source = new Internal\EmitSource();
+
     if ($iterable instanceof \Closure) {
         try {
             $iterable = $iterable();
         } catch (\Throwable $exception) {
-            $source = new Internal\EmitSource;
             $source->error($exception);
-
             return new AutoDisposingPipeline($source);
         }
 
@@ -55,8 +55,6 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
     if ($iterable instanceof Pipeline) {
         return $iterable;
     }
-
-    $source = new Internal\EmitSource;
 
     EventLoop::queue(static function () use ($iterable, $source): void {
         try {
@@ -299,20 +297,12 @@ function filter(\Closure $filter): PipelineOperator
  */
 function postpone(float $delay): PipelineOperator
 {
-    $emitter = new Emitter;
-
-    EventLoop::queue(static function () use ($emitter, $delay): void {
-        try {
-            while (true) {
-                delay($delay);
-                $emitter->yield(0);
-            }
-        } catch (\Throwable $exception) {
-            $emitter->error($exception);
+    return postponeWhen(fromIterable(static function () use ($delay): \Generator {
+        while (true) {
+            delay($delay);
+            yield 0;
         }
-    });
-
-    return postponeWhen($emitter->pipe());
+    }));
 }
 
 /**

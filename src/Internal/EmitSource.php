@@ -77,13 +77,16 @@ final class EmitSource
 
         if ($cancellation) {
             $waiting = &$this->waiting;
+            $emitPosition = &$this->emitPosition;
             $id = $cancellation->subscribe(static function (\Throwable $exception) use (
                 &$waiting,
-                $suspension
+                &$emitPosition,
+                $suspension,
             ): void {
                 foreach ($waiting as $key => $pending) {
                     if ($pending === $suspension) {
                         unset($waiting[$key]);
+                        ++$emitPosition; // Advance emit position to account for removed consumption.
                         $suspension->throw($exception);
                         return;
                     }
@@ -155,14 +158,9 @@ final class EmitSource
 
             if ($this->disposed && empty($this->waiting)) {
                 $this->triggerDisposal();
-                return self::CONTINUE; // Subsequent push() calls will throw.
             }
 
-            if ($this->consumePosition > $position) {
-                return self::CONTINUE;
-            }
-
-            return null;
+            return self::CONTINUE;
         }
 
         if ($this->disposed) {
@@ -326,7 +324,7 @@ final class EmitSource
                 $this->triggerDisposal();
             }
         } else {
-            $this->resolvePending();
+            $this->resolvePending($this->exception);
         }
     }
 
@@ -351,12 +349,10 @@ final class EmitSource
     /**
      * Resolves all backpressure and outstanding calls for emitted values.
      */
-    private function resolvePending(): void
+    private function resolvePending(?\Throwable $exception): void
     {
         $waiting = $this->waiting;
         unset($this->waiting);
-
-        $exception = $this->exception ?? null;
 
         foreach ($waiting as $suspension) {
             if ($exception) {
@@ -381,7 +377,7 @@ final class EmitSource
 
         /** @psalm-suppress RedundantCondition */
         if (isset($this->waiting)) {
-            $this->resolvePending();
+            $this->resolvePending($this->exception);
         }
     }
 }
