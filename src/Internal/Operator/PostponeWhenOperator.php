@@ -25,7 +25,6 @@ final class PostponeWhenOperator implements PipelineOperator
             while ($this->postpone->continue() !== null) {
                 $value = $pipeline->continue();
                 if ($value === null) {
-                    $this->postpone->dispose();
                     return;
                 }
 

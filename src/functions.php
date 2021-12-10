@@ -47,7 +47,8 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         }
 
         if (!\is_iterable($iterable)) {
-            throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
+            throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, '
+                . \get_debug_type($iterable) . ' returned');
         }
     }
 
@@ -59,15 +60,8 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
 
     EventLoop::queue(static function () use ($iterable, $source): void {
         try {
-            if (!$iterable instanceof \Generator) {
-                $iterable = (static fn () => yield from $iterable)();
-            }
-
-            $yielded = $iterable->current();
-
-            while ($iterable->valid()) {
-                $source->yield($yielded);
-                $yielded = $iterable->send(null);
+            foreach ($iterable as $value) {
+                $source->yield($value);
             }
 
             $source->complete();
@@ -158,7 +152,9 @@ function concat(array $pipelines): Pipeline
     return fromIterable(static function () use ($pipelines): \Generator {
         try {
             foreach ($pipelines as $pipeline) {
-                yield from $pipeline;
+                foreach ($pipeline as $value) {
+                    yield $value;
+                }
             }
         } finally {
             foreach ($pipelines as $pipeline) {
