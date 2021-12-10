@@ -3,9 +3,10 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Amp\Pipeline\AsyncGenerator;
+use Amp\Pipeline\Pipeline;
 use Revolt\EventLoop;
 use function Amp\delay;
+use function Amp\Pipeline\fromIterable;
 
 try {
     // Unreference timer so the loop exits automatically when all tasks complete.
@@ -13,8 +14,8 @@ try {
         echo "."; // This repeat timer is to show the loop is not being blocked.
     }));
 
-    /** @psalm-var AsyncGenerator<int> $pipeline */
-    $pipeline = new AsyncGenerator(function (): \Generator {
+    /** @psalm-var Pipeline<int> $pipeline */
+    $pipeline = fromIterable(function (): \Generator {
         yield 1;
         delay(0.5);
         yield 2;

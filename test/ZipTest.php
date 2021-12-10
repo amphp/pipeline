@@ -54,13 +54,13 @@ class ZipTest extends AsyncTestCase
         $values2 = [$this->asyncValue(0.02, 4), $this->asyncValue(0.04, 5), $this->asyncValue(0.06, 6)];
         $expected = [[1, 4], [2, 5], [3, 6]];
 
-        $pipelines[] = new AsyncGenerator(function () use ($values1) {
+        $pipelines[] = fromIterable(function () use ($values1) {
             foreach ($values1 as $value) {
                 yield $value->await();
             }
         });
 
-        $pipelines[] = new AsyncGenerator(function () use ($values2) {
+        $pipelines[] = fromIterable(function () use ($values2) {
             foreach ($values2 as $value) {
                 yield $value->await();
             }
@@ -101,7 +101,7 @@ class ZipTest extends AsyncTestCase
     public function testZipWithFailedPipeline(): void
     {
         $exception = new TestException;
-        $generator = new AsyncGenerator(static function () use ($exception) {
+        $generator = fromIterable(static function () use ($exception) {
             yield 1; // Emit once before failing.
             throw $exception;
         });

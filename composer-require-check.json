@@ -16,6 +16,7 @@
         "mixed",
         "void",
         "object",
+        "fromIterable",
         "postpone",
         "postponeWhen",
         "sampleWhen"

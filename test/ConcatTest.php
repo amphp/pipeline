@@ -43,7 +43,7 @@ class ConcatTest extends AsyncTestCase
     {
         $exception = new TestException;
         $expected = \range(1, 6);
-        $generator = new AsyncGenerator(static function () use ($exception) {
+        $generator = fromIterable(static function () use ($exception) {
             yield 6; // Emit once before failing.
             throw $exception;
         });

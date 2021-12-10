@@ -2,9 +2,9 @@
 
 namespace Amp\Pipeline\Internal\Operator;
 
-use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Pipeline;
 use Amp\Pipeline\PipelineOperator;
+use function Amp\Pipeline\fromIterable;
 
 /**
  * @template TValue
@@ -27,7 +27,7 @@ final class TapOperator implements PipelineOperator
      */
     public function pipe(Pipeline $pipeline): Pipeline
     {
-        return new AsyncGenerator(function () use ($pipeline): \Generator {
+        return fromIterable(function () use ($pipeline): \Generator {
             foreach ($pipeline as $value) {
                 ($this->tap)($value);
                 yield $value;

@@ -4,11 +4,10 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Amp\Pipeline;
-use Amp\Pipeline\AsyncGenerator;
 use Amp\Sync\LocalSemaphore;
 use function Amp\delay;
 
-$pipeline = new AsyncGenerator(function (): \Generator {
+$pipeline = Pipeline\fromIterable(function (): \Generator {
     for ($i = 0; $i < 100; ++$i) {
         yield $i;
     }
