@@ -118,19 +118,12 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
     public function testDisposal(): void
     {
-        $invoked = false;
-        $generator = fromIterable(function () use (&$invoked) {
-            try {
-                yield 0;
-                yield 1;
-            } finally {
-                $invoked = true;
-            }
+        $generator = fromIterable(function () {
+            yield 0;
+            yield 1;
         });
 
         self::assertSame(0, $generator->continue());
-
-        self::assertFalse($invoked);
 
         $generator->dispose();
 
@@ -141,7 +134,6 @@ class FromIterableGeneratorTest extends AsyncTestCase
             $generator->continue();
             self::fail("Pipeline should have been disposed");
         } catch (DisposedException $exception) {
-            self::assertTrue($invoked);
         }
     }
 
