@@ -48,11 +48,11 @@ class ConcatTest extends AsyncTestCase
             throw $exception;
         });
 
-        $pipeline = (Pipeline\concat([
+        $pipeline = Pipeline\concat([
             Pipeline\fromIterable(\range(1, 5)),
             $generator,
             Pipeline\fromIterable(\range(7, 10)),
-        ]));
+        ]);
 
         try {
             while (null !== $value = $pipeline->continue()) {

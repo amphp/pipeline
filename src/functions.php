@@ -37,7 +37,15 @@ function share(Pipeline $pipeline): Source
 function fromIterable(\Closure|iterable $iterable): Pipeline
 {
     if ($iterable instanceof \Closure) {
-        $iterable = $iterable();
+        try {
+            $iterable = $iterable();
+        } catch (\Throwable $exception) {
+            $source = new Internal\EmitSource;
+            $source->error($exception);
+
+            return new AutoDisposingPipeline($source);
+        }
+
         if (!\is_iterable($iterable)) {
             throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
         }
@@ -51,8 +59,15 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
 
     EventLoop::queue(static function () use ($iterable, $source): void {
         try {
-            foreach ($iterable as $value) {
-                $source->yield($value);
+            if (!$iterable instanceof \Generator) {
+                $iterable = (static fn () => yield from $iterable)();
+            }
+
+            $yielded = $iterable->current();
+
+            while ($iterable->valid()) {
+                $source->yield($yielded);
+                $yielded = $iterable->send(null);
             }
 
             $source->complete();
