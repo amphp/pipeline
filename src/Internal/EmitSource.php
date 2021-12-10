@@ -30,7 +30,7 @@ final class EmitSource
     private array $emittedValues = [];
 
     /** @var array<int, DeferredFuture|Suspension> */
-    private array $backPressure = [];
+    private array $backpressure = [];
 
     /** @var Suspension[] */
     private array $waiting = [];
@@ -43,20 +43,28 @@ final class EmitSource
 
     private bool $disposed = false;
 
+    private int $bufferSize;
+
+    public function __construct(int $bufferSize = 0)
+    {
+        $this->bufferSize = $bufferSize;
+    }
+
     /**
      * @return TValue
      */
     public function continue(?Cancellation $cancellation = null): mixed
     {
         $position = $this->consumePosition++;
+        $backpressurePosition = $position + $this->bufferSize;
 
         // Relieve backpressure from prior emit.
-        if (isset($this->backPressure[$position])) {
-            $placeholder = $this->backPressure[$position];
-            unset($this->backPressure[$position]);
-            $placeholder instanceof Suspension
-                ? $placeholder->resume()
-                : $placeholder->complete();
+        if (isset($this->backpressure[$backpressurePosition])) {
+            $backpressure = $this->backpressure[$backpressurePosition];
+            unset($this->backpressure[$backpressurePosition]);
+            $backpressure instanceof Suspension
+                ? $backpressure->resume()
+                : $backpressure->complete();
         }
 
         if (isset($this->emittedValues[$position])) {
@@ -163,7 +171,11 @@ final class EmitSource
 
         $this->emittedValues[$position] = $value;
 
-        return null;
+        if (\count($this->emittedValues) > $this->bufferSize) {
+            return null;
+        }
+
+        return self::CONTINUE;
     }
 
     /**
@@ -180,7 +192,7 @@ final class EmitSource
         $next = $this->push($value, $position);
 
         if ($next === null) {
-            $this->backPressure[$position] = $deferred = new DeferredFuture;
+            $this->backpressure[$position] = $deferred = new DeferredFuture;
             return $deferred->getFuture();
         }
 
@@ -204,7 +216,7 @@ final class EmitSource
         $next = $this->push($value, $position);
 
         if ($next === null) {
-            $this->backPressure[$position] = $suspension = EventLoop::createSuspension();
+            $this->backpressure[$position] = $suspension = EventLoop::createSuspension();
             $suspension->suspend();
             return;
         }
@@ -322,8 +334,8 @@ final class EmitSource
 
     private function relieveBackPressure(?\Throwable $exception): void
     {
-        $backPressure = $this->backPressure;
-        unset($this->backPressure);
+        $backPressure = $this->backpressure;
+        unset($this->backpressure);
 
         foreach ($backPressure as $placeholder) {
             if ($exception) {
@@ -365,7 +377,7 @@ final class EmitSource
         \assert($this->disposed && $this->exception, "Pipeline was not disposed on triggering disposal");
 
         /** @psalm-suppress RedundantCondition */
-        if (isset($this->backPressure)) {
+        if (isset($this->backpressure)) {
             $this->relieveBackPressure($this->exception);
         }
 

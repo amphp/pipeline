@@ -427,4 +427,43 @@ class EmitterTest extends AsyncTestCase
 
         self::assertNull($future4->await());
     }
+
+    /**
+     * @dataProvider provideBufferSize
+     */
+    public function testBufferSize(int $bufferSize): void
+    {
+        $source = new Emitter($bufferSize);
+        $pipeline = $source->pipe();
+
+        for ($i = 0; $i < $bufferSize; $i++) {
+            self::assertTrue($source->emit('.')->isComplete());
+        }
+
+        $blocked = $source->emit('x');
+        self::assertFalse($blocked->isComplete());
+
+        self::assertIsString($pipeline->continue());
+        self::assertTrue($blocked->isComplete());
+
+        self::assertFalse($source->emit('x')->isComplete());
+
+        if ($bufferSize === 0) {
+            return;
+        }
+
+        self::assertIsString($pipeline->continue());
+        self::assertIsString($pipeline->continue());
+
+        self::assertTrue($source->emit('.')->isComplete());
+    }
+
+    public function provideBufferSize(): iterable
+    {
+        yield 'buffer size 0' => [0];
+        yield 'buffer size 1' => [1];
+        yield 'buffer size 2' => [2];
+        yield 'buffer size 5' => [5];
+        yield 'buffer size 10' => [10];
+    }
 }
