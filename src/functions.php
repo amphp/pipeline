@@ -3,6 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
+use Amp\Pipeline\Internal\AutoDisposingPipeline;
 use Amp\Sync\Semaphore;
 use Revolt\EventLoop;
 use function Amp\async;
@@ -29,13 +30,38 @@ function share(Pipeline $pipeline): Source
  *
  * @template TValue
  *
- * @param iterable<array-key, TValue> $iterable Elements to emit.
+ * @param iterable<array-key, TValue>|\Closure():iterable<array-key, TValue> $iterable Elements to emit.
  *
  * @return Pipeline<TValue>
  */
-function fromIterable(iterable $iterable): Pipeline
+function fromIterable(\Closure|iterable $iterable): Pipeline
 {
-    return $iterable instanceof Pipeline ? $iterable : new AsyncGenerator(static fn () => yield from $iterable);
+    if ($iterable instanceof \Closure) {
+        $iterable = $iterable();
+        if (!\is_iterable($iterable)) {
+            throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
+        }
+    }
+
+    if ($iterable instanceof Pipeline) {
+        return $iterable;
+    }
+
+    $source = new Internal\EmitSource;
+
+    EventLoop::queue(static function () use ($iterable, $source): void {
+        try {
+            foreach ($iterable as $value) {
+                $source->yield($value);
+            }
+
+            $source->complete();
+        } catch (\Throwable $exception) {
+            $source->error($exception);
+        }
+    });
+
+    return new AutoDisposingPipeline($source);
 }
 
 /**
@@ -114,7 +140,7 @@ function concat(array $pipelines): Pipeline
         }
     }
 
-    return new AsyncGenerator(static function () use ($pipelines): \Generator {
+    return fromIterable(static function () use ($pipelines): \Generator {
         try {
             foreach ($pipelines as $pipeline) {
                 yield from $pipeline;
@@ -151,7 +177,7 @@ function zip(array $pipelines): Pipeline
         }
     }
 
-    return new AsyncGenerator(static function () use ($pipelines): \Generator {
+    return fromIterable(static function () use ($pipelines): \Generator {
         try {
             $keys = \array_keys($pipelines);
             while (true) {
@@ -262,7 +288,7 @@ function filter(\Closure $filter): PipelineOperator
  */
 function postpone(float $delay): PipelineOperator
 {
-    return postponeWhen(new AsyncGenerator(static function () use ($delay): \Generator {
+    return postponeWhen(fromIterable(static function () use ($delay): \Generator {
         while (true) {
             delay($delay);
             yield 0;
@@ -391,11 +417,11 @@ function sampleWhen(Pipeline $sampleWhen): PipelineOperator
 function sampleInterval(float $period): PipelineOperator
 {
     return sampleWhen(
-        (new AsyncGenerator(static function (): \Generator {
+        fromIterable(static function (): \Generator {
             while (true) {
                 yield 0;
             }
-        }))->pipe(postpone($period))
+        })->pipe(postpone($period))
     );
 }
 

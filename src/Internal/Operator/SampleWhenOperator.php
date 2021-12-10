@@ -4,11 +4,11 @@ namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\DeferredFuture;
 use Amp\Future;
-use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Pipeline;
 use Amp\Pipeline\PipelineOperator;
 use Revolt\EventLoop;
 use function Amp\async;
+use function Amp\Pipeline\fromIterable;
 
 /**
  * @template TValue
@@ -42,7 +42,7 @@ final class SampleWhenOperator implements PipelineOperator
             }
         });
 
-        return new AsyncGenerator(function () use (&$sampled, &$current, $deferred): \Generator {
+        return fromIterable(function () use (&$sampled, &$current, $deferred): \Generator {
             while (
                 Future\race([
                     $deferred->getFuture(),

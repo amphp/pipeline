@@ -2,9 +2,9 @@
 
 namespace Amp\Pipeline\Internal\Operator;
 
-use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Pipeline;
 use Amp\Pipeline\PipelineOperator;
+use function Amp\Pipeline\fromIterable;
 
 /**
  * @template TValue
@@ -21,7 +21,7 @@ final class PostponeWhenOperator implements PipelineOperator
 
     public function pipe(Pipeline $pipeline): Pipeline
     {
-        return new AsyncGenerator(function () use ($pipeline): \Generator {
+        return fromIterable(function () use ($pipeline): \Generator {
             while ($this->postpone->continue() !== null) {
                 $value = $pipeline->continue();
                 if ($value === null) {

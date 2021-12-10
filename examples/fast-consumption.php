@@ -3,13 +3,13 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Amp\Pipeline\AsyncGenerator;
 use function Amp\async;
 use function Amp\delay;
+use function Amp\Pipeline\fromIterable;
 
 try {
     /** @psalm-var AsyncGenerator<int> $pipeline */
-    $pipeline = new AsyncGenerator(function (): \Generator {
+    $pipeline = fromIterable(function (): \Generator {
         yield 1;
         delay(0.5);
         yield 2;
