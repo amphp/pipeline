@@ -299,12 +299,20 @@ function filter(\Closure $filter): PipelineOperator
  */
 function postpone(float $delay): PipelineOperator
 {
-    return postponeWhen(fromIterable(static function () use ($delay): \Generator {
-        while (true) {
-            delay($delay);
-            yield 0;
+    $emitter = new Emitter;
+
+    EventLoop::queue(static function () use ($emitter, $delay): void {
+        try {
+            while (true) {
+                delay($delay);
+                $emitter->yield(0);
+            }
+        } catch (\Throwable $exception) {
+            $emitter->error($exception);
         }
-    }));
+    });
+
+    return postponeWhen($emitter->pipe());
 }
 
 /**
