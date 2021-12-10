@@ -458,7 +458,7 @@ class EmitterTest extends AsyncTestCase
         self::assertTrue($source->emit('.')->isComplete());
     }
 
-    private function provideBufferSize(): iterable
+    public function provideBufferSize(): iterable
     {
         yield 'buffer size 0' => [0];
         yield 'buffer size 1' => [1];
