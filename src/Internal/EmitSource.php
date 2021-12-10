@@ -47,6 +47,10 @@ final class EmitSource
 
     public function __construct(int $bufferSize = 0)
     {
+        if ($bufferSize < 0) {
+            throw new \ValueError('Argument #1 ($bufferSize) must be greater than or equal to 0, got ' . $bufferSize);
+        }
+
         $this->bufferSize = $bufferSize;
     }
 
