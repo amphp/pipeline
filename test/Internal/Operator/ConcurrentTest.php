@@ -16,7 +16,7 @@ class ConcurrentTest extends AsyncTestCase
         $source = new Emitter;
 
         $pipeline = $source->pipe()->pipe(
-            Pipeline\concurrentOrdered(
+            Pipeline\concurrent(
                 new LocalSemaphore(3),
                 Pipeline\map($this->createCallback(0)),
             )
@@ -27,14 +27,14 @@ class ConcurrentTest extends AsyncTestCase
         self::assertSame(0, Pipeline\discard($pipeline));
     }
 
-    public function testUnorderedConcurrency(): void
+    public function testConcurrency(): void
     {
         $range = \range(0, 100);
 
         $source = Pipeline\fromIterable($range);
 
         $pipeline = $source->pipe(
-            Pipeline\concurrentUnordered(
+            Pipeline\concurrent(
                 new LocalSemaphore(10),
                 Pipeline\tap(fn (int $value) => delay(\random_int(0, 10) / 1000)),
             )
@@ -49,31 +49,13 @@ class ConcurrentTest extends AsyncTestCase
         }
     }
 
-    public function testOrderedConcurrency(): void
-    {
-        $range = \range(0, 100);
-
-        $source = Pipeline\fromIterable($range);
-
-        $pipeline = $source->pipe(
-            Pipeline\concurrentOrdered(
-                new LocalSemaphore(10),
-                Pipeline\tap(fn (int $value) => delay(\random_int(0, 10) / 1000)),
-            )
-        );
-
-        $results = \iterator_to_array($pipeline);
-
-        self::assertSame($range, $results); // Arrays should match as values are emitted in order.
-    }
-
     public function testPipelineFails(): void
     {
         $exception = new TestException;
         $source = new Emitter;
 
         $pipeline = $source->pipe()->pipe(
-            Pipeline\concurrentOrdered(
+            Pipeline\concurrent(
                 new LocalSemaphore(3),
                 Pipeline\tap($this->createCallback(1)),
             )
@@ -97,9 +79,9 @@ class ConcurrentTest extends AsyncTestCase
         $source = Pipeline\fromIterable($range);
 
         $pipeline = $source->pipe(
-            Pipeline\concurrentOrdered(
+            Pipeline\concurrent(
                 new LocalSemaphore(3),
-                Pipeline\tap($this->createCallback(4)),
+                Pipeline\tap($this->createCallback(3)),
             )
         );
 

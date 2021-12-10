@@ -22,12 +22,10 @@ final class ConcurrentOperator implements PipelineOperator
     /**
      * @param Semaphore $semaphore Concurrency limited to number of locks provided by the semaphore.
      * @param PipelineOperator[] $operators Set of operators to apply to each concurrent pipeline.
-     * @param bool $ordered True to maintain order of emissions on output pipeline.
      */
     public function __construct(
         private Semaphore $semaphore,
         private array $operators,
-        private bool $ordered,
     ) {
     }
 
@@ -37,10 +35,7 @@ final class ConcurrentOperator implements PipelineOperator
 
         EventLoop::queue(function () use ($pipeline, $destination): void {
             $queue = new \SplQueue();
-            $emitters = new \ArrayObject();
-
-            // Add initial source which will dispose of destination if no values are emitted.
-            $queue->push($this->createEmitter($destination, $queue, $emitters));
+            $emitters = new \SplObjectStorage();
 
             $previous = Future::complete();
 
@@ -58,12 +53,9 @@ final class ConcurrentOperator implements PipelineOperator
                         $emitter = $queue->shift();
                     }
 
-                    $deferred = new DeferredFuture();
-                    $emitter->emit([$value, $lock, $previous, $deferred]);
-                    $previous = $deferred->getFuture();
+                    $previous->ignore();
+                    $previous = $emitter->emit([$value, $lock]);
                 }
-
-                $previous->await();
             } catch (\Throwable $exception) {
                 try {
                     $previous->await();
@@ -75,6 +67,10 @@ final class ConcurrentOperator implements PipelineOperator
                     $destination->error($exception);
                 }
             } finally {
+                if ($emitters->count() === 0 && !$destination->isComplete()) {
+                    $destination->complete();
+                }
+
                 foreach ($emitters as $emitter) {
                     $emitter->complete();
                 }
@@ -84,19 +80,18 @@ final class ConcurrentOperator implements PipelineOperator
         return $destination->pipe();
     }
 
-    private function createEmitter(Emitter $destination, \SplQueue $queue, \ArrayObject $emitters): Emitter
+    private function createEmitter(Emitter $destination, \SplQueue $queue, \SplObjectStorage $emitters): Emitter
     {
         $emitter = new Emitter();
-        $emitters->append($emitter);
+        $emitters->attach($emitter);
+        $pending = 0;
 
-        EventLoop::queue(function () use ($emitters, $emitter, $destination, $queue): void {
+        EventLoop::queue(function () use (&$pending, $emitters, $emitter, $destination, $queue): void {
             $operatorEmitter = new Emitter();
             $operatorPipeline = $operatorEmitter->pipe();
             foreach ($this->operators as $operator) {
                 $operatorPipeline = $operator->pipe($operatorPipeline);
             }
-
-            $deferred = null;
 
             try {
                 /**
@@ -105,42 +100,54 @@ final class ConcurrentOperator implements PipelineOperator
                  * @var Future $previous
                  * @var DeferredFuture $deferred
                  */
-                foreach ($emitter->pipe() as [$value, $lock, $previous, $deferred]) {
-                    $operatorEmitter->emit($value)->ignore();
-                    $previous->ignore();
+                foreach ($emitter->pipe() as [$value, $lock]) {
+                    ++$pending;
+                    EventLoop::queue(static function () use (
+                        &$pending,
+                        $emitter,
+                        $queue,
+                        $emitters,
+                        $operatorEmitter,
+                        $operatorPipeline,
+                        $value,
+                        $destination,
+                    ): void {
+                        try {
+                            if (null === $value = $operatorPipeline->continue()) {
+                                return;
+                            }
+
+                            if ($destination->isComplete()) {
+                                return;
+                            }
+
+                            $destination->yield($value);
+                        } catch (\Throwable $exception) {
+                            if (!$destination->isComplete()) {
+                                $destination->error($exception);
+                            }
+                            $operatorPipeline->dispose();
+                        } finally {
+                            --$pending;
+                            if ($pending === 0 && $emitter->isComplete()) {
+                                $emitters->detach($emitter);
+                                if ($emitters->count() === 0) {
+                                    $destination->complete();
+                                }
+                            }
+                        }
+                    });
 
                     try {
-                        if (null === $value = $operatorPipeline->continue()) {
-                            break;
-                        }
+                        $operatorEmitter->yield($value);
                     } finally {
                         $queue->push($emitter);
                         $lock->release();
                     }
-
-                    if ($this->ordered) {
-                        $previous->await();
-                    }
-
-                    $deferred->complete();
-
-                    if ($destination->isComplete()) {
-                        break;
-                    }
-
-                    $destination->yield($value);
                 }
 
                 $operatorEmitter->complete();
-
-                // Only complete the destination once all outstanding pipelines have completed.
-                if ($queue->count() === $emitters->count() && !$destination->isComplete()) {
-                    $destination->complete();
-                }
             } catch (\Throwable $exception) {
-                if ($deferred && !$deferred->isComplete()) {
-                    $deferred?->error($exception);
-                }
                 $operatorEmitter->error($exception);
                 if (!$destination->isComplete()) {
                     $destination->error($exception);

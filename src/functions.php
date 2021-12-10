@@ -178,7 +178,6 @@ function zip(array $pipelines): Pipeline
 /**
  * Concurrently act on a pipeline using the given set of operators. The resulting pipeline will *not* necessarily be
  * in the same order as the source pipeline, however, items are emitted as soon as they are available.
- * Use {@see concurrentOrdered()} if item order matters.
  *
  * @template TValue
  * @template TResult
@@ -188,30 +187,9 @@ function zip(array $pipelines): Pipeline
  *
  * @return PipelineOperator<TValue, TResult>
  */
-function concurrentUnordered(Semaphore $semaphore, PipelineOperator ...$operators): PipelineOperator
+function concurrent(Semaphore $semaphore, PipelineOperator ...$operators): PipelineOperator
 {
-    return new Internal\Operator\ConcurrentOperator($semaphore, $operators, false);
-}
-
-/**
- * Concurrently act on a pipeline using the given set of operators. The resulting pipeline will maintain the original
- * order of items emitted from the source. Note that items that take a long time to process may then delay the emission
- * of subsequent items that were processed faster. Slow items do not block processing further items, but will prevent
- * emitting subsequent values on the returned pipeline that were previously emitted from the source until the slow
- * item has completed.
- * Use {@see concurrentUnordered()} if order does not matter.
- *
- * @template TValue
- * @template TResult
- *
- * @param Semaphore $semaphore Semaphore limiting the concurrency, e.g. {@see LocalSemaphore}.
- * @param PipelineOperator ...$operators Set of operators to act upon each value emitted. See {@see Pipeline::pipe()}.
- *
- * @return PipelineOperator<TValue, TResult>
- */
-function concurrentOrdered(Semaphore $semaphore, PipelineOperator ...$operators): PipelineOperator
-{
-    return new Internal\Operator\ConcurrentOperator($semaphore, $operators, true);
+    return new Internal\Operator\ConcurrentOperator($semaphore, $operators);
 }
 
 /**

@@ -15,13 +15,13 @@ $pipeline = new AsyncGenerator(function (): \Generator {
 });
 
 $results = $pipeline->pipe(
-    // Output from Pipeline\concurrentOrdered() will come in "bursts" as slower values prevent emitting prior values.
-    Pipeline\concurrentOrdered( // Change to Pipeline\concurrentUnordered() for unordered output.
+    Pipeline\concurrent(
         new LocalSemaphore(10),
         Pipeline\map(function (int $input): int {
             delay(\random_int(1, 10) / 10); // Delay for 0.1 to 1 seconds, simulating I/O.
             return $input * 10;
-        })
+        }),
+        Pipeline\filter(fn (int $input) => $input % 3 === 0) // Filter only values divisible by 3.
     ),
 );
 
