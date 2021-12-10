@@ -3,6 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
+use Amp\Pipeline\Internal\AutoDisposingPipeline;
 use Amp\Sync\Semaphore;
 use Revolt\EventLoop;
 use function Amp\async;
@@ -36,7 +37,14 @@ function share(Pipeline $pipeline): Source
 function fromIterable(\Closure|iterable $iterable): Pipeline
 {
     if ($iterable instanceof \Closure) {
-        $iterable = $iterable();
+        try {
+            $iterable = $iterable();
+        } catch (\Throwable $exception) {
+            $source = new Internal\EmitSource();
+            $source->error($exception);
+            return new AutoDisposingPipeline($source);
+        }
+
         if (!\is_iterable($iterable)) {
             throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
         }
