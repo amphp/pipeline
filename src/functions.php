@@ -115,13 +115,9 @@ function concat(array $pipelines): Pipeline
     }
 
     return new AsyncGenerator(static function () use ($pipelines): \Generator {
-        try {
-            foreach ($pipelines as $pipeline) {
-                yield from $pipeline;
-            }
-        } finally {
-            foreach ($pipelines as $pipeline) {
-                $pipeline->dispose();
+        foreach ($pipelines as $pipeline) {
+            foreach ($pipeline as $value) {
+                yield $value;
             }
         }
     });
@@ -152,25 +148,19 @@ function zip(array $pipelines): Pipeline
     }
 
     return new AsyncGenerator(static function () use ($pipelines): \Generator {
-        try {
-            $keys = \array_keys($pipelines);
-            while (true) {
-                $next = Future\all(\array_map(
-                    static fn (Pipeline $pipeline) => async(static fn () => $pipeline->continue()),
-                    $pipelines
-                ));
+        $keys = \array_keys($pipelines);
+        while (true) {
+            $next = Future\all(\array_map(
+                static fn (Pipeline $pipeline) => async(static fn () => $pipeline->continue()),
+                $pipelines
+            ));
 
-                if (\in_array(needle: null, haystack: $next, strict: true)) {
-                    return;
-                }
+            if (\in_array(needle: null, haystack: $next, strict: true)) {
+                return;
+            }
 
-                // Reconstruct emit array to ensure keys are in same iteration order as pipelines.
-                yield \array_map(static fn ($key) => $next[$key], $keys);
-            }
-        } finally {
-            foreach ($pipelines as $pipeline) {
-                $pipeline->dispose();
-            }
+            // Reconstruct emit array to ensure keys are in same iteration order as pipelines.
+            yield \array_map(static fn ($key) => $next[$key], $keys);
         }
     });
 }

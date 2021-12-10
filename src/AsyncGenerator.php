@@ -40,11 +40,8 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
 
         EventLoop::queue(static function () use ($generator, $source): void {
             try {
-                $yielded = $generator->current();
-
-                while ($generator->valid()) {
-                    $source->yield($yielded);
-                    $yielded = $generator->send(null);
+                foreach ($generator as $value) {
+                    $source->yield($value);
                 }
 
                 $source->complete();
@@ -52,11 +49,6 @@ final class AsyncGenerator implements Pipeline, \IteratorAggregate
                 $source->error($exception);
             }
         });
-    }
-
-    public function __destruct()
-    {
-        $this->source->destroy();
     }
 
     /**

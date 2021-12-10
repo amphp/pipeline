@@ -106,16 +106,6 @@ final class EmitSource
      */
     public function dispose(): void
     {
-        $this->cancel(true);
-    }
-
-    public function destroy(): void
-    {
-        $this->cancel(false);
-    }
-
-    private function cancel(bool $cancelPending): void
-    {
         try {
             if ($this->completed || $this->disposed) {
                 return; // Pipeline already completed or failed.
@@ -123,7 +113,7 @@ final class EmitSource
 
             $this->finalize(new DisposedException, true);
         } finally {
-            if ($this->disposed && $cancelPending) {
+            if ($this->disposed) {
                 $this->triggerDisposal();
             }
         }

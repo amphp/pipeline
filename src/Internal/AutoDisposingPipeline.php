@@ -28,7 +28,7 @@ final class AutoDisposingPipeline implements Pipeline, \IteratorAggregate
 
     public function __destruct()
     {
-        $this->source->destroy();
+        $this->source->dispose();
     }
 
     public function continue(?Cancellation $cancellation = null): mixed

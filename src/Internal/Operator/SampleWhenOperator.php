@@ -4,7 +4,7 @@ namespace Amp\Pipeline\Internal\Operator;
 
 use Amp\DeferredFuture;
 use Amp\Future;
-use Amp\Pipeline\AsyncGenerator;
+use Amp\Pipeline\Emitter;
 use Amp\Pipeline\Pipeline;
 use Amp\Pipeline\PipelineOperator;
 use Revolt\EventLoop;
@@ -42,20 +42,31 @@ final class SampleWhenOperator implements PipelineOperator
             }
         });
 
-        return new AsyncGenerator(function () use (&$sampled, &$current, $deferred): \Generator {
-            while (
-                Future\race([
-                    $deferred->getFuture(),
-                    async(fn () => $this->sampleWhen->continue())
-                ]) !== null
-            ) {
-                if ($sampled) {
-                    continue;
-                }
+        $emitter = new Emitter();
+        $sampleWhen = $this->sampleWhen;
+        EventLoop::queue(static function () use (&$sampled, &$current, $sampleWhen, $deferred, $emitter): void {
+            try {
+                while (
+                    Future\race([
+                        $deferred->getFuture(),
+                        async(static fn () => $sampleWhen->continue())
+                    ]) !== null
+                ) {
+                    if ($sampled) {
+                        continue;
+                    }
 
-                $sampled = true;
-                yield $current;
+                    $sampled = true;
+                    $emitter->yield($current);
+                }
+            } catch (\Throwable $exception) {
+                $emitter->error($exception);
+                return;
             }
+
+            $emitter->complete();
         });
+
+        return $emitter->pipe();
     }
 }
