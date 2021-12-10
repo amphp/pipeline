@@ -8,16 +8,16 @@ use Amp\PHPUnit\TestException;
 use function Amp\delay;
 use function Amp\now;
 
-class AsyncGeneratorTest extends AsyncTestCase
+class FromIterableGeneratorTest extends AsyncTestCase
 {
     private const TIMEOUT = 0.1;
 
     public function testNonGeneratorClosure(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Return value must be of type Generator, null returned');
+        $this->expectExceptionMessage('Return value of argument #1 ($iterable) must be of type iterable, null returned');
 
-        $generator = new AsyncGenerator(static fn () => null);
+        $generator = fromIterable(static fn () => null);
 
         $generator->continue();
     }
@@ -28,7 +28,7 @@ class AsyncGeneratorTest extends AsyncTestCase
 
         $this->expectExceptionObject($exception);
 
-        $generator = new AsyncGenerator(static fn () => throw $exception);
+        $generator = fromIterable(static fn () => throw $exception);
 
         $generator->continue();
     }
@@ -37,7 +37,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     {
         $value = 1;
 
-        $generator = new AsyncGenerator(function () use ($value) {
+        $generator = fromIterable(function () use ($value) {
             yield $value;
         });
 
@@ -53,7 +53,7 @@ class AsyncGeneratorTest extends AsyncTestCase
         $exception = new TestException;
         $deferred = new DeferredFuture;
 
-        $generator = new AsyncGenerator(function () use ($deferred) {
+        $generator = fromIterable(function () use ($deferred) {
             yield $deferred->getFuture()->await();
         });
 
@@ -75,7 +75,7 @@ class AsyncGeneratorTest extends AsyncTestCase
         $output = '';
         $yields = 5;
 
-        $generator = new AsyncGenerator(function () use (&$time, $yields) {
+        $generator = fromIterable(function () use (&$time, $yields) {
             $time = now();
             for ($i = 0; $i < $yields; ++$i) {
                 yield $i;
@@ -102,7 +102,7 @@ class AsyncGeneratorTest extends AsyncTestCase
         $exception = new TestException;
 
         try {
-            $generator = new AsyncGenerator(function () use ($exception) {
+            $generator = fromIterable(function () use ($exception) {
                 yield 1;
                 throw $exception;
             });
@@ -119,7 +119,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     public function testDisposal(): void
     {
         $invoked = false;
-        $generator = new AsyncGenerator(function () use (&$invoked) {
+        $generator = fromIterable(function () use (&$invoked) {
             try {
                 yield 0;
                 yield 1;
@@ -150,7 +150,7 @@ class AsyncGeneratorTest extends AsyncTestCase
      */
     public function testYieldAfterDisposal(): void
     {
-        $generator = new AsyncGenerator(function () {
+        $generator = fromIterable(function () {
             try {
                 yield 0;
             } catch (DisposedException) {
@@ -167,7 +167,7 @@ class AsyncGeneratorTest extends AsyncTestCase
 
     public function testGetReturnAfterDisposal(): void
     {
-        $generator = new AsyncGenerator(function () {
+        $generator = fromIterable(function () {
             try {
                 yield 0;
             } catch (DisposedException) {
@@ -188,7 +188,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     public function testGeneratorStartsOnlyAfterCallingContinue(): void
     {
         $invoked = false;
-        $generator = new AsyncGenerator(function () use (&$invoked) {
+        $generator = fromIterable(function () use (&$invoked) {
             $invoked = true;
             yield 0;
         });
@@ -205,7 +205,7 @@ class AsyncGeneratorTest extends AsyncTestCase
     {
         $values = [];
 
-        $generator = new AsyncGenerator(function () {
+        $generator = fromIterable(function () {
             yield 1;
             yield 2;
             yield 3;

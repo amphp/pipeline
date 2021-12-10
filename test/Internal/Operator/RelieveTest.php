@@ -5,7 +5,6 @@ namespace Amp\Pipeline\Internal\Operator;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\DisposedException;
 use Amp\Pipeline\Emitter;
 use function Amp\async;
@@ -17,7 +16,7 @@ class RelieveTest extends AsyncTestCase
     {
         $this->expectOutputString('Done123');
 
-        $pipeline = new AsyncGenerator(function () {
+        $pipeline = Pipeline\fromIterable(function () {
             yield 1;
             yield 2;
             yield 3;

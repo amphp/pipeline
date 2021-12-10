@@ -3,6 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
+use Amp\Pipeline\Internal\AutoDisposingPipeline;
 use Amp\Sync\Semaphore;
 use Revolt\EventLoop;
 use function Amp\async;
@@ -29,13 +30,36 @@ function share(Pipeline $pipeline): Source
  *
  * @template TValue
  *
- * @param iterable<array-key, TValue> $iterable Elements to emit.
+ * @param iterable<array-key, TValue>|\Closure():iterable<array-key, TValue> $iterable Elements to emit.
  *
  * @return Pipeline<TValue>
  */
-function fromIterable(iterable $iterable): Pipeline
+function fromIterable(\Closure|iterable $iterable): Pipeline
 {
-    return $iterable instanceof Pipeline ? $iterable : new AsyncGenerator(static fn () => yield from $iterable);
+    if ($iterable instanceof \Closure) {
+        try {
+            $iterable = $iterable();
+        } catch (\Throwable $exception) {
+            $source = new Internal\EmitSource();
+            $source->error($exception);
+            return new AutoDisposingPipeline($source);
+        }
+
+        if (!\is_iterable($iterable)) {
+            throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
+        }
+    }
+
+    if ($iterable instanceof Pipeline) {
+        return $iterable;
+    }
+
+    /** @psalm-suppress RedundantConditionGivenDocblockType */
+    if (!$iterable instanceof \Generator) {
+        $iterable = (static fn () => yield from $iterable)();
+    }
+
+    return new Internal\GeneratorPipeline($iterable);
 }
 
 /**
@@ -230,7 +254,7 @@ function filter(\Closure $filter): PipelineOperator
  */
 function postpone(float $delay): PipelineOperator
 {
-    return postponeWhen(new AsyncGenerator(static function () use ($delay): \Generator {
+    return postponeWhen(fromIterable(static function () use ($delay): \Generator {
         while (true) {
             delay($delay);
             yield 0;
@@ -359,11 +383,11 @@ function sampleWhen(Pipeline $sampleWhen): PipelineOperator
 function sampleInterval(float $period): PipelineOperator
 {
     return sampleWhen(
-        (new AsyncGenerator(static function (): \Generator {
+        fromIterable(static function (): \Generator {
             while (true) {
                 yield 0;
             }
-        }))->pipe(postpone($period))
+        })->pipe(postpone($period))
     );
 }
 

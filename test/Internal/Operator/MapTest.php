@@ -5,7 +5,6 @@ namespace Amp\Pipeline\Internal\Operator;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\AsyncGenerator;
 use Amp\Pipeline\Emitter;
 
 class MapTest extends AsyncTestCase
@@ -24,7 +23,7 @@ class MapTest extends AsyncTestCase
     {
         $count = 0;
         $values = [1, 2, 3];
-        $generator = new AsyncGenerator(function () use ($values) {
+        $generator = Pipeline\fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
@@ -50,7 +49,7 @@ class MapTest extends AsyncTestCase
         $values = [1, 2, 3];
         $exception = new TestException;
 
-        $generator = new AsyncGenerator(function () use ($values) {
+        $generator = Pipeline\fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
