@@ -41,7 +41,7 @@ final class GeneratorPipeline implements Pipeline, \IteratorAggregate
      */
     public function continue(?Cancellation $cancellation = null): mixed
     {
-        return $this->source->continue();
+        return $this->source->continue($cancellation);
     }
 
     /**
