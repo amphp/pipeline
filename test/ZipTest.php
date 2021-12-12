@@ -52,15 +52,15 @@ class ZipTest extends AsyncTestCase
             $this->asyncValue(0.1, 4),
         ];
         $values2 = [$this->asyncValue(0.02, 4), $this->asyncValue(0.04, 5), $this->asyncValue(0.06, 6)];
-        $expected = [[1, 4], [2, 5], [3, 6]];
+        $expected = [['one' => 1, 'two' => 4], ['one' => 2, 'two' => 5], ['one' => 3, 'two' => 6]];
 
-        $pipelines[] = fromIterable(function () use ($values1) {
+        $pipelines['one'] = fromIterable(function () use ($values1) {
             foreach ($values1 as $value) {
                 yield $value->await();
             }
         });
 
-        $pipelines[] = fromIterable(function () use ($values2) {
+        $pipelines['two'] = fromIterable(function () use ($values2) {
             foreach ($values2 as $value) {
                 yield $value->await();
             }

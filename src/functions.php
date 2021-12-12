@@ -172,19 +172,24 @@ function zip(array $pipelines): Pipeline
     }
 
     return fromIterable(static function () use ($pipelines): \Generator {
-        $keys = \array_keys($pipelines);
         while (true) {
             $next = Future\all(\array_map(
                 static fn (Pipeline $pipeline) => async(static fn () => $pipeline->continue()),
                 $pipelines
             ));
 
-            if (\in_array(needle: null, haystack: $next, strict: true)) {
-                return;
+            // Reconstruct emit array to ensure keys are in same iteration order as pipelines.
+            $emit = [];
+            foreach ($pipelines as $key => $pipeline) {
+                $value = $next[$key];
+                if ($value === null) {
+                    return;
+                }
+
+                $emit[$key] = $value;
             }
 
-            // Reconstruct emit array to ensure keys are in same iteration order as pipelines.
-            yield \array_map(static fn ($key) => $next[$key], $keys);
+            yield $emit;
         }
     });
 }
