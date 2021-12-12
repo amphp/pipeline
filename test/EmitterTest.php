@@ -400,6 +400,34 @@ class EmitterTest extends AsyncTestCase
         $future2->await();
     }
 
+    public function testCancellationThenEmitAdditionalValues(): void
+    {
+        $pipeline = $this->source->pipe();
+
+        $cancellationSource = new DeferredCancellation();
+
+        $future1 = async(fn () => $pipeline->continue());
+        $future2 = async(fn () => $pipeline->continue($cancellationSource->getCancellation()));
+
+        $cancellationSource->cancel();
+
+        delay(0); // Tick event loop to trigger cancellation callback.
+
+        $this->source->emit(1);
+        $this->source->emit(2);
+        $this->source->emit(3);
+
+        self::assertSame(1, $future1->await());
+
+        self::assertSame(2, $pipeline->continue());
+        self::assertSame(3, $pipeline->continue());
+
+        $this->source->complete();
+
+        $this->expectException(CancelledException::class);
+        $future2->await();
+    }
+
     public function testCancellationAfterEmitted(): void
     {
         $pipeline = $this->source->pipe();

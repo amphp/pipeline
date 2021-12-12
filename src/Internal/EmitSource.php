@@ -89,13 +89,16 @@ final class EmitSource
 
         if ($cancellation) {
             $waiting = &$this->waiting;
+            $emitPosition = &$this->emitPosition;
             $id = $cancellation->subscribe(static function (\Throwable $exception) use (
                 &$waiting,
-                $suspension
+                &$emitPosition,
+                $suspension,
             ): void {
                 foreach ($waiting as $key => $pending) {
                     if ($pending === $suspension) {
                         unset($waiting[$key]);
+                        ++$emitPosition;
                         $suspension->throw($exception);
                         return;
                     }
