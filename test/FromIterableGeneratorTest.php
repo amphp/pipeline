@@ -97,7 +97,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
     /**
      * @depends testYield
      */
-    public function testAsyncGeneratorThrows(): void
+    public function testGeneratorThrows(): void
     {
         $exception = new TestException;
 

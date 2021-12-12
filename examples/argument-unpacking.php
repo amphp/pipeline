@@ -32,7 +32,7 @@ try {
         yield 10;
     });
 
-    echo "Unpacking AsyncGenerator, please wait...\n";
+    echo "Unpacking arguments, please wait...\n";
     \var_dump(...$pipeline);
 } catch (\Exception $exception) {
     \printf("Exception: %s\n", (string) $exception);

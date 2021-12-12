@@ -138,7 +138,7 @@ function concat(array $pipelines): Pipeline
         }
     }
 
-    return new AsyncGenerator(static function () use ($pipelines): \Generator {
+    return fromIterable(static function () use ($pipelines): \Generator {
         foreach ($pipelines as $pipeline) {
             foreach ($pipeline as $value) {
                 yield $value;
@@ -171,7 +171,7 @@ function zip(array $pipelines): Pipeline
         }
     }
 
-    return new AsyncGenerator(static function () use ($pipelines): \Generator {
+    return fromIterable(static function () use ($pipelines): \Generator {
         $keys = \array_keys($pipelines);
         while (true) {
             $next = Future\all(\array_map(
