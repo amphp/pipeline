@@ -36,7 +36,7 @@ final class ConcurrentOperator implements PipelineOperator
         EventLoop::queue(function () use ($pipeline, $destination): void {
             $queue = new \SplQueue();
             $emitters = new \SplObjectStorage();
-
+            $pending = 0;
             $previous = Future::complete();
 
             try {
@@ -48,7 +48,7 @@ final class ConcurrentOperator implements PipelineOperator
                     }
 
                     if ($queue->isEmpty()) {
-                        $emitter = $this->createEmitter($destination, $queue, $emitters);
+                        $emitter = $this->createEmitter($destination, $queue, $emitters, $pending);
                     } else {
                         $emitter = $queue->shift();
                     }
@@ -67,10 +67,11 @@ final class ConcurrentOperator implements PipelineOperator
                     $destination->error($exception);
                 }
             } finally {
-                if ($emitters->count() === 0 && !$destination->isComplete()) {
+                if ($pending === 0 && !$destination->isComplete()) {
                     $destination->complete();
                 }
 
+                /** @var Emitter $emitter */
                 foreach ($emitters as $emitter) {
                     $emitter->complete();
                 }
@@ -80,11 +81,14 @@ final class ConcurrentOperator implements PipelineOperator
         return $destination->pipe();
     }
 
-    private function createEmitter(Emitter $destination, \SplQueue $queue, \SplObjectStorage $emitters): Emitter
-    {
+    private function createEmitter(
+        Emitter $destination,
+        \SplQueue $queue,
+        \SplObjectStorage $emitters,
+        int &$pending
+    ): Emitter {
         $emitter = new Emitter();
         $emitters->attach($emitter);
-        $pending = 0;
 
         EventLoop::queue(function () use (&$pending, $emitters, $emitter, $destination, $queue): void {
             $operatorEmitter = new Emitter();
@@ -127,14 +131,15 @@ final class ConcurrentOperator implements PipelineOperator
                                 $destination->error($exception);
                             }
                             $operatorPipeline->dispose();
+                            return;
                         } finally {
                             --$pending;
-                            if ($pending === 0 && $emitter->isComplete()) {
-                                $emitters->detach($emitter);
-                                if ($emitters->count() === 0) {
-                                    $destination->complete();
-                                }
-                            }
+                        }
+
+                        \assert($pending >= 0);
+
+                        if ($pending === 0 && $emitter->isComplete() && !$destination->isComplete()) {
+                            $destination->complete();
                         }
                     });
 
