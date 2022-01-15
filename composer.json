@@ -27,8 +27,7 @@
     "require": {
         "php": ">=8",
         "amphp/amp": "^3",
-        "amphp/sync": "^2",
-        "revolt/event-loop": "^0.1"
+        "revolt/event-loop": "^0.1 | ^0.2"
     },
     "require-dev": {
         "amphp/phpunit-util": "^3",
@@ -36,7 +35,7 @@
         "friendsofphp/php-cs-fixer": "^2.3",
         "amphp/php-cs-fixer-config": "dev-master",
         "psalm/phar": "^4.12",
-        "jetbrains/phpstorm-stubs": "^2019.3"
+        "jetbrains/phpstorm-stubs": "^2021.3"
     },
     "minimum-stability": "beta",
     "prefer-stable": true,
