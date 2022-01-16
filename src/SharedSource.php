@@ -1,24 +1,23 @@
 <?php
 
-namespace Amp\Pipeline\Internal;
+namespace Amp\Pipeline;
 
 use Amp\Future;
-use Amp\Pipeline\Emitter;
-use Amp\Pipeline\Pipeline;
-use Amp\Pipeline\Source;
 use Revolt\EventLoop;
 
 /**
  * @internal
  *
  * @template TValue
- * @template-implements Source<TValue>
  */
-final class SharedSource implements Source
+final class SharedSource
 {
     /** @var Emitter[] */
     private array $emitters = [];
 
+    /**
+     * @internal Use {@see share()} instead of directly creating an instance of this class.
+     */
     public function __construct(
         private Pipeline $pipeline,
     ) {
@@ -61,6 +60,9 @@ final class SharedSource implements Source
         });
     }
 
+    /**
+     * @return Pipeline<TValue>
+     */
     public function pipe(): Pipeline
     {
         $disperse = empty($this->emitters);

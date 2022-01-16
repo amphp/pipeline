@@ -3,8 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
-use Amp\Pipeline\Internal\AutoDisposingPipeline;
-use Amp\Sync\Semaphore;
+use Amp\Pipeline\Internal\EmitSource;
 use Revolt\EventLoop;
 use function Amp\async;
 use function Amp\delay;
@@ -18,11 +17,11 @@ use function Amp\delay;
  *
  * @param Pipeline<TValue> $pipeline
  *
- * @return Source<TValue>
+ * @return SharedSource<TValue>
  */
-function share(Pipeline $pipeline): Source
+function share(Pipeline $pipeline): SharedSource
 {
-    return new Internal\SharedSource($pipeline);
+    return new SharedSource($pipeline);
 }
 
 /**
@@ -42,7 +41,7 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         } catch (\Throwable $exception) {
             $source = new Internal\EmitSource();
             $source->error($exception);
-            return new AutoDisposingPipeline($source);
+            return new Pipeline($source);
         }
 
         if (!\is_iterable($iterable)) {
@@ -59,7 +58,21 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         $iterable = (static fn () => yield from $iterable)();
     }
 
-    return new Internal\GeneratorPipeline($iterable);
+    $source = new EmitSource();
+
+    EventLoop::queue(static function () use ($iterable, $source): void {
+        try {
+            foreach ($iterable as $value) {
+                $source->yield($value);
+            }
+
+            $source->complete();
+        } catch (\Throwable $exception) {
+            $source->error($exception);
+        }
+    });
+
+    return new Pipeline($source);
 }
 
 /**

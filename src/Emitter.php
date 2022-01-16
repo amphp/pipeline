@@ -10,9 +10,8 @@ use Amp\Future;
  * not be returned as part of a public API, but used internally to create and emit values to a Pipeline.
  *
  * @template TValue
- * @template-implements Source<TValue>
  */
-final class Emitter implements Source
+final class Emitter
 {
     /** @var Internal\EmitSource<TValue> Has public emit, complete, and fail methods. */
     private Internal\EmitSource $source;
@@ -54,7 +53,7 @@ final class Emitter implements Source
 
         $this->used = true;
 
-        return new Internal\AutoDisposingPipeline($this->source);
+        return new Pipeline($this->source);
     }
 
     /**

@@ -8,32 +8,37 @@ use Amp\Cancellation;
  * A pipeline is an asynchronous set of ordered values.
  *
  * @template TValue
- * @template-extends \Traversable<int, TValue>
+ * @template-implements \IteratorAggregate<int, TValue>
  */
-interface Pipeline extends \Traversable
+final class Pipeline implements \IteratorAggregate
 {
-    /**
-     * Returns the emitted value if the pipeline has emitted a value or null if the pipeline has completed.
-     * If the pipeline fails, the exception will be thrown from this method.
-     *
-     * This method exists primarily for async consumption of a single value within a coroutine. In general, a
-     * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
-     *
-     * @param Cancellation|null $cancellation Cancels waiting for the next emitted value. If cancelled, the next
-     * emitted value is not lost, but will be sent to the next call to this method.
-     *
-     * @return mixed Returns null if the pipeline has completed.
-     *
-     * @psalm-return TValue|null
-     */
-    public function continue(?Cancellation $cancellation = null): mixed;
+    /** @var Internal\EmitSource<TValue> */
+    private Internal\EmitSource $source;
 
     /**
-     * Disposes the pipeline, indicating the consumer is no longer interested in the pipeline output.
+     * @internal Create a Pipeline using either {@see Emitter} or {@see fromIterable()}.
      *
-     * @return void
+     * @param Internal\EmitSource $source
      */
-    public function dispose(): void;
+    public function __construct(Internal\EmitSource $source)
+    {
+        $this->source = $source;
+    }
+
+    public function __destruct()
+    {
+        $this->source->dispose();
+    }
+
+    public function continue(?Cancellation $cancellation = null): mixed
+    {
+        return $this->source->continue($cancellation);
+    }
+
+    public function dispose(): void
+    {
+        $this->source->dispose();
+    }
 
     /**
      * @template TResult
@@ -42,15 +47,35 @@ interface Pipeline extends \Traversable
      *
      * @return Pipeline<TResult>
      */
-    public function pipe(PipelineOperator ...$operators): Pipeline;
+    public function pipe(PipelineOperator ...$operators): Pipeline
+    {
+        $pipeline = $this;
+
+        foreach ($operators as $operator) {
+            $pipeline = $operator->pipe($pipeline);
+        }
+
+        /** @var Pipeline<TResult> $pipeline */
+        return $pipeline;
+    }
+
+    public function isComplete(): bool
+    {
+        return $this->source->isConsumed();
+    }
+
+    public function isDisposed(): bool
+    {
+        return $this->source->isDisposed();
+    }
 
     /**
-     * @return bool True if the pipeline has completed, either successfully or with an error.
+     * @psalm-return \Traversable<int, TValue>
      */
-    public function isComplete(): bool;
-
-    /**
-     * @return bool True if the pipeline was disposed.
-     */
-    public function isDisposed(): bool;
+    public function getIterator(): \Traversable
+    {
+        while (null !== $value = $this->source->continue()) {
+            yield $value;
+        }
+    }
 }
