@@ -41,7 +41,7 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         } catch (\Throwable $exception) {
             $source = new Internal\EmitSource();
             $source->error($exception);
-            return new Pipeline($source);
+            return new Pipeline($source, true);
         }
 
         if (!\is_iterable($iterable)) {
@@ -72,7 +72,7 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         }
     });
 
-    return new Pipeline($source);
+    return new Pipeline($source, false);
 }
 
 /**

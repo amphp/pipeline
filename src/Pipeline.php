@@ -12,22 +12,22 @@ use Amp\Cancellation;
  */
 final class Pipeline implements \IteratorAggregate
 {
-    /** @var Internal\EmitSource<TValue> */
-    private Internal\EmitSource $source;
-
     /**
      * @internal Create a Pipeline using either {@see Emitter::pipe()} or {@see fromIterable()}.
      *
-     * @param Internal\EmitSource $source
+     * @param Internal\EmitSource<TValue> $source
      */
-    public function __construct(Internal\EmitSource $source)
-    {
-        $this->source = $source;
+    public function __construct(
+        private Internal\EmitSource $source,
+        private bool $autoDispose,
+    ) {
     }
 
     public function __destruct()
     {
-        $this->source->dispose();
+        if ($this->autoDispose) {
+            $this->source->dispose();
+        }
     }
 
     /**

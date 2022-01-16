@@ -53,7 +53,7 @@ final class Emitter
 
         $this->used = true;
 
-        return new Pipeline($this->source);
+        return new Pipeline($this->source, true);
     }
 
     /**
