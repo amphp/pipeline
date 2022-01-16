@@ -48,7 +48,7 @@ try {
         }
     });
 
-    Future\all([$future1, $future2]);
+    Future\await([$future1, $future2]);
 } catch (\Throwable $exception) {
     \printf("Exception: %s\n", (string) $exception);
 }

@@ -6,8 +6,6 @@ use Amp\Future;
 use Revolt\EventLoop;
 
 /**
- * @internal
- *
  * @template TValue
  */
 final class SharedSource
@@ -31,7 +29,7 @@ final class SharedSource
         EventLoop::queue(static function () use (&$emitters, $pipeline): void {
             try {
                 foreach ($pipeline as $item) {
-                    Future\all(\array_map(static fn (Emitter $emitter) => $emitter->emit($item)->catch(
+                    Future\await(\array_map(static fn (Emitter $emitter) => $emitter->emit($item)->catch(
                         static function () use (&$emitters, $emitter, $pipeline): void {
                             foreach ($emitters as $index => $active) {
                                 if ($active === $emitter) {

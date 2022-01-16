@@ -112,7 +112,7 @@ function merge(array $pipelines): Pipeline
 
     EventLoop::queue(static function () use ($emitter, $futures, $pipelines): void {
         try {
-            Future\all($futures);
+            Future\await($futures);
 
             $emitter->complete();
         } catch (\Throwable $exception) {
@@ -186,7 +186,7 @@ function zip(array $pipelines): Pipeline
 
     return fromIterable(static function () use ($pipelines): \Generator {
         while (true) {
-            $next = Future\all(\array_map(
+            $next = Future\await(\array_map(
                 static fn (Pipeline $pipeline) => async(static fn () => $pipeline->continue()),
                 $pipelines
             ));

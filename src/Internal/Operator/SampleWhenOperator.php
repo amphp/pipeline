@@ -47,7 +47,7 @@ final class SampleWhenOperator implements PipelineOperator
         EventLoop::queue(static function () use (&$sampled, &$current, $sampleWhen, $deferred, $emitter): void {
             try {
                 while (
-                    Future\race([
+                    Future\awaitFirst([
                         $deferred->getFuture(),
                         async(static fn () => $sampleWhen->continue())
                     ]) !== null
