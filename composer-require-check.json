@@ -17,6 +17,10 @@
         "void",
         "object",
         "fromIterable",
+        "map",
+        "filter",
+        "tap",
+        "discard",
         "postpone",
         "postponeWhen",
         "sampleWhen"

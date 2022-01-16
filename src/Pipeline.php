@@ -92,12 +92,22 @@ final class Pipeline implements \IteratorAggregate
      * @param \Closure(TValue):bool $filter
      *
      * @return self<TValue>
-     *
-     * @see filter()
      */
     public function filter(\Closure $filter): self
     {
         return $this->pipe(filter($filter));
+    }
+
+    /**
+     * Invokes the given callback for each value emitted on the pipeline.
+     *
+     * @param \Closure(TValue):void $forEach
+     *
+     * @return void
+     */
+    public function forEach(\Closure $forEach): void
+    {
+        discard($this->pipe(tap($forEach)));
     }
 
     /**
