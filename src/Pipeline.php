@@ -59,6 +59,30 @@ final class Pipeline implements \IteratorAggregate
         return $pipeline;
     }
 
+    /**
+     * @template TResult
+     *
+     * @param \Closure(TValue):TResult $map
+     *
+     * @return self<TResult>
+     */
+    public function map(\Closure $map): self
+    {
+        return $this->pipe(map($map));
+    }
+
+    /**
+     * @param \Closure(TValue):bool $filter
+     *
+     * @return self<TValue>
+     *
+     * @see filter()
+     */
+    public function filter(\Closure $filter): self
+    {
+        return $this->pipe(filter($filter));
+    }
+
     public function isComplete(): bool
     {
         return $this->source->isConsumed();
