@@ -36,8 +36,8 @@ class FilterTest extends AsyncTestCase
             return (bool) ($value & 1);
         }));
 
-        while (null !== $value = $pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $value);
+        while ($pipeline->continue()) {
+            self::assertSame(\array_shift($expected), $pipeline->get());
         }
 
         self::assertSame(3, $count);

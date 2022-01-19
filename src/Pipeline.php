@@ -41,12 +41,20 @@ final class Pipeline implements \IteratorAggregate
      * @param Cancellation|null $cancellation Cancels waiting for the next emitted value. If cancelled, the next
      * emitted value is not lost, but will be sent to the next call to this method.
      *
-     * @return TValue|null Returns null if the pipeline has completed.
+     * @return bool {@code true} if a value is available, {@code false} if the pipeline has completed.
      */
-    public function continue(?Cancellation $cancellation = null): mixed
+    public function continue(?Cancellation $cancellation = null): bool
     {
         /** @noinspection PhpUnhandledExceptionInspection */
         return $this->source->continue($cancellation);
+    }
+
+    /**
+     * @return TValue
+     */
+    public function get(): mixed
+    {
+        return $this->source->get();
     }
 
     /**
@@ -133,8 +141,8 @@ final class Pipeline implements \IteratorAggregate
      */
     public function getIterator(): \Traversable
     {
-        while (null !== $value = $this->source->continue()) {
-            yield $value;
+        while ($this->source->continue()) {
+            yield $this->source->get();
         }
     }
 }

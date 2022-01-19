@@ -25,9 +25,9 @@ class SampleWhenTest extends AsyncTestCase
         );
 
         $count = 0;
-        while (null !== $value = $pipeline->continue()) {
+        while ($pipeline->continue()) {
             ++$count;
-            self::assertSame(\array_shift($expected), $value);
+            self::assertSame(\array_shift($expected), $pipeline->get());
         }
 
         self::assertSame(3, $count);
@@ -46,9 +46,9 @@ class SampleWhenTest extends AsyncTestCase
         );
 
         $count = 0;
-        while (null !== $value = $pipeline->continue()) {
+        while ($pipeline->continue()) {
             ++$count;
-            self::assertSame(\array_shift($expected), $value);
+            self::assertSame(\array_shift($expected), $pipeline->get());
         }
 
         self::assertSame(3, $count);
@@ -70,7 +70,8 @@ class SampleWhenTest extends AsyncTestCase
         $source->emit(1)->ignore();
         EventLoop::queue(fn () => $source->error($exception));
 
-        self::assertSame(1, $pipeline->continue());
+        self::assertTrue($pipeline->continue());
+        self::assertSame(1, $pipeline->get());
 
         $this->expectExceptionObject($exception);
         $pipeline->continue();
@@ -94,7 +95,8 @@ class SampleWhenTest extends AsyncTestCase
         $source->emit(1)->ignore();
         EventLoop::queue(fn () => $source->error($exception));
 
-        self::assertSame(1, $pipeline->continue());
+        self::assertTrue($pipeline->continue());
+        self::assertSame(1, $pipeline->get());
 
         $this->expectExceptionObject($exception);
         $pipeline->continue();

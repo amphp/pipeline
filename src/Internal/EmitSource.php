@@ -8,6 +8,7 @@ use Amp\Future;
 use Amp\Internal;
 use Amp\Pipeline\DisposedException;
 use Revolt\EventLoop;
+use Revolt\EventLoop\FiberLocal;
 use Revolt\EventLoop\Suspension;
 
 /**
@@ -45,6 +46,8 @@ final class EmitSource
 
     private int $bufferSize;
 
+    private FiberLocal $currentValue;
+
     public function __construct(int $bufferSize = 0)
     {
         if ($bufferSize < 0) {
@@ -52,12 +55,10 @@ final class EmitSource
         }
 
         $this->bufferSize = $bufferSize;
+        $this->currentValue = new FiberLocal(fn () => throw new \Error('Call continue() before calling get()'));
     }
 
-    /**
-     * @return TValue
-     */
-    public function continue(?Cancellation $cancellation = null): mixed
+    public function continue(?Cancellation $cancellation = null): bool
     {
         $position = $this->consumePosition++;
         $backpressurePosition = $position + $this->bufferSize;
@@ -71,21 +72,23 @@ final class EmitSource
                 : $backpressure->complete();
         }
 
-        if (isset($this->emittedValues[$position])) {
+        if (\array_key_exists($position, $this->emittedValues)) {
             $value = $this->emittedValues[$position];
             unset($this->emittedValues[$position]);
-            return $value;
+            $this->currentValue->set($value);
+            return true;
         }
 
         if ($this->completed || $this->disposed) {
             if ($this->exception) {
                 throw $this->exception;
             }
-            return null;
+
+            return false;
         }
 
         // No value has been emitted, suspend fiber to await next value.
-        $this->waiting[] = $suspension = EventLoop::createSuspension();
+        $this->waiting[] = $suspension = EventLoop::getSuspension();
 
         if ($cancellation) {
             $waiting = &$this->waiting;
@@ -107,11 +110,30 @@ final class EmitSource
         }
 
         try {
-            return $suspension->suspend();
+            $value = $suspension->suspend();
+
+            // Use $this as marker to indicate no more values
+            if ($value === $this) {
+                // TODO: Reset $this->currentValue to throw an exception
+
+                return false;
+            }
+
+            $this->currentValue->set($value);
+
+            return true;
         } finally {
             /** @psalm-suppress PossiblyUndefinedVariable $id will be defined if $cancellation is not null. */
             $cancellation?->unsubscribe($id);
         }
+    }
+
+    /**
+     * @return TValue
+     */
+    public function get(): mixed
+    {
+        return $this->currentValue->get();
     }
 
     /**
@@ -135,8 +157,8 @@ final class EmitSource
     }
 
     /**
-     * @param TValue       $value
-     * @param int          $position
+     * @param TValue $value
+     * @param int $position
      *
      * @return array|null Returns [?\Throwable, mixed] or null if no send value is available.
      *
@@ -146,10 +168,6 @@ final class EmitSource
     {
         if ($this->completed) {
             throw new \Error("Pipelines cannot emit values after calling complete");
-        }
-
-        if ($value === null) {
-            throw new \TypeError("Pipelines cannot emit NULL");
         }
 
         if (!empty($this->waiting)) {
@@ -223,7 +241,7 @@ final class EmitSource
         $next = $this->push($value, $position);
 
         if ($next === null) {
-            $this->backpressure[$position] = $suspension = EventLoop::createSuspension();
+            $this->backpressure[$position] = $suspension = EventLoop::getSuspension();
             $suspension->suspend();
             return;
         }
@@ -285,7 +303,7 @@ final class EmitSource
 
     /**
      * @param \Throwable|null $exception Failure reason or null for success.
-     * @param bool            $disposed Flag if the generator was disposed.
+     * @param bool $disposed Flag if the generator was disposed.
      *
      * @return void
      */
@@ -371,7 +389,7 @@ final class EmitSource
             if ($exception) {
                 $suspension->throw($exception);
             } else {
-                $suspension->resume();
+                $suspension->resume($this);
             }
         }
     }

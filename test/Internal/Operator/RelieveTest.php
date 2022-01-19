@@ -57,7 +57,10 @@ class RelieveTest extends AsyncTestCase
 
         $pipeline = $source->pipe()->pipe(Pipeline\relieve());
 
-        $future = async(fn () => $pipeline->continue());
+        $future = async(function () use ($pipeline) {
+            $pipeline->continue();
+            return $pipeline->get();
+        });
 
         $source->yield(1);
 

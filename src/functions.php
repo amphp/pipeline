@@ -187,7 +187,13 @@ function zip(array $pipelines): Pipeline
     return fromIterable(static function () use ($pipelines): \Generator {
         while (true) {
             $next = Future\await(\array_map(
-                static fn (Pipeline $pipeline) => async(static fn () => $pipeline->continue()),
+                static fn (Pipeline $pipeline) => async(static function () use ($pipeline) {
+                    if ($pipeline->continue()) {
+                        return [$pipeline->get()];
+                    }
+
+                    return null;
+                }),
                 $pipelines
             ));
 
@@ -199,7 +205,7 @@ function zip(array $pipelines): Pipeline
                     return;
                 }
 
-                $emit[$key] = $value;
+                $emit[$key] = $value[0];
             }
 
             yield $emit;
@@ -453,7 +459,7 @@ function discard(Pipeline $pipeline): int
 {
     $count = 0;
 
-    while (null !== $pipeline->continue()) {
+    while ($pipeline->continue()) {
         $count++;
     }
 

@@ -18,9 +18,9 @@ class SkipTest extends AsyncTestCase
         \array_shift($values); // Shift off the first value that should be skipped.
 
         $emitted = 0;
-        while (null !== $value = $pipeline->continue()) {
+        while ($pipeline->continue()) {
             $emitted++;
-            self::assertSame(\array_shift($values), $value);
+            self::assertSame(\array_shift($values), $pipeline->get());
         }
 
         self::assertSame($count - 1, $emitted);

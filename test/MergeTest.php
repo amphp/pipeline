@@ -34,8 +34,8 @@ class MergeTest extends AsyncTestCase
 
         $pipeline = Pipeline\merge($pipelines);
 
-        while (null !== $value = $pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $value);
+        while ($pipeline->continue()) {
+            self::assertSame(\array_shift($expected), $pipeline->get());
         }
     }
 
@@ -63,8 +63,8 @@ class MergeTest extends AsyncTestCase
 
         $pipeline = Pipeline\merge($pipelines);
 
-        while (null !== $value = $pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $value);
+        while ($pipeline->continue()) {
+            self::assertSame(\array_shift($expected), $pipeline->get());
         }
     }
 
@@ -83,8 +83,8 @@ class MergeTest extends AsyncTestCase
         $this->expectException(DisposedException::class);
         $this->setTimeout(0.3);
 
-        while (null !== $value = $pipeline->continue()) {
-            if ($value === 7) {
+        while ($pipeline->continue()) {
+            if ($pipeline->get() === 7) {
                 $pipeline->dispose();
             }
         }

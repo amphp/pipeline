@@ -28,7 +28,8 @@ class EmitterTest extends AsyncTestCase
         $pipeline = $this->source->pipe();
 
         self::assertFalse($future->isComplete());
-        self::assertSame($value, $pipeline->continue());
+        self::assertTrue($pipeline->continue());
+        self::assertSame($value, $pipeline->get());
         self::assertTrue($future->isComplete());
 
         // Future will not complete until another value is emitted or pipeline completed.
@@ -43,7 +44,7 @@ class EmitterTest extends AsyncTestCase
 
         self::assertTrue($this->source->isComplete());
 
-        self::assertNull($continue->await());
+        self::assertFalse($continue->await());
     }
 
     public function testFail(): void
@@ -78,10 +79,11 @@ class EmitterTest extends AsyncTestCase
      */
     public function testEmittingNull(): void
     {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Pipelines cannot emit NULL');
+        $this->source->emit(null);
 
-        $this->source->emit(null)->await();
+        $pipe = $this->source->pipe();
+        self::assertTrue($pipe->continue());
+        self::assertNull($pipe->get());
     }
 
     public function testDoubleComplete(): void
@@ -114,17 +116,24 @@ class EmitterTest extends AsyncTestCase
 
     public function testEmitAfterContinue(): void
     {
-        $value = 'Emited Value';
+        $value = 'Emitted Value';
 
         $pipeline = $this->source->pipe();
 
-        $future = async(fn () => $pipeline->continue());
+        $future = async(function () use ($pipeline) {
+            $pipeline->continue();
+            return $pipeline->get();
+        });
 
         $backPressure = $this->source->emit($value);
 
         self::assertSame($value, $future->await());
 
-        $future = async(fn () => $pipeline->continue());
+        $future = async(function () use ($pipeline) {
+            $pipeline->continue();
+            return $pipeline->get();
+        });
+
         $future->ignore();
 
         self::assertNull($backPressure->await());
@@ -138,7 +147,7 @@ class EmitterTest extends AsyncTestCase
 
         $this->source->complete();
 
-        self::assertNull($pipeline->continue());
+        self::assertFalse($pipeline->continue());
     }
 
     public function testContinueAfterFail(): void
@@ -162,7 +171,7 @@ class EmitterTest extends AsyncTestCase
 
         $this->source->complete();
 
-        self::assertNull($future->await());
+        self::assertFalse($future->await());
     }
 
     public function testDestroyingPipelineRelievesBackPressure(): void
@@ -246,7 +255,11 @@ class EmitterTest extends AsyncTestCase
     public function testEmitAfterAutomaticDisposalWithPendingContinueFuture(): void
     {
         $pipeline = $this->source->pipe();
-        $future = async(fn () => $pipeline->continue());
+        $future = async(function () use ($pipeline) {
+            $pipeline->continue();
+            return $pipeline->get();
+        });
+
         unset($pipeline); // Trigger automatic disposal.
         self::assertFalse($this->source->isDisposed());
         $this->source->emit(1)->ignore();
@@ -265,7 +278,10 @@ class EmitterTest extends AsyncTestCase
     public function testEmitAfterExplicitDisposalWithPendingContinueFuture(): void
     {
         $pipeline = $this->source->pipe();
-        $future = async(fn () => $pipeline->continue());
+        $future = async(function () use ($pipeline) {
+            $pipeline->continue();
+            return $pipeline->get();
+        });
         $pipeline->dispose();
         self::assertTrue($this->source->isDisposed());
 
@@ -338,16 +354,21 @@ class EmitterTest extends AsyncTestCase
 
         $pipeline = $this->source->pipe();
         self::assertFalse($pipeline->isComplete());
-        self::assertSame(1, $pipeline->continue());
+
+        self::assertTrue($pipeline->continue());
+        self::assertSame(1, $pipeline->get());
         self::assertTrue($future1->isComplete());
         self::assertFalse($future2->isComplete());
         self::assertFalse($pipeline->isComplete());
-        self::assertSame(2, $pipeline->continue());
+
+        self::assertTrue($pipeline->continue());
+        self::assertSame(2, $pipeline->get());
         self::assertTrue($pipeline->isComplete());
         self::assertTrue($future1->isComplete());
         self::assertTrue($future2->isComplete());
         self::assertTrue($pipeline->isComplete());
-        self::assertNull($pipeline->continue());
+
+        self::assertFalse($pipeline->continue());
     }
 
     public function testBackPressureOnDisposal(): void
@@ -375,14 +396,29 @@ class EmitterTest extends AsyncTestCase
     {
         $pipeline = $this->source->pipe();
 
-        $cancellationSource = new DeferredCancellation();
+        $cancellation = new DeferredCancellation();
 
-        $future1 = async(fn () => $pipeline->continue());
-        $future2 = async(fn () => $pipeline->continue($cancellationSource->getCancellation()));
-        $future3 = async(fn () => $pipeline->continue());
-        $future4 = async(fn () => $pipeline->continue());
+        $future1 = async(function () use ($pipeline) {
+            $pipeline->continue();
+            return $pipeline->get();
+        });
 
-        $cancellationSource->cancel();
+        $future2 = async(function () use ($pipeline, $cancellation) {
+            $pipeline->continue($cancellation->getCancellation());
+            return $pipeline->get();
+        });
+
+        $future3 = async(function () use ($pipeline) {
+            $pipeline->continue();
+            return $pipeline->get();
+        });
+
+        $future4 = async(function () use ($pipeline) {
+            $pipeline->continue();
+            return $pipeline->get();
+        });
+
+        $cancellation->cancel();
 
         delay(0); // Tick event loop to trigger cancellation callback.
 
@@ -404,12 +440,19 @@ class EmitterTest extends AsyncTestCase
     {
         $pipeline = $this->source->pipe();
 
-        $cancellationSource = new DeferredCancellation();
+        $cancellation = new DeferredCancellation();
 
-        $future1 = async(fn () => $pipeline->continue());
-        $future2 = async(fn () => $pipeline->continue($cancellationSource->getCancellation()));
+        $future1 = async(function () use ($pipeline) {
+            $pipeline->continue();
+            return $pipeline->get();
+        });
 
-        $cancellationSource->cancel();
+        $future2 = async(function () use ($pipeline, $cancellation) {
+            $pipeline->continue($cancellation->getCancellation());
+            return $pipeline->get();
+        });
+
+        $cancellation->cancel();
 
         delay(0); // Tick event loop to trigger cancellation callback.
 
@@ -419,8 +462,11 @@ class EmitterTest extends AsyncTestCase
 
         self::assertSame(1, $future1->await());
 
-        self::assertSame(2, $pipeline->continue());
-        self::assertSame(3, $pipeline->continue());
+        self::assertTrue($pipeline->continue());
+        self::assertSame(2, $pipeline->get());
+
+        self::assertTrue($pipeline->continue());
+        self::assertSame(3, $pipeline->get());
 
         $this->source->complete();
 
@@ -432,18 +478,33 @@ class EmitterTest extends AsyncTestCase
     {
         $pipeline = $this->source->pipe();
 
-        $cancellationSource = new DeferredCancellation();
+        $cancellation = new DeferredCancellation();
 
-        $future1 = async(fn () => $pipeline->continue());
-        $future2 = async(fn () => $pipeline->continue($cancellationSource->getCancellation()));
-        $future3 = async(fn () => $pipeline->continue());
-        $future4 = async(fn () => $pipeline->continue());
+        $future1 = async(function () use ($pipeline) {
+            self::assertTrue($pipeline->continue());
+            return $pipeline->get();
+        });
+
+        $future2 = async(function () use ($pipeline, $cancellation) {
+            self::assertTrue($pipeline->continue($cancellation->getCancellation()));
+            return $pipeline->get();
+        });
+
+        $future3 = async(function () use ($pipeline) {
+            self::assertTrue($pipeline->continue());
+            return $pipeline->get();
+        });
+
+        $future4 = async(function () use ($pipeline) {
+            self::assertFalse($pipeline->continue());
+            return null;
+        });
 
         $this->source->emit(1);
         $this->source->emit(2);
         $this->source->emit(3);
 
-        $cancellationSource->cancel();
+        $cancellation->cancel();
 
         delay(0); // Tick event loop to trigger cancellation callback.
 
@@ -471,7 +532,7 @@ class EmitterTest extends AsyncTestCase
         $blocked = $source->emit('x');
         self::assertFalse($blocked->isComplete());
 
-        self::assertIsString($pipeline->continue());
+        self::assertTrue($pipeline->continue());
         self::assertTrue($blocked->isComplete());
 
         self::assertFalse($source->emit('x')->isComplete());
@@ -480,8 +541,8 @@ class EmitterTest extends AsyncTestCase
             return;
         }
 
-        self::assertIsString($pipeline->continue());
-        self::assertIsString($pipeline->continue());
+        self::assertTrue($pipeline->continue());
+        self::assertTrue($pipeline->continue());
 
         self::assertTrue($source->emit('.')->isComplete());
     }

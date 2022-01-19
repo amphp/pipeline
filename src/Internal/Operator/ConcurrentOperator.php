@@ -58,12 +58,12 @@ final class ConcurrentOperator implements PipelineOperator
                 $source = $operator->pipe($source);
             }
 
-            while (null !== $value = $source->continue()) {
+            while ($source->continue()) {
                 if ($destination->isComplete()) {
                     return;
                 }
 
-                $destination->yield($value);
+                $destination->yield($source->get());
             }
         });
     }
