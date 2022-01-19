@@ -13,9 +13,10 @@ use Amp\Cancellation;
 final class Pipeline implements \IteratorAggregate
 {
     /**
-     * @internal Create a Pipeline using either {@see Emitter::pipe()} or {@see fromIterable()}.
-     *
      * @param Internal\EmitSource<TValue> $source
+     * @param bool $autoDispose
+     *
+     * @internal Create a Pipeline using either {@see Emitter::pipe()} or {@see fromIterable()}.
      */
     public function __construct(
         private Internal\EmitSource $source,
@@ -44,6 +45,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function continue(?Cancellation $cancellation = null): mixed
     {
+        /** @noinspection PhpUnhandledExceptionInspection */
         return $this->source->continue($cancellation);
     }
 
