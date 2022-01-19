@@ -208,6 +208,23 @@ function zip(array $pipelines): Pipeline
 }
 
 /**
+ * Concurrently act on a pipeline using the given set of operators. The resulting pipeline will *not* necessarily be
+ * in the same order as the source pipeline, however, items are emitted as soon as they are available.
+ *
+ * @template TValue
+ * @template TResult
+ *
+ * @param int $concurrency Concurrency limited to consuming the given number of items simultaneously.
+ * @param PipelineOperator ...$operators Set of operators to act upon each value emitted. See {@see Pipeline::pipe()}.
+ *
+ * @return PipelineOperator<TValue, TResult>
+ */
+function concurrent(int $concurrency, PipelineOperator ...$operators): PipelineOperator
+{
+    return new Internal\Operator\ConcurrentOperator($concurrency, $operators);
+}
+
+/**
  * Removes backpressure on the source pipeline.
  *
  * @template TValue
