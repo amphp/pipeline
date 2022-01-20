@@ -369,6 +369,11 @@ class EmitterTest extends AsyncTestCase
         self::assertTrue($pipeline->isComplete());
 
         self::assertFalse($pipeline->continue());
+
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('complete');
+
+        $pipeline->get();
     }
 
     public function testBackPressureOnDisposal(): void

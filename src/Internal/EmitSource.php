@@ -46,7 +46,7 @@ final class EmitSource
 
     private int $bufferSize;
 
-    private FiberLocal $currentValue;
+    private ?FiberLocal $currentValue;
 
     public function __construct(int $bufferSize = 0)
     {
@@ -55,7 +55,7 @@ final class EmitSource
         }
 
         $this->bufferSize = $bufferSize;
-        $this->currentValue = new FiberLocal(fn () => throw new \Error('Call continue() before calling get()'));
+        $this->currentValue = new FiberLocal(static fn () => throw new \Error('Call continue() before calling get()'));
     }
 
     public function continue(?Cancellation $cancellation = null): bool
@@ -75,11 +75,13 @@ final class EmitSource
         if (\array_key_exists($position, $this->emittedValues)) {
             $value = $this->emittedValues[$position];
             unset($this->emittedValues[$position]);
-            $this->currentValue->set($value);
+            $this->currentValue?->set($value);
             return true;
         }
 
         if ($this->completed || $this->disposed) {
+            $this->currentValue = null;
+
             if ($this->exception) {
                 throw $this->exception;
             }
@@ -112,10 +114,7 @@ final class EmitSource
         try {
             $value = $suspension->suspend();
 
-            // Use $this as marker to indicate no more values
-            if ($value === $this) {
-                // TODO: Reset $this->currentValue to throw an exception
-
+            if (!$this->currentValue) {
                 return false;
             }
 
@@ -133,6 +132,14 @@ final class EmitSource
      */
     public function get(): mixed
     {
+        if (!$this->currentValue) {
+            if ($this->exception) {
+                throw $this->exception;
+            }
+
+            throw new \Error('Pipeline complete, cannot call get()');
+        }
+
         return $this->currentValue->get();
     }
 
@@ -385,11 +392,15 @@ final class EmitSource
 
         $exception = $this->exception ?? null;
 
-        foreach ($waiting as $suspension) {
-            if ($exception) {
-                $suspension->throw($exception);
-            } else {
-                $suspension->resume($this);
+        if ($waiting) {
+            $this->currentValue = null;
+            foreach ($waiting as $suspension) {
+                if ($exception) {
+                    $suspension->throw($exception);
+                } else {
+                    $suspension->resume();
+
+                }
             }
         }
     }
