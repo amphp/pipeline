@@ -32,8 +32,9 @@ final class Pipeline implements \IteratorAggregate
     }
 
     /**
-     * Returns the emitted value if the pipeline has emitted a value or null if the pipeline has completed.
-     * If the pipeline fails, the exception will be thrown from this method.
+     * Advances the pipeline to the next value, returning {@code true} if the pipeline has emitted a value or
+     * {@code false} if the pipeline has completed. If the pipeline fails, the exception will be thrown from this
+     * method.
      *
      * This method exists primarily for async consumption of a single value within a coroutine. In general, a
      * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
@@ -50,7 +51,14 @@ final class Pipeline implements \IteratorAggregate
     }
 
     /**
-     * @return TValue
+     * Returns the last value emitted by the pipeline. Advance the pipeline to the next value using {@see continue()},
+     * which must be called before this method may be called for the first time.
+     *
+     * This method exists primarily for async consumption of a single value within a coroutine. In general, a
+     * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
+     *
+     * @return TValue The last value emitted by the pipeline. If the pipeline has completed or {@see continue()} has
+     * not been called, an {@see \Error} will be thrown.
      */
     public function get(): mixed
     {

@@ -30,7 +30,7 @@ final class EmitSource
     /** @var array<int, TValue> */
     private array $emittedValues = [];
 
-    /** @var array<int, DeferredFuture|Suspension> */
+    /** @var array<int, DeferredFuture<null>|Suspension> */
     private array $backpressure = [];
 
     /** @var Suspension[] */
@@ -46,6 +46,7 @@ final class EmitSource
 
     private int $bufferSize;
 
+    /** @var FiberLocal<TValue>|null */
     private ?FiberLocal $currentValue;
 
     public function __construct(int $bufferSize = 0)
