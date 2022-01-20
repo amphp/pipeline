@@ -399,7 +399,6 @@ final class EmitSource
                     $suspension->throw($exception);
                 } else {
                     $suspension->resume();
-
                 }
             }
         }
