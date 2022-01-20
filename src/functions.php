@@ -3,21 +3,20 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
-use Amp\Pipeline\Internal\EmitSource;
+use Amp\Pipeline\Internal\Source;
 use Revolt\EventLoop;
 use function Amp\async;
-use function Amp\delay;
 
 /**
  * Creates a source that can create any number of pipelines by calling {@see Source::pipe()}. The new pipelines
  * will each emit values identical to that of the given pipeline. The original pipeline is only disposed if all
  * downstream pipelines are disposed.
  *
- * @template TValue
+ * @template T
  *
- * @param Pipeline<TValue> $pipeline
+ * @param Pipeline<T> $pipeline
  *
- * @return SharedSource<TValue>
+ * @return SharedSource<T>
  */
 function share(Pipeline $pipeline): SharedSource
 {
@@ -27,11 +26,11 @@ function share(Pipeline $pipeline): SharedSource
 /**
  * Creates a pipeline from the given iterable, emitting each value.
  *
- * @template TValue
+ * @template T
  *
- * @param iterable<array-key, TValue>|\Closure():iterable<array-key, TValue> $iterable Elements to emit.
+ * @param iterable<array-key, T>|\Closure():iterable<array-key, T> $iterable Elements to emit.
  *
- * @return Pipeline<TValue>
+ * @return Pipeline<T>
  */
 function fromIterable(\Closure|iterable $iterable): Pipeline
 {
@@ -39,9 +38,9 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         try {
             $iterable = $iterable();
         } catch (\Throwable $exception) {
-            $source = new Internal\EmitSource();
+            $source = new Internal\Source();
             $source->error($exception);
-            return new Pipeline($source, true);
+            return new Pipeline($source);
         }
 
         if (!\is_iterable($iterable)) {
@@ -58,7 +57,7 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         $iterable = (static fn () => yield from $iterable)();
     }
 
-    $source = new EmitSource();
+    $source = new Source();
 
     EventLoop::queue(static function () use ($iterable, $source): void {
         try {
@@ -72,17 +71,17 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         }
     });
 
-    return new Pipeline($source, false);
+    return new Pipeline($source);
 }
 
 /**
  * Creates a pipeline that emits values emitted from any pipeline in the array of pipelines.
  *
- * @template TValue
+ * @template T
  *
- * @param Pipeline<TValue>[] $pipelines
+ * @param Pipeline<T>[] $pipelines
  *
- * @return Pipeline<TValue>
+ * @return Pipeline<T>
  */
 function merge(array $pipelines): Pipeline
 {
@@ -132,11 +131,11 @@ function merge(array $pipelines): Pipeline
  * prior pipeline must complete before values are emitted from any subsequent pipelines. Pipelines are concatenated
  * in the order given (iteration order of the array).
  *
- * @template TValue
+ * @template T
  *
- * @param Pipeline<TValue>[] $pipelines
+ * @param Pipeline<T>[] $pipelines
  *
- * @return Pipeline<TValue>
+ * @return Pipeline<T>
  */
 function concat(array $pipelines): Pipeline
 {
@@ -164,12 +163,12 @@ function concat(array $pipelines): Pipeline
  * Combines all given pipelines into one pipeline, emitting an array of values only after each pipeline has emitted a
  * value. The returned pipeline completes when any pipeline completes or errors when any pipeline errors.
  *
- * @template TKey as array-key
- * @template TValue
+ * @template Tk as array-key
+ * @template Tv
  *
- * @param array<TKey, Pipeline<TValue>> $pipelines
+ * @param array<Tk, Pipeline<Tv>> $pipelines
  *
- * @return Pipeline<array<TKey, TValue>>
+ * @return Pipeline<array<Tk, Tv>>
  */
 function zip(array $pipelines): Pipeline
 {
@@ -211,271 +210,4 @@ function zip(array $pipelines): Pipeline
             yield $emit;
         }
     });
-}
-
-/**
- * Concurrently act on a pipeline using the given set of operators. The resulting pipeline will *not* necessarily be
- * in the same order as the source pipeline, however, items are emitted as soon as they are available.
- *
- * @template TValue
- * @template TResult
- *
- * @param int $concurrency Concurrency limited to consuming the given number of items simultaneously.
- * @param PipelineOperator ...$operators Set of operators to act upon each value emitted. See {@see Pipeline::pipe()}.
- *
- * @return PipelineOperator<TValue, TResult>
- */
-function concurrent(int $concurrency, PipelineOperator ...$operators): PipelineOperator
-{
-    return new Internal\Operator\ConcurrentOperator($concurrency, $operators);
-}
-
-/**
- * Removes backpressure on the source pipeline.
- *
- * @template TValue
- *
- * @return PipelineOperator<TValue, TValue>
- */
-function relieve(): PipelineOperator
-{
-    return new Internal\Operator\RelieveOperator;
-}
-
-/**
- * @template TValue
- * @template TReturn
- *
- * @param \Closure(TValue):TReturn $map
- *
- * @return PipelineOperator<TValue, TReturn>
- */
-function map(\Closure $map): PipelineOperator
-{
-    return new Internal\Operator\MapOperator($map);
-}
-
-/**
- * @template TValue
- *
- * @param \Closure(TValue):bool $filter
- *
- * @return PipelineOperator<TValue, TValue>
- */
-function filter(\Closure $filter): PipelineOperator
-{
-    return new Internal\Operator\FilterOperator($filter);
-}
-
-/**
- * Postpone (delay) consumption of each value from the source pipeline for the given amount of time.
- *
- * @template TValue
- *
- * @param float $delay
- *
- * @return PipelineOperator<TValue, TValue>
- */
-function postpone(float $delay): PipelineOperator
-{
-    return postponeWhen(fromIterable(static function () use ($delay): \Generator {
-        while (true) {
-            delay($delay);
-            yield 0;
-        }
-    }));
-}
-
-/**
- * Values are not consumed from the source pipeline until the $postponeUntil pipeline emits. The values emitted from
- * the returned pipeline are identical to those of the source pipeline.
- * The returned pipeline completes or errors when either the source or $postponeUntil completes or errors.
- *
- * @template TValue
- *
- * @param Pipeline<mixed> $postponeWhen
- *
- * @return PipelineOperator<TValue, TValue>
- */
-function postponeWhen(Pipeline $postponeWhen): PipelineOperator
-{
-    return new Internal\Operator\PostponeWhenOperator($postponeWhen);
-}
-
-/**
- * Skip the first X number of items emitted on the pipeline.
- *
- * @template TValue
- *
- * @param int $count
- * @return PipelineOperator<TValue, TValue>
- */
-function skip(int $count): PipelineOperator
-{
-    return new Internal\Operator\SkipOperator($count);
-}
-
-/**
- * Skips values emitted on the pipeline until $predicate returns false. All values are emitted afterward without
- * invoking $predicate.
- *
- * @template TValue
- *
- * @param \Closure(TValue):bool $predicate
- * @return PipelineOperator<TValue, TValue>
- */
-function skipWhile(\Closure $predicate): PipelineOperator
-{
-    return new Internal\Operator\SkipWhileOperator($predicate);
-}
-
-/**
- * Take only the first X number of items emitted on the pipeline.
- *
- * @template TValue
- *
- * @param int $count
- * @return PipelineOperator<TValue, TValue>
- */
-function take(int $count): PipelineOperator
-{
-    return new Internal\Operator\TakeOperator($count);
-}
-
-/**
- * Emit values from the pipeline as until $predicate returns false.
- *
- * @template TValue
- *
- * @param \Closure(TValue):bool $predicate
- * @return PipelineOperator<TValue, TValue>
- */
-function takeWhile(\Closure $predicate): PipelineOperator
-{
-    return new Internal\Operator\TakeWhileOperator($predicate);
-}
-
-/**
- * Invokes the given function each time a value is emitted to perform side effects with the value.
- * While this could be accomplished with map, the intention of this operator is to keep those functions pure.
- *
- * @template TValue
- *
- * @param \Closure(TValue):void $tap
- * @return PipelineOperator<TValue, TValue>
- */
-function tap(\Closure $tap): PipelineOperator
-{
-    return new Internal\Operator\TapOperator($tap);
-}
-
-/**
- * Invokes the given function when the pipeline completes, either successfully or with an error.
- *
- * @template TValue
- *
- * @param \Closure():void $finally
- * @return PipelineOperator<TValue, TValue>
- */
-function finalize(\Closure $finally): PipelineOperator
-{
-    return new Internal\Operator\FinalizeOperator($finally);
-}
-
-/**
- * The last value emitted on the pipeline is emitted only when $sampleWhen emits. If the previous value has already
- * been emitted when $sampleWhen emits, no value is emitted on the returned pipeline.
- *
- * The returned pipeline completes or errors when either the source or $sampleWhen completes or errors.
- *
- * @template TValue
- *
- * @param Pipeline<mixed> $sampleWhen
- * @return PipelineOperator<TValue, TValue>
- */
-function sampleWhen(Pipeline $sampleWhen): PipelineOperator
-{
-    return new Internal\Operator\SampleWhenOperator($sampleWhen);
-}
-
-/**
- * @template TValue
- *
- * @param float $period
- * @return PipelineOperator<TValue, TValue>
- */
-function sampleInterval(float $period): PipelineOperator
-{
-    return sampleWhen(
-        fromIterable(static function (): \Generator {
-            while (true) {
-                yield 0;
-            }
-        })->pipe(postpone($period))
-    );
-}
-
-/**
- * @template TValue
- *
- * @param Pipeline<TValue> $pipeline
- * @param \Closure(TValue):void $each
- */
-function each(Pipeline $pipeline, \Closure $each): void
-{
-    foreach ($pipeline as $value) {
-        $each($value);
-    }
-}
-
-/**
- * @template TValue
- * @template TResult
- *
- * @param Pipeline<TValue> $pipeline
- * @param \Closure(TResult, TValue):TResult $accumulator
- * @param TResult $initial
- * @return TResult
- */
-function reduce(Pipeline $pipeline, \Closure $accumulator, mixed $initial = null): mixed
-{
-    $result = $initial;
-    foreach ($pipeline as $value) {
-        $result = $accumulator($result, $value);
-    }
-    return $result;
-}
-
-/**
- * Discards all remaining items and returns the number of discarded items.
- *
- * @template TValue
- *
- * @param Pipeline<TValue> $pipeline
- *
- * @return int
- */
-function discard(Pipeline $pipeline): int
-{
-    $count = 0;
-
-    while ($pipeline->continue()) {
-        $count++;
-    }
-
-    return $count;
-}
-
-/**
- * Collects all items from a pipeline into an array.
- *
- * @template TValue
- *
- * @param Pipeline<TValue> $pipeline
- *
- * @return array<int, TValue>
- */
-function toArray(Pipeline $pipeline): array
-{
-    return \iterator_to_array($pipeline);
 }

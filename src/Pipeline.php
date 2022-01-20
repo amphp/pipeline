@@ -3,154 +3,293 @@
 namespace Amp\Pipeline;
 
 use Amp\Cancellation;
+use Amp\CancelledException;
+use Amp\Future;
+use Amp\Pipeline\Internal\Source;
+use Revolt\EventLoop;
+use function Amp\async;
 
 /**
  * A pipeline is an asynchronous set of ordered values.
  *
- * @template TValue
- * @template-implements \IteratorAggregate<int, TValue>
+ * @template T
+ * @template-implements \IteratorAggregate<int, T>
  */
-final class Pipeline implements \IteratorAggregate
+final class Pipeline implements ConcurrentIterator, \IteratorAggregate
 {
+    private ConcurrentIterator $source;
+    private int $concurrency = 1;
+
     /**
-     * @param Internal\EmitSource<TValue> $source
-     * @param bool $autoDispose
-     *
-     * @internal Create a Pipeline using either {@see Emitter::pipe()} or {@see fromIterable()}.
+     * @param ConcurrentIterator<T> $source
      */
-    public function __construct(
-        private Internal\EmitSource $source,
-        private bool $autoDispose,
-    ) {
+    public function __construct(ConcurrentIterator $source)
+    {
+        $this->source = $source;
     }
 
     public function __destruct()
     {
-        if ($this->autoDispose) {
-            $this->source->dispose();
-        }
-    }
-
-    /**
-     * Advances the pipeline to the next value, returning {@code true} if the pipeline has emitted a value or
-     * {@code false} if the pipeline has completed. If the pipeline fails, the exception will be thrown from this
-     * method.
-     *
-     * This method exists primarily for async consumption of a single value within a coroutine. In general, a
-     * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
-     *
-     * @param Cancellation|null $cancellation Cancels waiting for the next emitted value. If cancelled, the next
-     * emitted value is not lost, but will be sent to the next call to this method.
-     *
-     * @return bool {@code true} if a value is available, {@code false} if the pipeline has completed.
-     */
-    public function continue(?Cancellation $cancellation = null): bool
-    {
-        /** @noinspection PhpUnhandledExceptionInspection */
-        return $this->source->continue($cancellation);
-    }
-
-    /**
-     * Returns the last value emitted by the pipeline for the current fiber. Advance the pipeline to the next value using {@see continue()},
-     * which must be called before this method may be called for the first time in the same fiber.
-     *
-     * This method exists primarily for async consumption of a single value within a coroutine. In general, a
-     * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
-     *
-     * @return TValue The last value emitted by the pipeline. If the pipeline has completed or {@see continue()} has
-     * not been called, an {@see \Error} will be thrown.
-     */
-    public function get(): mixed
-    {
-        return $this->source->get();
-    }
-
-    /**
-     * Disposes the pipeline, indicating the consumer is no longer interested in the pipeline output.
-     *
-     * @return void
-     */
-    public function dispose(): void
-    {
         $this->source->dispose();
     }
 
-    /**
-     * @template TResult
-     *
-     * @param PipelineOperator ...$operators
-     *
-     * @return Pipeline<TResult>
-     */
-    public function pipe(PipelineOperator ...$operators): Pipeline
+    public function concurrent(int $concurrency): self
     {
-        $pipeline = $this;
+        $this->concurrency = $concurrency;
 
-        foreach ($operators as $operator) {
-            $pipeline = $operator->pipe($pipeline);
+        // TODO Return new instance?
+        return $this;
+    }
+
+    public function count(): int
+    {
+        $count = 0;
+
+        // TODO Concurrency?
+        foreach ($this as $ignored) {
+            $count++;
         }
 
-        /** @var Pipeline<TResult> $pipeline */
-        return $pipeline;
+        return $count;
+    }
+
+    private function process(int $concurrency, \Closure $operator): self
+    {
+        $destination = new Source($concurrency);
+
+        if ($concurrency === 1) {
+            try {
+                foreach ($this->source as $value) {
+                    foreach ($operator($value) as $emit) {
+                        $destination->emit($emit);
+                    }
+                }
+            } catch (\Throwable $e) {
+                $destination->error($e);
+            }
+        } else {
+            $futures = [];
+
+            for ($i = 0; $i < $concurrency; $i++) {
+                $futures[] = async(function () use ($destination, $operator): void {
+                    foreach ($this->source as $value) {
+                        if ($destination->isComplete()) {
+                            return;
+                        }
+
+                        foreach ($operator($value) as $emit) {
+                            $destination->emit($emit);
+                        }
+                    }
+                });
+            }
+
+            EventLoop::queue(function () use ($futures, $destination): void {
+                try {
+                    Future\await($futures);
+                    $destination->complete();
+                } catch (\Throwable $exception) {
+                    $destination->error($exception);
+                    $this->source->dispose();
+                }
+            });
+        }
+
+        return new self($destination);
     }
 
     /**
-     * @template TResult
+     * Maps values.
      *
-     * @param \Closure(TValue):TResult $map
+     * @template R
      *
-     * @return self<TResult>
+     * @param \Closure(T):R $map
+     *
+     * @return self<R>
      */
     public function map(\Closure $map): self
     {
-        return $this->pipe(map($map));
+        return $this->process($this->concurrency, fn (mixed $value) => [$map($value)]);
     }
 
     /**
-     * @param \Closure(TValue):bool $filter
+     * Filters values.
      *
-     * @return self<TValue>
+     * @param \Closure(T):bool $filter Keep value if {@code $filter} returns {@code true}.
+     *
+     * @return self<T>
      */
     public function filter(\Closure $filter): self
     {
-        return $this->pipe(filter($filter));
+        return $this->process($this->concurrency, fn (mixed $value) => $filter($value) ? [$value] : []);
+    }
+
+    /**
+     * Invokes the given function each time a value is streamed through the pipeline to perform side effects.
+     *
+     * @param \Closure(T):void $tap
+     *
+     * @return self<T>
+     */
+    public function tap(\Closure $tap): self
+    {
+        return $this->process($this->concurrency, function (mixed $value) use ($tap) {
+            $tap($value);
+
+            return [$value];
+        });
+    }
+
+    /**
+     * @template R
+     *
+     * @param \Closure(R, T): R $accumulator
+     * @param R $initial
+     *
+     * @return R
+     */
+    public function reduce(\Closure $accumulator, mixed $initial = null)
+    {
+        $result = $initial;
+
+        // TODO Concurrency?
+        foreach ($this as $value) {
+            $result = $accumulator($result, $value);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Skip the first N items of the pipeline.
+     *
+     * @template T
+     *
+     * @param int $count
+     *
+     * @return self<T>
+     */
+    public function skip(int $count): self
+    {
+        return $this->process($this->concurrency, function (mixed $value) use ($count) {
+            static $i = 0;
+
+            if ($i++ < $count) {
+                return [];
+            }
+
+            return [$value];
+        });
+    }
+
+    /**
+     * Skips values on the pipeline until {@code $predicate} returns {@code false}.
+     *
+     * All values are emitted afterwards without invoking {@code $predicate}.
+     *
+     * @param \Closure(T):bool $predicate
+     *
+     * @return self<T>
+     */
+    public function skipWhile(\Closure $predicate): self
+    {
+        return $this
+            ->map(fn (mixed $value) => [$predicate($value), $value]) // TODO Don't evaluate if no longer needed
+            ->process(1, function (array $value) {
+                if ($value[0]) {
+                    return [];
+                }
+
+                return [$value[1]];
+            });
+    }
+
+    /**
+     * Take only the first N items of the pipeline.
+     *
+     * @param int $count
+     *
+     * @return self<T>
+     */
+    public function take(int $count): self
+    {
+        return $this->process($this->concurrency, function (mixed $value) use ($count) {
+            static $i = 0;
+
+            if ($i++ < $count) {
+                return [$value];
+            }
+
+            throw new CancelledException;
+        });
+    }
+
+    /**
+     * Takes values on the pipeline until {@code $predicate} returns {@code false}.
+     *
+     * @param \Closure(T):bool $predicate
+     *
+     * @return self<T>
+     */
+    public function takeWhile(\Closure $predicate): self
+    {
+        return $this
+            ->map(fn (mixed $value) => [$predicate($value), $value]) // TODO Don't evaluate if no longer needed
+            ->process(1, function (array $value) {
+                if ($value[0]) {
+                    return [$value[1]];
+                }
+
+                throw new CancelledException;
+            });
     }
 
     /**
      * Invokes the given callback for each value emitted on the pipeline.
      *
-     * @param \Closure(TValue):void $forEach
+     * @param \Closure(T):void $forEach
      *
      * @return void
      */
     public function forEach(\Closure $forEach): void
     {
-        discard($this->pipe(tap($forEach)));
+        foreach ($this->tap($forEach) as $ignored) {
+            // noop
+        }
     }
 
     /**
-     * @return bool True if the pipeline has completed, either successfully or with an error.
+     * Collects all items into an array.
+     *
+     * @return array<int, T>
      */
-    public function isComplete(): bool
+    public function toArray(): array
     {
-        return $this->source->isConsumed();
+        return \iterator_to_array($this);
     }
 
     /**
-     * @return bool True if the pipeline was disposed.
-     */
-    public function isDisposed(): bool
-    {
-        return $this->source->isDisposed();
-    }
-
-    /**
-     * @return \Traversable<int, TValue>
+     * @return \Traversable<int, T>
      */
     public function getIterator(): \Traversable
     {
         while ($this->source->continue()) {
             yield $this->source->get();
         }
+    }
+
+    public function continue(?Cancellation $cancellation = null): bool
+    {
+        return $this->source->continue($cancellation);
+    }
+
+    public function get(): mixed
+    {
+        return $this->source->get();
+    }
+
+    public function dispose(): void
+    {
+        $this->source->dispose();
     }
 }

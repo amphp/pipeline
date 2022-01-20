@@ -1,11 +1,10 @@
 <?php
 
-namespace Amp\Pipeline\Internal\Operator;
+namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\Emitter;
 
 class TakeWhileTest extends AsyncTestCase
 {
@@ -13,7 +12,7 @@ class TakeWhileTest extends AsyncTestCase
     {
         $expected = 2;
         $values = [1, 2, 3];
-        $pipeline = Pipeline\fromIterable($values)->pipe(Pipeline\takeWhile(fn ($value) => $value < 3));
+        $pipeline = Pipeline\fromIterable($values)->takeWhile(fn ($value) => $value < 3);
 
         $emitted = 0;
         while ($pipeline->continue()) {
@@ -29,7 +28,7 @@ class TakeWhileTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->pipe()->pipe(Pipeline\takeWhile(fn ($value) => $value < 3));
+        $iterator = $source->pipe()->takeWhile(fn ($value) => $value < 3);
 
         $source->error($exception);
 
@@ -42,7 +41,7 @@ class TakeWhileTest extends AsyncTestCase
     {
         $exception = new TestException;
 
-        $iterator = Pipeline\fromIterable([1, 2, 3])->pipe(Pipeline\takeWhile(fn ($value) => throw $exception));
+        $iterator = Pipeline\fromIterable([1, 2, 3])->takeWhile(fn ($value) => throw $exception);
 
         $this->expectExceptionObject($exception);
 

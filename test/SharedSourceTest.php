@@ -32,7 +32,7 @@ class SharedSourceTest extends AsyncTestCase
         $source = new Emitter();
         $share = Pipeline\share($source->pipe());
 
-        $pipeline1 = $share->pipe()->pipe(Pipeline\postpone(0.2));
+        $pipeline1 = $share->pipe()->tap(fn () => delay(0.2));
         $pipeline2 = $share->pipe();
 
         $future1 = async(function () use ($pipeline1) {

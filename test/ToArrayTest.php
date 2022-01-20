@@ -9,13 +9,13 @@ class ToArrayTest extends AsyncTestCase
 {
     public function testNonEmpty(): void
     {
-        $pipeline = Pipeline\fromIterable(["abc", "foo", "bar"])->pipe(Pipeline\postpone(0.005));
-        self::assertSame(["abc", "foo", "bar"], Pipeline\toArray($pipeline));
+        $pipeline = Pipeline\fromIterable(["abc", "foo", "bar"]);
+        self::assertSame(["abc", "foo", "bar"], $pipeline->toArray());
     }
 
     public function testEmpty(): void
     {
-        $pipeline = Pipeline\fromIterable([], 5);
-        self::assertSame([], Pipeline\toArray($pipeline));
+        $pipeline = Pipeline\fromIterable([]);
+        self::assertSame([], $pipeline->toArray());
     }
 }

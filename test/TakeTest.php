@@ -1,21 +1,18 @@
 <?php
 
-namespace Amp\Pipeline\Internal\Operator;
+namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\Emitter;
 
-class SkipTest extends AsyncTestCase
+class TakeTest extends AsyncTestCase
 {
     public function testValuesEmitted(): void
     {
-        $values = [1, 2, 3];
-        $count = \count($values);
-        $pipeline = Pipeline\fromIterable($values)->pipe(Pipeline\skip(1));
-
-        \array_shift($values); // Shift off the first value that should be skipped.
+        $count = 2;
+        $values = [1, 2, 3, 4];
+        $pipeline = Pipeline\fromIterable($values)->take($count);
 
         $emitted = 0;
         while ($pipeline->continue()) {
@@ -23,7 +20,7 @@ class SkipTest extends AsyncTestCase
             self::assertSame(\array_shift($values), $pipeline->get());
         }
 
-        self::assertSame($count - 1, $emitted);
+        self::assertSame($count, $emitted);
     }
 
     public function testPipelineFails(): void
@@ -31,7 +28,7 @@ class SkipTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->pipe()->pipe(Pipeline\skip(1));
+        $iterator = $source->pipe()->take(2);
 
         $source->error($exception);
 

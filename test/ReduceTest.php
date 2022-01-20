@@ -14,7 +14,7 @@ class ReduceTest extends AsyncTestCase
 
         $pipeline = Pipeline\fromIterable($values);
 
-        $result = Pipeline\reduce($pipeline, fn (int $carry, int $emitted) => $carry + $emitted, 0);
+        $result = $pipeline->reduce(fn (int $carry, int $emitted) => $carry + $emitted, 0);
 
         self::assertSame(\array_sum($values), $result);
     }
@@ -29,6 +29,6 @@ class ReduceTest extends AsyncTestCase
 
         $this->expectExceptionObject($exception);
 
-        $result = Pipeline\reduce($source->pipe(), $this->createCallback(1));
+        $source->pipe()->reduce($this->createCallback(1));
     }
 }

@@ -106,12 +106,12 @@ class EmitterTest extends AsyncTestCase
 
     public function testDoubleStart(): void
     {
-        $pipeline = $this->source->pipe();
+        $this->source->pipe();
 
         $this->expectException(\Error::class);
         $this->expectExceptionMessage('A pipeline may be started only once');
 
-        $pipeline = $this->source->pipe();
+        $this->source->pipe();
     }
 
     public function testEmitAfterContinue(): void
@@ -181,10 +181,10 @@ class EmitterTest extends AsyncTestCase
         $invoked = 0;
         foreach (\range(1, 5) as $value) {
             $future = $this->source->emit($value);
-            EventLoop::queue(function () use (&$invoked, $future): void {
+            EventLoop::queue(static function () use (&$invoked, $future): void {
                 try {
                     $future->await();
-                } catch (DisposedException $exception) {
+                } catch (DisposedException) {
                     // Ignore disposal.
                 } finally {
                     $invoked++;
@@ -217,7 +217,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(1)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -231,7 +231,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(1)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -247,7 +247,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(1)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -270,7 +270,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(2)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -288,7 +288,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $future->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -304,7 +304,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(2)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -353,20 +353,16 @@ class EmitterTest extends AsyncTestCase
         self::assertFalse($future1->isComplete());
 
         $pipeline = $this->source->pipe();
-        self::assertFalse($pipeline->isComplete());
 
         self::assertTrue($pipeline->continue());
         self::assertSame(1, $pipeline->get());
         self::assertTrue($future1->isComplete());
         self::assertFalse($future2->isComplete());
-        self::assertFalse($pipeline->isComplete());
 
         self::assertTrue($pipeline->continue());
         self::assertSame(2, $pipeline->get());
-        self::assertTrue($pipeline->isComplete());
         self::assertTrue($future1->isComplete());
         self::assertTrue($future2->isComplete());
-        self::assertTrue($pipeline->isComplete());
 
         self::assertFalse($pipeline->continue());
 

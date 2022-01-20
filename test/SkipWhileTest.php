@@ -1,11 +1,10 @@
 <?php
 
-namespace Amp\Pipeline\Internal\Operator;
+namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\Emitter;
 
 class SkipWhileTest extends AsyncTestCase
 {
@@ -13,7 +12,7 @@ class SkipWhileTest extends AsyncTestCase
     {
         $values = [1, 2, 3];
         $count = \count($values);
-        $pipeline = Pipeline\fromIterable($values)->pipe(Pipeline\skipWhile(fn ($value) => $value < 2));
+        $pipeline = Pipeline\fromIterable($values)->skipWhile(fn ($value) => $value < 2);
 
         \array_shift($values); // Shift off the first value that should be skipped.
 
@@ -31,7 +30,7 @@ class SkipWhileTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->pipe()->pipe(Pipeline\skipWhile(fn ($value) => $value < 2));
+        $iterator = $source->pipe()->skipWhile(fn ($value) => $value < 2);
 
         $source->error($exception);
 
@@ -44,7 +43,7 @@ class SkipWhileTest extends AsyncTestCase
     {
         $exception = new TestException;
 
-        $iterator = Pipeline\fromIterable([1, 2, 3])->pipe(Pipeline\skipWhile(fn ($value) => throw $exception));
+        $iterator = Pipeline\fromIterable([1, 2, 3])->skipWhile(fn ($value) => throw $exception);
 
         $this->expectExceptionObject($exception);
 

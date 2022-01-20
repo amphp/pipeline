@@ -6,6 +6,7 @@ use Amp\Cancellation;
 use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\Internal;
+use Amp\Pipeline\ConcurrentIterator;
 use Amp\Pipeline\DisposedException;
 use Revolt\EventLoop;
 use Revolt\EventLoop\FiberLocal;
@@ -17,9 +18,10 @@ use Revolt\EventLoop\Suspension;
  *
  * @internal
  *
- * @template TValue
+ * @template T
+ * @template-implements ConcurrentIterator<T>
  */
-final class EmitSource
+final class Source implements ConcurrentIterator, \IteratorAggregate
 {
     private const CONTINUE = [null];
 
@@ -27,7 +29,7 @@ final class EmitSource
 
     private ?\Throwable $exception = null;
 
-    /** @var array<int, TValue> */
+    /** @var array<int, T> */
     private array $emittedValues = [];
 
     /** @var array<int, DeferredFuture<null>|Suspension> */
@@ -46,7 +48,7 @@ final class EmitSource
 
     private int $bufferSize;
 
-    /** @var FiberLocal<TValue>|null */
+    /** @var FiberLocal<T>|null */
     private ?FiberLocal $currentValue;
 
     public function __construct(int $bufferSize = 0)
@@ -129,7 +131,7 @@ final class EmitSource
     }
 
     /**
-     * @return TValue
+     * @return T
      */
     public function get(): mixed
     {
@@ -164,8 +166,15 @@ final class EmitSource
         }
     }
 
+    public function getIterator(): \Traversable
+    {
+        while ($this->continue()) {
+            yield $this->get();
+        }
+    }
+
     /**
-     * @param TValue $value
+     * @param T $value
      * @param int $position
      *
      * @return array|null Returns [?\Throwable, mixed] or null if no send value is available.
@@ -215,7 +224,7 @@ final class EmitSource
      * Emits a value from the pipeline. The returned promise is resolved once the emitted value has been consumed or
      * if the pipeline is completed, failed, or disposed.
      *
-     * @param TValue $value Value to emit from the pipeline.
+     * @param T $value Value to emit from the pipeline.
      *
      * @return Future Resolves once the value has been consumed on the pipeline.
      */
@@ -241,7 +250,7 @@ final class EmitSource
     /**
      * Emits a value from the pipeline, suspending execution until the value is consumed.
      *
-     * @param TValue $value Value to emit from the pipeline.
+     * @param T $value Value to emit from the pipeline.
      */
     public function yield(mixed $value): void
     {
