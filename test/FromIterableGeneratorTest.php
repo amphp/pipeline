@@ -41,8 +41,9 @@ class FromIterableGeneratorTest extends AsyncTestCase
             yield $value;
         });
 
-        self::assertSame($value, $generator->continue());
-        self::assertNull($generator->continue());
+        self::assertTrue($generator->continue());
+        self::assertSame($value, $generator->get());
+        self::assertFalse($generator->continue());
     }
 
     /**
@@ -83,8 +84,8 @@ class FromIterableGeneratorTest extends AsyncTestCase
             $time = now() - $time;
         });
 
-        while (null !== $yielded = $generator->continue()) {
-            $output .= $yielded;
+        while ($generator->continue()) {
+            $output .= $generator->get();
             delay(self::TIMEOUT);
         }
 
@@ -128,7 +129,8 @@ class FromIterableGeneratorTest extends AsyncTestCase
             }
         });
 
-        self::assertSame(0, $generator->continue());
+        self::assertTrue($generator->continue());
+        self::assertSame(0, $generator->get());
 
         self::assertFalse($invoked);
 
@@ -195,10 +197,11 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
         self::assertFalse($invoked);
 
-        self::assertSame(0, $generator->continue());
+        self::assertTrue($generator->continue());
+        self::assertSame(0, $generator->get());
         self::assertTrue($invoked);
 
-        self::assertNull($generator->continue());
+        self::assertFalse($generator->continue());
     }
 
     public function testTraversable(): void

@@ -35,14 +35,32 @@ class SharedSourceTest extends AsyncTestCase
         $pipeline1 = $share->pipe()->pipe(Pipeline\postpone(0.2));
         $pipeline2 = $share->pipe();
 
-        $future1 = async(fn () => $pipeline1->continue());
-        $future2 = async(fn () => $pipeline2->continue());
+        $future1 = async(function () use ($pipeline1) {
+            self::assertTrue($pipeline1->continue());
+            return $pipeline1->get();
+        });
+        $future2 = async(function () use ($pipeline2) {
+            self::assertTrue($pipeline2->continue());
+            return $pipeline2->get();
+        });
 
-        $future3 = async(fn () => $pipeline1->continue());
-        $future4 = async(fn () => $pipeline2->continue());
+        $future3 = async(function () use ($pipeline1) {
+            self::assertTrue($pipeline1->continue());
+            return $pipeline1->get();
+        });
+        $future4 = async(function () use ($pipeline2) {
+            self::assertTrue($pipeline2->continue());
+            return $pipeline2->get();
+        });
 
-        $future5 = async(fn () => $pipeline1->continue());
-        $future6 = async(fn () => $pipeline2->continue());
+        $future5 = async(function () use ($pipeline1) {
+            self::assertFalse($pipeline1->continue());
+            return null;
+        });
+        $future6 = async(function () use ($pipeline2) {
+            self::assertFalse($pipeline2->continue());
+            return null;
+        });
 
         $source->emit(1)->ignore();
 

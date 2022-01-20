@@ -30,7 +30,13 @@ try {
     // Pipeline consumer attempts to consume 11 values at once. Only 10 will be emitted.
     $futures = [];
     for ($i = 0; $i < 11; ++$i) {
-        $futures[] = async(fn (): ?int => $pipeline->continue());
+        $futures[] = async(function () use ($pipeline): ?int {
+            if ($pipeline->continue()) {
+                return $pipeline->get();
+            }
+
+            return null;
+        });
     }
 
     foreach ($futures as $key => $future) {

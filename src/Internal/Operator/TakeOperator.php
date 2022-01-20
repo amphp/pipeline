@@ -27,8 +27,8 @@ final class TakeOperator implements PipelineOperator
         return fromIterable(function () use ($pipeline): \Generator {
             $taken = 0;
             while ($taken++ < $this->count) {
-                if (null !== $value = $pipeline->continue()) {
-                    yield $value;
+                if ($pipeline->continue()) {
+                    yield $pipeline->get();
                 }
             }
         });

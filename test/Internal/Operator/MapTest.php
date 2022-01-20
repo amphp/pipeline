@@ -34,8 +34,8 @@ class MapTest extends AsyncTestCase
             return $value + 1;
         }));
 
-        while (null !== $value = $pipeline->continue()) {
-            self::assertSame(\array_shift($values) + 1, $value);
+        while ($pipeline->continue()) {
+            self::assertSame(\array_shift($values) + 1, $pipeline->get());
         }
 
         self::assertSame(3, $count);

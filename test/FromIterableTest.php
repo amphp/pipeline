@@ -21,8 +21,8 @@ class FromIterableTest extends AsyncTestCase
 
         $pipeline = Pipeline\fromIterable($generator);
 
-        while (null !== $value = $pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $value);
+        while ($pipeline->continue()) {
+            self::assertSame(\array_shift($expected), $pipeline->get());
         }
 
         self::assertEmpty($expected);
@@ -56,8 +56,8 @@ class FromIterableTest extends AsyncTestCase
         $pipeline = Pipeline\fromIterable(\range(1, $count));
 
         $i = 0;
-        while (null !== $value = $pipeline->continue()) {
-            self::assertSame(++$i, $value);
+        while ($pipeline->continue()) {
+            self::assertSame(++$i, $pipeline->get());
         }
 
         self::assertSame($count, $i);
@@ -71,7 +71,7 @@ class FromIterableTest extends AsyncTestCase
         $count = 5;
         $pipeline = Pipeline\fromIterable(\range(1, $count));
 
-        for ($i = 0; $value = $pipeline->continue(); ++$i) {
+        for ($i = 0; $pipeline->continue(); ++$i) {
             delay(self::TIMEOUT * 2);
         }
 

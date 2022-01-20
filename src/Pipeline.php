@@ -32,8 +32,9 @@ final class Pipeline implements \IteratorAggregate
     }
 
     /**
-     * Returns the emitted value if the pipeline has emitted a value or null if the pipeline has completed.
-     * If the pipeline fails, the exception will be thrown from this method.
+     * Advances the pipeline to the next value, returning {@code true} if the pipeline has emitted a value or
+     * {@code false} if the pipeline has completed. If the pipeline fails, the exception will be thrown from this
+     * method.
      *
      * This method exists primarily for async consumption of a single value within a coroutine. In general, a
      * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
@@ -41,12 +42,27 @@ final class Pipeline implements \IteratorAggregate
      * @param Cancellation|null $cancellation Cancels waiting for the next emitted value. If cancelled, the next
      * emitted value is not lost, but will be sent to the next call to this method.
      *
-     * @return TValue|null Returns null if the pipeline has completed.
+     * @return bool {@code true} if a value is available, {@code false} if the pipeline has completed.
      */
-    public function continue(?Cancellation $cancellation = null): mixed
+    public function continue(?Cancellation $cancellation = null): bool
     {
         /** @noinspection PhpUnhandledExceptionInspection */
         return $this->source->continue($cancellation);
+    }
+
+    /**
+     * Returns the last value emitted by the pipeline for the current fiber. Advance the pipeline to the next value using {@see continue()},
+     * which must be called before this method may be called for the first time in the same fiber.
+     *
+     * This method exists primarily for async consumption of a single value within a coroutine. In general, a
+     * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
+     *
+     * @return TValue The last value emitted by the pipeline. If the pipeline has completed or {@see continue()} has
+     * not been called, an {@see \Error} will be thrown.
+     */
+    public function get(): mixed
+    {
+        return $this->source->get();
     }
 
     /**
@@ -133,8 +149,8 @@ final class Pipeline implements \IteratorAggregate
      */
     public function getIterator(): \Traversable
     {
-        while (null !== $value = $this->source->continue()) {
-            yield $value;
+        while ($this->source->continue()) {
+            yield $this->source->get();
         }
     }
 }

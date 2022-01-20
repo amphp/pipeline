@@ -22,14 +22,13 @@ final class PostponeWhenOperator implements PipelineOperator
     public function pipe(Pipeline $pipeline): Pipeline
     {
         return fromIterable(function () use ($pipeline): \Generator {
-            while ($this->postpone->continue() !== null) {
-                $value = $pipeline->continue();
-                if ($value === null) {
+            while ($this->postpone->continue()) {
+                if (!$pipeline->continue()) {
                     $this->postpone->dispose();
                     return;
                 }
 
-                yield $value;
+                yield $pipeline->get();
             }
         });
     }
