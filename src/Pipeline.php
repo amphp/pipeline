@@ -51,8 +51,8 @@ final class Pipeline implements \IteratorAggregate
     }
 
     /**
-     * Returns the last value emitted by the pipeline. Advance the pipeline to the next value using {@see continue()},
-     * which must be called before this method may be called for the first time.
+     * Returns the last value emitted by the pipeline for the current fiber. Advance the pipeline to the next value using {@see continue()},
+     * which must be called before this method may be called for the first time in the same fiber.
      *
      * This method exists primarily for async consumption of a single value within a coroutine. In general, a
      * pipeline may be consumed using foreach ($pipeline as $value) { ... }.
