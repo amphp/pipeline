@@ -2,7 +2,6 @@
 
 namespace Amp\Pipeline;
 
-use Amp\Cancellation;
 use Amp\CancelledException;
 use Amp\Future;
 use Amp\Pipeline\Internal\Source;
@@ -15,10 +14,15 @@ use function Amp\async;
  * @template T
  * @template-implements \IteratorAggregate<int, T>
  */
-final class Pipeline implements ConcurrentIterator, \IteratorAggregate
+final class Pipeline implements \IteratorAggregate
 {
     private ConcurrentIterator $source;
+
     private int $concurrency = 1;
+
+    private array $intermediateOperations = [];
+
+    private bool $used = false;
 
     /**
      * @param ConcurrentIterator<T> $source
@@ -30,14 +34,15 @@ final class Pipeline implements ConcurrentIterator, \IteratorAggregate
 
     public function __destruct()
     {
-        $this->source->dispose();
+        if (!$this->used) {
+            $this->source->dispose();
+        }
     }
 
     public function concurrent(int $concurrency): self
     {
         $this->concurrency = $concurrency;
 
-        // TODO Return new instance?
         return $this;
     }
 
@@ -55,47 +60,13 @@ final class Pipeline implements ConcurrentIterator, \IteratorAggregate
 
     private function process(int $concurrency, \Closure $operator): self
     {
-        $destination = new Source($concurrency);
-
-        if ($concurrency === 1) {
-            try {
-                foreach ($this->source as $value) {
-                    foreach ($operator($value) as $emit) {
-                        $destination->emit($emit);
-                    }
-                }
-            } catch (\Throwable $e) {
-                $destination->error($e);
-            }
-        } else {
-            $futures = [];
-
-            for ($i = 0; $i < $concurrency; $i++) {
-                $futures[] = async(function () use ($destination, $operator): void {
-                    foreach ($this->source as $value) {
-                        if ($destination->isComplete()) {
-                            return;
-                        }
-
-                        foreach ($operator($value) as $emit) {
-                            $destination->emit($emit);
-                        }
-                    }
-                });
-            }
-
-            EventLoop::queue(function () use ($futures, $destination): void {
-                try {
-                    Future\await($futures);
-                    $destination->complete();
-                } catch (\Throwable $exception) {
-                    $destination->error($exception);
-                    $this->source->dispose();
-                }
-            });
+        if ($this->used) {
+            throw new \Error('Can\'t add new operations once a terminal operation has been invoked');
         }
 
-        return new self($destination);
+        $this->intermediateOperations[] = [$concurrency, $operator];
+
+        return $this;
     }
 
     /**
@@ -269,23 +240,63 @@ final class Pipeline implements ConcurrentIterator, \IteratorAggregate
     }
 
     /**
-     * @return \Traversable<int, T>
+     * @return ConcurrentIterator<T>
      */
-    public function getIterator(): \Traversable
+    public function getIterator(): ConcurrentIterator
     {
-        while ($this->source->continue()) {
-            yield $this->source->get();
+        if ($this->used) {
+            throw new \Error('Pipelines can\'t be reused after a terminal operation');
         }
-    }
 
-    public function continue(?Cancellation $cancellation = null): bool
-    {
-        return $this->source->continue($cancellation);
-    }
+        $this->used = true;
 
-    public function get(): mixed
-    {
-        return $this->source->get();
+        $source = $this->source;
+
+        foreach ($this->intermediateOperations as [$concurrency, $operation]) {
+            $destination = new Source($concurrency);
+
+            if ($concurrency === 1) {
+                try {
+                    foreach ($source as $value) {
+                        foreach ($operation($value) as $emit) {
+                            $destination->emit($emit);
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $destination->error($e);
+                }
+            } else {
+                $futures = [];
+
+                for ($i = 0; $i < $concurrency; $i++) {
+                    $futures[] = async(function () use ($source, $destination, $operation): void {
+                        foreach ($source as $value) {
+                            if ($destination->isComplete()) {
+                                return;
+                            }
+
+                            foreach ($operation($value) as $emit) {
+                                $destination->emit($emit);
+                            }
+                        }
+                    });
+                }
+
+                EventLoop::queue(static function () use ($futures, $source, $destination): void {
+                    try {
+                        Future\await($futures);
+                        $destination->complete();
+                    } catch (\Throwable $exception) {
+                        $destination->error($exception);
+                        $source->dispose();
+                    }
+                });
+            }
+
+            $source = $destination;
+        }
+
+        return $source;
     }
 
     public function dispose(): void

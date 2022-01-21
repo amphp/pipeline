@@ -8,13 +8,6 @@ use Amp\Pipeline;
 
 class FilterTest extends AsyncTestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        self::markTestSkipped('Filter should be lazy');
-    }
-
     public function testNoValuesEmitted(): void
     {
         $source = new Emitter;
@@ -42,10 +35,7 @@ class FilterTest extends AsyncTestCase
             return (bool) ($value & 1);
         });
 
-        while ($pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $pipeline->get());
-        }
-
+        self::assertSame($expected, $pipeline->toArray());
         self::assertSame(3, $count);
     }
 
@@ -66,7 +56,7 @@ class FilterTest extends AsyncTestCase
 
         $this->expectExceptionObject($exception);
 
-        $pipeline->continue();
+        $pipeline->toArray();
     }
 
     public function testPipelineFails(): void
@@ -80,6 +70,6 @@ class FilterTest extends AsyncTestCase
 
         $this->expectExceptionObject($exception);
 
-        $pipeline->continue();
+        $pipeline->toArray();
     }
 }

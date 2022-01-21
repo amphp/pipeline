@@ -30,7 +30,7 @@ class SkipWhileTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->pipe()->skipWhile(fn ($value) => $value < 2);
+        $iterator = $source->pipe()->skipWhile(fn ($value) => $value < 2)->getIterator();
 
         $source->error($exception);
 
@@ -43,7 +43,7 @@ class SkipWhileTest extends AsyncTestCase
     {
         $exception = new TestException;
 
-        $iterator = Pipeline\fromIterable([1, 2, 3])->skipWhile(fn ($value) => throw $exception);
+        $iterator = Pipeline\fromIterable([1, 2, 3])->skipWhile(fn ($value) => throw $exception)->getIterator();
 
         $this->expectExceptionObject($exception);
 

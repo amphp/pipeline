@@ -12,7 +12,7 @@ class SkipTest extends AsyncTestCase
     {
         $values = [1, 2, 3];
         $count = \count($values);
-        $pipeline = Pipeline\fromIterable($values)->skip(1);
+        $pipeline = Pipeline\fromIterable($values)->skip(1)->getIterator();
 
         \array_shift($values); // Shift off the first value that should be skipped.
 
@@ -30,7 +30,7 @@ class SkipTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->pipe()->skip(1);
+        $iterator = $source->pipe()->skip(1)->getIterator();
 
         $source->error($exception);
 

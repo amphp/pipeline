@@ -12,7 +12,7 @@ class TakeTest extends AsyncTestCase
     {
         $count = 2;
         $values = [1, 2, 3, 4];
-        $pipeline = Pipeline\fromIterable($values)->take($count);
+        $pipeline = Pipeline\fromIterable($values)->take($count)->getIterator();
 
         $emitted = 0;
         while ($pipeline->continue()) {
@@ -28,7 +28,7 @@ class TakeTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->pipe()->take(2);
+        $iterator = $source->pipe()->take(2)->getIterator();
 
         $source->error($exception);
 

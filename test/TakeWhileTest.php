@@ -12,7 +12,7 @@ class TakeWhileTest extends AsyncTestCase
     {
         $expected = 2;
         $values = [1, 2, 3];
-        $pipeline = Pipeline\fromIterable($values)->takeWhile(fn ($value) => $value < 3);
+        $pipeline = Pipeline\fromIterable($values)->takeWhile(fn ($value) => $value < 3)->getIterator();
 
         $emitted = 0;
         while ($pipeline->continue()) {
@@ -28,7 +28,7 @@ class TakeWhileTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->pipe()->takeWhile(fn ($value) => $value < 3);
+        $iterator = $source->pipe()->takeWhile(fn ($value) => $value < 3)->getIterator();
 
         $source->error($exception);
 
@@ -41,7 +41,7 @@ class TakeWhileTest extends AsyncTestCase
     {
         $exception = new TestException;
 
-        $iterator = Pipeline\fromIterable([1, 2, 3])->takeWhile(fn ($value) => throw $exception);
+        $iterator = Pipeline\fromIterable([1, 2, 3])->takeWhile(fn ($value) => throw $exception)->getIterator();
 
         $this->expectExceptionObject($exception);
 

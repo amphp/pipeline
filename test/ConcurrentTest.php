@@ -52,11 +52,13 @@ class ConcurrentTest extends AsyncTestCase
 
         $source->error($exception);
 
-        self::assertTrue($pipeline->continue());
-        self::assertSame(1, $pipeline->get());
+        $iterator = $pipeline->getIterator();
+
+        self::assertTrue($iterator->continue());
+        self::assertSame(1, $iterator->get());
 
         $this->expectExceptionObject($exception);
 
-        $pipeline->continue();
+        $iterator->continue();
     }
 }

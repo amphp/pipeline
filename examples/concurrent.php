@@ -12,16 +12,10 @@ $pipeline = Pipeline\fromIterable(function (): \Generator {
     }
 });
 
-$results = $pipeline->pipe(
-    Pipeline\concurrent(
-        10,
-        Pipeline\map(function (int $input): int {
-            delay(\random_int(1, 10) / 10); // Delay for 0.1 to 1 seconds, simulating I/O.
-            return $input * 10;
-        }),
-        Pipeline\filter(fn (int $input) => $input % 3 === 0), // Filter only values divisible by 3.
-    ),
-);
+$results = $pipeline->concurrent(10)
+        ->tap(fn () => delay(\random_int(1, 10) / 10))  // Delay for 0.1 to 1 seconds, simulating I/O.
+        ->map(fn (int $input): int => $input * 10)
+        ->filter(fn (int $input) => $input % 3 === 0); // Filter only values divisible by 3.
 
 foreach ($results as $value) {
     echo $value, "\n";

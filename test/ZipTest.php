@@ -32,7 +32,7 @@ class ZipTest extends AsyncTestCase
             return Pipeline\fromIterable($iterator);
         }, $array);
 
-        $pipeline = Pipeline\zip($pipelines);
+        $pipeline = Pipeline\zip($pipelines)->getIterator();
 
         while ($pipeline->continue()) {
             self::assertSame(\array_shift($expected), $pipeline->get());
@@ -66,7 +66,7 @@ class ZipTest extends AsyncTestCase
             }
         });
 
-        $pipeline = Pipeline\zip($pipelines);
+        $pipeline = Pipeline\zip($pipelines)->getIterator();
 
         while ($pipeline->continue()) {
             self::assertSame(\array_shift($expected), $pipeline->get());
@@ -83,7 +83,7 @@ class ZipTest extends AsyncTestCase
         $pipelines[] = Pipeline\fromIterable([1, 2, 3, 4, 5])->tap(fn () => delay(0.1));
         $pipelines[] = Pipeline\fromIterable([6, 7, 8, 9, 10])->tap(fn () => delay(0.1));
 
-        $pipeline = Pipeline\zip($pipelines);
+        $pipeline = Pipeline\zip($pipelines)->getIterator();
 
         $this->expectException(DisposedException::class);
         $this->setTimeout(0.3);

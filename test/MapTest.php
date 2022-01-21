@@ -31,7 +31,7 @@ class MapTest extends AsyncTestCase
         $pipeline = $generator->map(function ($value) use (&$count): int {
             ++$count;
             return $value + 1;
-        });
+        })->getIterator();
 
         while ($pipeline->continue()) {
             self::assertSame(\array_shift($values) + 1, $pipeline->get());
@@ -54,7 +54,7 @@ class MapTest extends AsyncTestCase
             }
         });
 
-        $pipeline = $generator->map(fn () => throw $exception);
+        $pipeline = $generator->map(fn () => throw $exception)->getIterator();
 
         $this->expectExceptionObject($exception);
 
@@ -66,7 +66,7 @@ class MapTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->pipe()->map($this->createCallback(0));
+        $iterator = $source->pipe()->map($this->createCallback(0))->getIterator();
 
         $source->error($exception);
 

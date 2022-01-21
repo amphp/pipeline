@@ -32,8 +32,8 @@ class SharedSourceTest extends AsyncTestCase
         $source = new Emitter();
         $share = Pipeline\share($source->pipe());
 
-        $pipeline1 = $share->pipe()->tap(fn () => delay(0.2));
-        $pipeline2 = $share->pipe();
+        $pipeline1 = $share->pipe()->tap(fn () => delay(0.2))->getIterator();
+        $pipeline2 = $share->pipe()->getIterator();
 
         $future1 = async(function () use ($pipeline1) {
             self::assertTrue($pipeline1->continue());
