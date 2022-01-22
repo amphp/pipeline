@@ -35,13 +35,7 @@ function share(Pipeline $pipeline): SharedSource
 function fromIterable(\Closure|iterable $iterable): Pipeline
 {
     if ($iterable instanceof \Closure) {
-        try {
-            $iterable = $iterable();
-        } catch (\Throwable $exception) {
-            $source = new Internal\Source();
-            $source->error($exception);
-            return new Pipeline($source);
-        }
+        $iterable = $iterable();
 
         if (!\is_iterable($iterable)) {
             throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');

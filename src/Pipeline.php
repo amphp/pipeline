@@ -4,8 +4,8 @@ namespace Amp\Pipeline;
 
 use Amp\CancelledException;
 use Amp\Future;
+use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\Source;
-use Revolt\EventLoop;
 use function Amp\async;
 
 /**
@@ -19,6 +19,8 @@ final class Pipeline implements \IteratorAggregate
     private ConcurrentIterator $source;
 
     private int $concurrency = 1;
+
+    private bool $ordered = true;
 
     private array $intermediateOperations = [];
 
@@ -64,7 +66,7 @@ final class Pipeline implements \IteratorAggregate
             throw new \Error('Can\'t add new operations once a terminal operation has been invoked');
         }
 
-        $this->intermediateOperations[] = [$concurrency, $operator];
+        $this->intermediateOperations[] = [$concurrency, $this->ordered, $operator];
 
         return $this;
     }
@@ -252,37 +254,56 @@ final class Pipeline implements \IteratorAggregate
 
         $source = $this->source;
 
-        foreach ($this->intermediateOperations as [$concurrency, $operation]) {
-            $destination = new Source($concurrency);
+        foreach ($this->intermediateOperations as [$concurrency, $ordered, $operation]) {
+            $destination = new Source;
 
             if ($concurrency === 1) {
-                try {
-                    foreach ($source as $value) {
-                        foreach ($operation($value) as $emit) {
-                            $destination->emit($emit);
+                async(static function () use ($source, $destination, $operation): void {
+                    try {
+                        foreach ($source as $value) {
+                            foreach ($operation($value) as $emit) {
+                                $destination->yield($emit);
+                            }
                         }
+
+                        $destination->complete();
+                    } catch (\Throwable $e) {
+                        $destination->error($e);
+                        $source->dispose();
                     }
-                } catch (\Throwable $e) {
-                    $destination->error($e);
-                }
+                });
             } else {
                 $futures = [];
 
+                $sequence = $ordered ? new Sequence : null;
+                $position = 0;
+
                 for ($i = 0; $i < $concurrency; $i++) {
-                    $futures[] = async(function () use ($source, $destination, $operation): void {
+                    $futures[] = async(function () use ($source, $destination, $operation, $sequence, &$position): void {
                         foreach ($source as $value) {
+                            $currentPosition = $position++;
+
                             if ($destination->isComplete()) {
                                 return;
                             }
 
-                            foreach ($operation($value) as $emit) {
-                                $destination->emit($emit);
+                            // The operation runs concurrently, but the emits are at the correct position
+                            $result = $operation($value);
+
+                            $sequence?->await($currentPosition);
+
+                            foreach ($result as $emit) {
+                                $destination->yield($emit);
                             }
+
+                            $sequence?->arrive($currentPosition);
                         }
                     });
                 }
 
-                EventLoop::queue(static function () use ($futures, $source, $destination): void {
+                unset($position);
+
+                async(static function () use ($futures, $source, $destination): void {
                     try {
                         Future\await($futures);
                         $destination->complete();
