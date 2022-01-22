@@ -48,6 +48,27 @@ final class Pipeline implements \IteratorAggregate
         return $this;
     }
 
+    public function sequential(): self
+    {
+        $this->concurrency = 1;
+
+        return $this;
+    }
+
+    public function ordered(): self
+    {
+        $this->ordered = true;
+
+        return $this;
+    }
+
+    public function unordered(): self
+    {
+        $this->ordered = false;
+
+        return $this;
+    }
+
     public function count(): int
     {
         $count = 0;
