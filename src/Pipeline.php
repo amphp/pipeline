@@ -2,8 +2,8 @@
 
 namespace Amp\Pipeline;
 
-use Amp\CancelledException;
 use Amp\Future;
+use Amp\Pipeline\Internal\ConcurrentSourceIterator;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\Source;
 use function Amp\async;
@@ -282,7 +282,13 @@ final class Pipeline implements \IteratorAggregate
                 $position = 0;
 
                 for ($i = 0; $i < $concurrency; $i++) {
-                    $futures[] = async(function () use ($source, $destination, $operation, $sequence, &$position): void {
+                    $futures[] = async(function () use (
+                        $source,
+                        $destination,
+                        $operation,
+                        $sequence,
+                        &$position
+                    ): void {
                         foreach ($source as $value) {
                             $currentPosition = $position++;
 
@@ -323,7 +329,7 @@ final class Pipeline implements \IteratorAggregate
             $source = $destination;
         }
 
-        return $source;
+        return $source instanceof Source ? new ConcurrentSourceIterator($source) : $source;
     }
 
     public function dispose(): void

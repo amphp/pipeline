@@ -21,7 +21,7 @@ use Revolt\EventLoop\Suspension;
  * @template T
  * @template-implements ConcurrentIterator<T>
  */
-final class Source implements ConcurrentIterator, \IteratorAggregate
+final class Source implements \IteratorAggregate
 {
     private const CONTINUE = [null];
 
@@ -59,11 +59,6 @@ final class Source implements ConcurrentIterator, \IteratorAggregate
 
         $this->bufferSize = $bufferSize;
         $this->currentValue = new FiberLocal(static fn () => throw new \Error('Call continue() before calling get()'));
-    }
-
-    public function __destruct()
-    {
-        $this->dispose();
     }
 
     public function continue(?Cancellation $cancellation = null): bool

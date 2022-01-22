@@ -3,6 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
+use Amp\Pipeline\Internal\ConcurrentSourceIterator;
 use Amp\Pipeline\Internal\Source;
 use Revolt\EventLoop;
 use function Amp\async;
@@ -51,6 +52,10 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         $iterable = (static fn () => yield from $iterable)();
     }
 
+    if (\is_array($iterable)) {
+        return new Pipeline(new ConcurrentArrayIterator($iterable));
+    }
+
     $source = new Source();
 
     EventLoop::queue(static function () use ($iterable, $source): void {
@@ -67,7 +72,7 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         }
     });
 
-    return new Pipeline($source);
+    return new Pipeline(new ConcurrentSourceIterator($source));
 }
 
 /**

@@ -37,6 +37,11 @@ final class ConcurrentSourceIterator implements ConcurrentIterator, \IteratorAgg
 
     public function getIterator(): \Traversable
     {
-        return $this->source->getIterator();
+        // Don't replace this with: return $this->source->getIterator();
+        // PHP will call getIterator and GC this instance, triggering a dispose operation.
+
+        while ($this->continue()) {
+            yield $this->get();
+        }
     }
 }

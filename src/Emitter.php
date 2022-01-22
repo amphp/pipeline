@@ -3,6 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
+use Amp\Pipeline\Internal\ConcurrentSourceIterator;
 
 /**
  * Emitter is a container for a Pipeline that can emit values using the emit() method and completed using the
@@ -53,7 +54,7 @@ final class Emitter
 
         $this->used = true;
 
-        return new Pipeline($this->source);
+        return new Pipeline(new ConcurrentSourceIterator($this->source));
     }
 
     /**
