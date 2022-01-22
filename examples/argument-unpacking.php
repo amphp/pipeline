@@ -3,7 +3,6 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Amp\Pipeline\Pipeline;
 use Revolt\EventLoop;
 use function Amp\delay;
 use function Amp\Pipeline\fromIterable;
