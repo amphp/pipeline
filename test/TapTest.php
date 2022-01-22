@@ -17,6 +17,8 @@ class TapTest extends AsyncTestCase
             $invoked++;
         });
 
+        self::assertSame(0, $invoked);
+
         $pipeline->forEach(fn () => null);
 
         self::assertSame(3, $invoked);

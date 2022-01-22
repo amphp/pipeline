@@ -61,6 +61,11 @@ final class Source implements ConcurrentIterator, \IteratorAggregate
         $this->currentValue = new FiberLocal(static fn () => throw new \Error('Call continue() before calling get()'));
     }
 
+    public function __destruct()
+    {
+        $this->dispose();
+    }
+
     public function continue(?Cancellation $cancellation = null): bool
     {
         $position = $this->consumePosition++;

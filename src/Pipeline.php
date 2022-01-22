@@ -267,6 +267,9 @@ final class Pipeline implements \IteratorAggregate
                         }
 
                         $destination->complete();
+                    } catch (CancelledException) {
+                        $destination->complete();
+                        $source->dispose();
                     } catch (\Throwable $e) {
                         $destination->error($e);
                         $source->dispose();

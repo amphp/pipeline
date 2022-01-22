@@ -62,6 +62,8 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
             $source->complete();
         } catch (\Throwable $exception) {
             $source->error($exception);
+        } finally {
+            $source->dispose();
         }
     });
 
@@ -175,14 +177,16 @@ function zip(array $pipelines): Pipeline
                 $key
             ));
         }
+
+        $pipelines[$key] = $pipeline->getIterator();
     }
 
     return fromIterable(static function () use ($pipelines): \Generator {
         while (true) {
             $next = Future\await(\array_map(
-                static fn (Pipeline $pipeline) => async(static function () use ($pipeline) {
-                    if ($pipeline->continue()) {
-                        return [$pipeline->get()];
+                static fn (ConcurrentIterator $iterator) => async(static function () use ($iterator) {
+                    if ($iterator->continue()) {
+                        return [$iterator->get()];
                     }
 
                     return null;

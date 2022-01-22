@@ -32,11 +32,9 @@ class ZipTest extends AsyncTestCase
             return Pipeline\fromIterable($iterator);
         }, $array);
 
-        $pipeline = Pipeline\zip($pipelines)->getIterator();
+        $pipeline = Pipeline\zip($pipelines);
 
-        while ($pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $pipeline->get());
-        }
+        self::assertSame($expected, $pipeline->toArray());
     }
 
     /**
@@ -66,11 +64,9 @@ class ZipTest extends AsyncTestCase
             }
         });
 
-        $pipeline = Pipeline\zip($pipelines)->getIterator();
+        $pipeline = Pipeline\zip($pipelines);
 
-        while ($pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $pipeline->get());
-        }
+        self::assertSame($expected, $pipeline->toArray());
     }
 
     /**

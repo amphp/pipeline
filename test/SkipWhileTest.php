@@ -10,19 +10,10 @@ class SkipWhileTest extends AsyncTestCase
 {
     public function testValuesEmitted(): void
     {
-        $values = [1, 2, 3];
-        $count = \count($values);
-        $pipeline = Pipeline\fromIterable($values)->skipWhile(fn ($value) => $value < 2);
+        $pipeline = Pipeline\fromIterable([1, 2, 3])
+            ->skipWhile(fn ($value) => $value < 2);
 
-        \array_shift($values); // Shift off the first value that should be skipped.
-
-        $emitted = 0;
-        while ($pipeline->continue()) {
-            $emitted++;
-            self::assertSame(\array_shift($values), $pipeline->get());
-        }
-
-        self::assertSame($count - 1, $emitted);
+        self::assertSame([2, 3], $pipeline->toArray());
     }
 
     public function testPipelineFails(): void

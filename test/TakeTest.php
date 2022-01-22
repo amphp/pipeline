@@ -10,17 +10,10 @@ class TakeTest extends AsyncTestCase
 {
     public function testValuesEmitted(): void
     {
-        $count = 2;
-        $values = [1, 2, 3, 4];
-        $pipeline = Pipeline\fromIterable($values)->take($count)->getIterator();
+        $pipeline = Pipeline\fromIterable([1, 2, 3, 4])
+            ->take(2);
 
-        $emitted = 0;
-        while ($pipeline->continue()) {
-            $emitted++;
-            self::assertSame(\array_shift($values), $pipeline->get());
-        }
-
-        self::assertSame($count, $emitted);
+        self::assertSame([1, 2], $pipeline->toArray());
     }
 
     public function testPipelineFails(): void

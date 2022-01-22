@@ -15,6 +15,11 @@ final class ConcurrentSourceIterator implements ConcurrentIterator, \IteratorAgg
         $this->source = $source;
     }
 
+    public function __destruct()
+    {
+        $this->source->dispose();
+    }
+
     public function continue(?Cancellation $cancellation = null): bool
     {
         return $this->source->continue($cancellation);
