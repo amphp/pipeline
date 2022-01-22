@@ -193,7 +193,7 @@ final class Pipeline implements \IteratorAggregate
                 return [$value];
             }
 
-            throw new CancelledException;
+            throw new DisposedException;
         });
     }
 
@@ -213,7 +213,7 @@ final class Pipeline implements \IteratorAggregate
                     return [$value[1]];
                 }
 
-                throw new CancelledException;
+                throw new DisposedException;
             });
     }
 
@@ -267,7 +267,7 @@ final class Pipeline implements \IteratorAggregate
                         }
 
                         $destination->complete();
-                    } catch (CancelledException) {
+                    } catch (DisposedException) {
                         $destination->complete();
                         $source->dispose();
                     } catch (\Throwable $e) {
@@ -310,6 +310,9 @@ final class Pipeline implements \IteratorAggregate
                     try {
                         Future\await($futures);
                         $destination->complete();
+                    } catch (DisposedException) {
+                        $destination->complete();
+                        $source->dispose();
                     } catch (\Throwable $exception) {
                         $destination->error($exception);
                         $source->dispose();
