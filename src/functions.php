@@ -9,22 +9,6 @@ use Revolt\EventLoop;
 use function Amp\async;
 
 /**
- * Creates a source that can create any number of pipelines by calling {@see Source::pipe()}. The new pipelines
- * will each emit values identical to that of the given pipeline. The original pipeline is only disposed if all
- * downstream pipelines are disposed.
- *
- * @template T
- *
- * @param Pipeline<T> $pipeline
- *
- * @return SharedSource<T>
- */
-function share(Pipeline $pipeline): SharedSource
-{
-    return new SharedSource($pipeline);
-}
-
-/**
  * Creates a pipeline from the given iterable, emitting each value.
  *
  * @template T
