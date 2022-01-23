@@ -8,7 +8,7 @@ use function Amp\delay;
 use function Amp\Pipeline\fromIterable;
 
 try {
-    /** @psalm-var Pipeline<int> $pipeline */
+    /** @psalm-var \Amp\Pipeline\Pipeline<int> $pipeline */
     $iterator = fromIterable(function (): \Generator {
         yield 1;
         delay(0.5);

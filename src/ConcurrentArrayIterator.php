@@ -59,4 +59,11 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
     {
         $this->disposed ??= new DisposedException;
     }
+
+    public function getIterator(): \Traversable
+    {
+        while ($this->continue()) {
+            yield $this->getPosition() => $this->getValue();
+        }
+    }
 }

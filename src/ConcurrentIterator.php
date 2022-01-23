@@ -6,8 +6,9 @@ use Amp\Cancellation;
 
 /**
  * @template T
+ * @template-extends \IteratorAggregate<int, T>
  */
-interface ConcurrentIterator extends \Traversable
+interface ConcurrentIterator extends \IteratorAggregate
 {
     /**
      * Advances the iterator to the next value, returning {@code true} if the iterator has emitted a value or
@@ -47,4 +48,10 @@ interface ConcurrentIterator extends \Traversable
      * Disposes the iterator, indicating the consumer is no longer interested in the iterator output.
      */
     public function dispose(): void;
+
+    /**
+     * @return \Traversable<int, T> Returns an iterator with position and value, multiple calls must be allowed to
+     *     allow for concurrent iteration.
+     */
+    public function getIterator(): \Traversable;
 }

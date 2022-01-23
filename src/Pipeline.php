@@ -81,13 +81,16 @@ final class Pipeline implements \IteratorAggregate
     }
 
     /**
-     * @param \Closure(T, T): int $comparator
+     * @template R
      *
-     * @return T|null
+     * @param \Closure(T, T): int $comparator
+     * @param R $default
+     *
+     * @return T|R
      */
-    public function min(\Closure $comparator): mixed
+    public function min(\Closure $comparator, mixed $default = null): mixed
     {
-        $min = null;
+        $min = $default;
         $first = true;
 
         foreach ($this as $value) {
@@ -95,6 +98,7 @@ final class Pipeline implements \IteratorAggregate
                 $first = false;
                 $min = $value;
             } else {
+                /** @var T $min */
                 $comparison = $comparator($min, $value);
                 if ($comparison > 0) {
                     $min = $value;
@@ -106,13 +110,16 @@ final class Pipeline implements \IteratorAggregate
     }
 
     /**
-     * @param \Closure(T, T): int $comparator
+     * @template R
      *
-     * @return T|null
+     * @param \Closure(T, T): int $comparator
+     * @param R $default
+     *
+     * @return T|R
      */
-    public function max(\Closure $comparator): mixed
+    public function max(\Closure $comparator, mixed $default = null): mixed
     {
-        $max = null;
+        $max = $default;
         $first = true;
 
         foreach ($this as $value) {
@@ -120,6 +127,7 @@ final class Pipeline implements \IteratorAggregate
                 $first = false;
                 $max = $value;
             } else {
+                /** @var T $max */
                 $comparison = $comparator($max, $value);
                 if ($comparison < 0) {
                     $max = $value;
@@ -253,8 +261,6 @@ final class Pipeline implements \IteratorAggregate
     /**
      * Skip the first N items of the pipeline.
      *
-     * @template T
-     *
      * @param int $count
      *
      * @return self<T>
@@ -297,6 +303,7 @@ final class Pipeline implements \IteratorAggregate
 
                 $sequence->await($position);
 
+                /** @psalm-suppress RedundantCondition */
                 if ($skipping && $predicateResult) {
                     $sequence->arrive($position);
                     return [];
@@ -354,6 +361,7 @@ final class Pipeline implements \IteratorAggregate
 
                 $sequence->await($position);
 
+                /** @psalm-suppress RedundantCondition */
                 if ($taking && $predicateResult) {
                     $sequence->arrive($position);
                     return [$value];
@@ -364,6 +372,7 @@ final class Pipeline implements \IteratorAggregate
 
                 return (static function () {
                     // turn into generator
+                    /** @psalm-suppress TypeDoesNotContainType */
                     if (false) {
                         /** @noinspection PhpUnreachableStatementInspection */
                         yield;

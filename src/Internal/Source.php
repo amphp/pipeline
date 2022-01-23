@@ -46,10 +46,10 @@ final class Source implements \IteratorAggregate
 
     private int $bufferSize;
 
-    /** @var FiberLocal<int> */
+    /** @var FiberLocal<int|null> */
     private FiberLocal $currentPosition;
 
-    /** @var FiberLocal<T> */
+    /** @var FiberLocal<T|null> */
     private FiberLocal $currentValue;
 
     public function __construct(int $bufferSize = 0)

@@ -31,13 +31,13 @@ function fromIterable(\Closure|iterable $iterable): Pipeline
         return $iterable;
     }
 
+    if (\is_array($iterable)) {
+        return new Pipeline(new ConcurrentArrayIterator($iterable));
+    }
+
     /** @psalm-suppress RedundantConditionGivenDocblockType */
     if (!$iterable instanceof \Generator) {
         $iterable = (static fn () => yield from $iterable)();
-    }
-
-    if (\is_array($iterable)) {
-        return new Pipeline(new ConcurrentArrayIterator($iterable));
     }
 
     $source = new Source();
@@ -157,6 +157,8 @@ function concat(array $pipelines): Pipeline
  */
 function zip(array $pipelines): Pipeline
 {
+    $iterators = [];
+
     foreach ($pipelines as $key => $pipeline) {
         if (!$pipeline instanceof Pipeline) {
             throw new \TypeError(\sprintf(
@@ -167,10 +169,10 @@ function zip(array $pipelines): Pipeline
             ));
         }
 
-        $pipelines[$key] = $pipeline->getIterator();
+        $iterators[$key] = $pipeline->getIterator();
     }
 
-    return fromIterable(static function () use ($pipelines): \Generator {
+    return fromIterable(static function () use ($iterators): \Generator {
         while (true) {
             $next = Future\await(\array_map(
                 static fn (ConcurrentIterator $iterator) => async(static function () use ($iterator) {
@@ -180,12 +182,12 @@ function zip(array $pipelines): Pipeline
 
                     return null;
                 }),
-                $pipelines
+                $iterators
             ));
 
             // Reconstruct emit array to ensure keys are in same iteration order as pipelines.
             $emit = [];
-            foreach ($pipelines as $key => $pipeline) {
+            foreach ($iterators as $key => $pipeline) {
                 $value = $next[$key];
                 if ($value === null) {
                     return;
