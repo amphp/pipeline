@@ -10,23 +10,23 @@ class TakeWhileTest extends AsyncTestCase
 {
     public function testAllValuesTrue(): void
     {
-        $pipeline = Pipeline\fromIterable([1, 2, 3])->takeWhile(fn ($value) => $value < 3);
+        $pipeline = Pipeline\fromIterable([1, 2])->takeWhile(fn ($value) => $value < 3);
 
-        self::assertSame([1, 2, 3], $pipeline->toArray());
+        self::assertSame([1, 2], $pipeline->toArray());
     }
 
     public function testSomeValuesTrue(): void
     {
         $pipeline = Pipeline\fromIterable([1, 2, 3, 4, 5])->takeWhile(fn ($value) => $value < 3);
 
-        self::assertSame([1, 2, 3], $pipeline->toArray());
+        self::assertSame([1, 2], $pipeline->toArray());
     }
 
     public function testSomeValuesTrueAfterFalse(): void
     {
         $pipeline = Pipeline\fromIterable([1, 2, 3, 4, 5, 4, 3, 2, 1])->takeWhile(fn ($value) => $value < 3);
 
-        self::assertSame([1, 2, 3], $pipeline->toArray());
+        self::assertSame([1, 2], $pipeline->toArray());
     }
 
     public function testPipelineFails(): void

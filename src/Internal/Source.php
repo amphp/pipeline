@@ -19,7 +19,7 @@ use Revolt\EventLoop\Suspension;
  *
  * @template T
  */
-final class Source
+final class Source implements \IteratorAggregate
 {
     private const CONTINUE = [null];
 
@@ -436,6 +436,13 @@ final class Source
         /** @psalm-suppress RedundantCondition */
         if (isset($this->waiting)) {
             $this->resolvePending();
+        }
+    }
+
+    public function getIterator(): \Traversable
+    {
+        while ($this->continue()) {
+            yield $this->getPosition() => $this->getValue();
         }
     }
 }
