@@ -80,6 +80,56 @@ final class Pipeline implements \IteratorAggregate
         return $count;
     }
 
+    /**
+     * @param \Closure(T, T): int $comparator
+     *
+     * @return T|null
+     */
+    public function min(\Closure $comparator): mixed
+    {
+        $min = null;
+        $first = true;
+
+        foreach ($this as $value) {
+            if ($first) {
+                $first = false;
+                $min = $value;
+            } else {
+                $comparison = $comparator($min, $value);
+                if ($comparison > 0) {
+                    $min = $value;
+                }
+            }
+        }
+
+        return $min;
+    }
+
+    /**
+     * @param \Closure(T, T): int $comparator
+     *
+     * @return T|null
+     */
+    public function max(\Closure $comparator): mixed
+    {
+        $max = null;
+        $first = true;
+
+        foreach ($this as $value) {
+            if ($first) {
+                $first = false;
+                $max = $value;
+            } else {
+                $comparison = $comparator($max, $value);
+                if ($comparison < 0) {
+                    $max = $value;
+                }
+            }
+        }
+
+        return $max;
+    }
+
     private function process(int $concurrency, \Closure $operator): self
     {
         if ($this->used) {
