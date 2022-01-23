@@ -323,10 +323,11 @@ final class Pipeline implements \IteratorAggregate
             static $i = 0;
 
             if ($i++ < $count) {
-                return [$value];
+                yield $value;
+                return true;
             }
 
-            throw new DisposedException;
+            return false;
         });
     }
 
@@ -343,10 +344,11 @@ final class Pipeline implements \IteratorAggregate
             ->map(fn (mixed $value) => [$predicate($value), $value])
             ->process(1, function (array $value) {
                 if ($value[0]) {
-                    return [$value[1]];
+                    yield $value[1];
+                    return true;
                 }
 
-                throw new DisposedException;
+                return false;
             });
     }
 
@@ -394,13 +396,16 @@ final class Pipeline implements \IteratorAggregate
                 async(static function () use ($source, $destination, $operation): void {
                     try {
                         foreach ($source as $position => $value) {
-                            foreach ($operation($value, $position) as $emit) {
+                            $iterable = $operation($value, $position);
+                            foreach ($iterable as $emit) {
                                 $destination->yield($emit);
+                            }
+
+                            if ($iterable instanceof \Generator && $iterable->getReturn() === false) {
+                                break;
                             }
                         }
 
-                        $destination->complete();
-                    } catch (DisposedException) {
                         $destination->complete();
                         $source->dispose();
                     } catch (\Throwable $e) {
@@ -426,12 +431,18 @@ final class Pipeline implements \IteratorAggregate
                             }
 
                             // The operation runs concurrently, but the emits are at the correct position
-                            $result = $operation($value, $position);
+                            $iterable = $operation($value, $position);
 
                             $sequence?->await($position);
 
-                            foreach ($result as $emit) {
+                            foreach ($iterable as $emit) {
                                 $destination->yield($emit);
+                            }
+
+                            if ($iterable instanceof \Generator && $iterable->getReturn() === false) {
+                                $destination->complete();
+                                $source->dispose();
+                                return;
                             }
 
                             $sequence?->arrive($position);
@@ -443,9 +454,6 @@ final class Pipeline implements \IteratorAggregate
                     try {
                         Future\await($futures);
                         $destination->complete();
-                    } catch (DisposedException) {
-                        $destination->complete();
-                        $source->dispose();
                     } catch (\Throwable $exception) {
                         $destination->error($exception);
                         $source->dispose();
