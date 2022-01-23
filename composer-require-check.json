@@ -17,13 +17,7 @@
         "void",
         "object",
         "fromIterable",
-        "map",
-        "filter",
-        "tap",
-        "discard",
-        "postpone",
-        "postponeWhen",
-        "sampleWhen"
+        "array_is_list"
     ],
     "php-core-extensions": [
         "Core",
