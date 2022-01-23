@@ -16,6 +16,8 @@ use function Amp\async;
  */
 final class Pipeline implements \IteratorAggregate
 {
+    private static \stdClass $stop;
+
     private ConcurrentIterator $source;
 
     private int $concurrency = 1;
@@ -31,6 +33,9 @@ final class Pipeline implements \IteratorAggregate
      */
     public function __construct(ConcurrentIterator $source)
     {
+        /** @psalm-suppress RedundantPropertyInitializationCheck */
+        self::$stop ??= new \stdClass;
+
         $this->source = $source;
     }
 
@@ -330,11 +335,10 @@ final class Pipeline implements \IteratorAggregate
             static $i = 0;
 
             if ($i++ < $count) {
-                yield $value;
-                return true;
+                return [$value];
             }
 
-            return false;
+            return [self::$stop];
         });
     }
 
@@ -370,16 +374,7 @@ final class Pipeline implements \IteratorAggregate
                 $taking = false;
                 $sequence->arrive($position);
 
-                return (static function () {
-                    // turn into generator
-                    /** @psalm-suppress TypeDoesNotContainType */
-                    if (false) {
-                        /** @noinspection PhpUnreachableStatementInspection */
-                        yield;
-                    }
-
-                    return false;
-                })();
+                return [self::$stop];
             }
         );
     }
@@ -430,11 +425,11 @@ final class Pipeline implements \IteratorAggregate
                         foreach ($source as $position => $value) {
                             $iterable = $operation($value, $position);
                             foreach ($iterable as $emit) {
-                                $destination->yield($emit);
-                            }
+                                if ($emit === self::$stop) {
+                                    break 2;
+                                }
 
-                            if ($iterable instanceof \Generator && $iterable->getReturn() === false) {
-                                break;
+                                $destination->yield($emit);
                             }
                         }
 
@@ -468,13 +463,12 @@ final class Pipeline implements \IteratorAggregate
                             $sequence?->await($position);
 
                             foreach ($iterable as $emit) {
-                                $destination->yield($emit);
-                            }
+                                /** @psalm-suppress TypeDoesNotContainType */
+                                if ($emit === self::$stop || $destination->isComplete()) {
+                                    break 2;
+                                }
 
-                            if ($iterable instanceof \Generator && $iterable->getReturn() === false) {
-                                $destination->complete();
-                                $source->dispose();
-                                return;
+                                $destination->yield($emit);
                             }
 
                             $sequence?->arrive($position);
