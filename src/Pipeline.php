@@ -73,7 +73,6 @@ final class Pipeline implements \IteratorAggregate
     {
         $count = 0;
 
-        // TODO Concurrency?
         foreach ($this as $ignored) {
             $count++;
         }
@@ -146,7 +145,6 @@ final class Pipeline implements \IteratorAggregate
     {
         $result = $initial;
 
-        // TODO Concurrency?
         foreach ($this as $value) {
             $result = $accumulator($result, $value);
         }
