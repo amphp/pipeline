@@ -16,6 +16,21 @@ class SkipWhileTest extends AsyncTestCase
         self::assertSame([2, 3], $pipeline->toArray());
     }
 
+    public function testPredicateInvokedAsNeeded(): void
+    {
+        $invoked = 0;
+
+        $pipeline = Pipeline\fromIterable([1, 2, 3])
+            ->skipWhile(function ($value) use (&$invoked) {
+                $invoked++;
+
+                return $value < 2;
+            });
+
+        self::assertSame([2, 3], $pipeline->toArray());
+        self::assertSame(2, $invoked);
+    }
+
     public function testPipelineFails(): void
     {
         $exception = new TestException;

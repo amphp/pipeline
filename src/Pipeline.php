@@ -283,15 +283,31 @@ final class Pipeline implements \IteratorAggregate
      */
     public function skipWhile(\Closure $predicate): self
     {
-        return $this
-            ->map(fn (mixed $value) => [$predicate($value), $value]) // TODO Don't evaluate if no longer needed
-            ->process(1, function (array $value) {
-                if ($value[0]) {
+        $sequence = new Sequence;
+        $skipping = true;
+
+        return $this->process(
+            $this->concurrency,
+            function (mixed $value, int $position) use ($sequence, $predicate, &$skipping) {
+                if (!$skipping) {
+                    return [$value];
+                }
+
+                $predicateResult = $predicate($value);
+
+                $sequence->await($position);
+
+                if ($skipping && $predicateResult) {
+                    $sequence->arrive($position);
                     return [];
                 }
 
-                return [$value[1]];
-            });
+                $skipping = false;
+                $sequence->arrive($position);
+
+                return [$value];
+            }
+        );
     }
 
     /**
@@ -373,12 +389,15 @@ final class Pipeline implements \IteratorAggregate
 
         foreach ($this->intermediateOperations as [$concurrency, $ordered, $operation]) {
             $destination = new Source;
+            $position = 0;
 
             if ($concurrency === 1) {
-                async(static function () use ($source, $destination, $operation): void {
+                async(static function () use ($source, $destination, $operation, &$position): void {
                     try {
                         foreach ($source as $value) {
-                            foreach ($operation($value) as $emit) {
+                            $currentPosition = $position++;
+
+                            foreach ($operation($value, $currentPosition) as $emit) {
                                 $destination->yield($emit);
                             }
                         }
@@ -396,7 +415,6 @@ final class Pipeline implements \IteratorAggregate
                 $futures = [];
 
                 $sequence = $ordered ? new Sequence : null;
-                $position = 0;
 
                 for ($i = 0; $i < $concurrency; $i++) {
                     $futures[] = async(function () use (
@@ -414,7 +432,7 @@ final class Pipeline implements \IteratorAggregate
                             }
 
                             // The operation runs concurrently, but the emits are at the correct position
-                            $result = $operation($value);
+                            $result = $operation($value, $currentPosition);
 
                             $sequence?->await($currentPosition);
 
@@ -426,8 +444,6 @@ final class Pipeline implements \IteratorAggregate
                         }
                     });
                 }
-
-                unset($position);
 
                 async(static function () use ($futures, $source, $destination): void {
                     try {
@@ -444,6 +460,8 @@ final class Pipeline implements \IteratorAggregate
             }
 
             $source = $destination;
+
+            unset($position);
         }
 
         return $source instanceof Source ? new ConcurrentSourceIterator($source) : $source;
