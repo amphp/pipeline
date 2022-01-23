@@ -22,7 +22,7 @@ class ConcurrentTest extends AsyncTestCase
         self::assertSame(0, $pipeline->count());
     }
 
-    public function testConcurrency(): void
+    public function testConcurrencyOrdered(): void
     {
         $range = \range(0, 100);
 
@@ -32,7 +32,21 @@ class ConcurrentTest extends AsyncTestCase
             ->tap(fn (int $value) => delay(\random_int(0, 10) / 1000))
             ->toArray();
 
-        self::assertNotSame($range, $results); // Arrays should not match as values should be randomly ordered.
+        self::assertSame($range, $results);
+    }
+
+    public function testConcurrencyUnordered(): void
+    {
+        $range = \range(0, 100);
+
+        $source = Pipeline\fromIterable($range);
+
+        $results = $source->concurrent(3)
+            ->unordered()
+            ->tap(fn (int $value) => delay(\random_int(0, 10) / 1000))
+            ->toArray();
+
+        self::assertNotSame($range, $results);
 
         foreach ($range as $value) {
             self::assertContains(needle: $value, haystack: $results);
