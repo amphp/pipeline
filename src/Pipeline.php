@@ -340,7 +340,7 @@ final class Pipeline implements \IteratorAggregate
     public function takeWhile(\Closure $predicate): self
     {
         return $this
-            ->map(fn (mixed $value) => [$predicate($value), $value]) // TODO Don't evaluate if no longer needed
+            ->map(fn (mixed $value) => [$predicate($value), $value])
             ->process(1, function (array $value) {
                 if ($value[0]) {
                     return [$value[1]];

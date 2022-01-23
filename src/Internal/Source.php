@@ -46,14 +46,11 @@ final class Source
 
     private int $bufferSize;
 
-    /** @var FiberLocal<T> */
+    /** @var FiberLocal<int> */
     private FiberLocal $currentPosition;
 
     /** @var FiberLocal<T> */
     private FiberLocal $currentValue;
-
-    /** @var FiberLocal<bool> */
-    private FiberLocal $currentValueUnavailable;
 
     public function __construct(int $bufferSize = 0)
     {
@@ -64,7 +61,6 @@ final class Source
         $this->bufferSize = $bufferSize;
         $this->currentPosition = new FiberLocal(static fn () => throw new \Error('Call continue() before calling getPosition()'));
         $this->currentValue = new FiberLocal(static fn () => throw new \Error('Call continue() before calling getValue()'));
-        $this->currentValueUnavailable = new FiberLocal(static fn () => false);
     }
 
     public function continue(?Cancellation $cancellation = null): bool
@@ -92,7 +88,6 @@ final class Source
         if ($this->completed || $this->disposed) {
             $this->currentPosition->set(null);
             $this->currentValue->set(null);
-            $this->currentValueUnavailable->set(true);
 
             if ($this->exception) {
                 throw $this->exception;
@@ -126,10 +121,10 @@ final class Source
         try {
             $value = $suspension->suspend();
 
-            if ($value === $this->currentValueUnavailable) {
+            // This is just a marker, because we can't set fiber locals from other fibers
+            if ($value === $this->currentPosition) {
                 $this->currentPosition->set(null);
                 $this->currentValue->set(null);
-                $this->currentValueUnavailable->set(true);
 
                 return false;
             }
@@ -149,11 +144,7 @@ final class Source
      */
     public function getValue(): mixed
     {
-        if ($this->exception) {
-            throw $this->exception;
-        }
-
-        if ($this->currentValueUnavailable->get()) {
+        if ($this->currentPosition->get() === null) {
             throw new \Error('Pipeline complete, cannot call getValue()');
         }
 
@@ -162,15 +153,12 @@ final class Source
 
     public function getPosition(): int
     {
-        if ($this->exception) {
-            throw $this->exception;
-        }
-
-        if ($this->currentValueUnavailable->get()) {
+        $position = $this->currentPosition->get();
+        if ($position === null) {
             throw new \Error('Pipeline complete, cannot call getPosition()');
         }
 
-        return $this->currentPosition->get();
+        return $position;
     }
 
     /**
@@ -427,7 +415,7 @@ final class Source
                 if ($exception) {
                     $suspension->throw($exception);
                 } else {
-                    $suspension->resume($this->currentValueUnavailable);
+                    $suspension->resume($this->currentPosition);
                 }
             }
         }

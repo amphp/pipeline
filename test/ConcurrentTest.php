@@ -49,7 +49,6 @@ class ConcurrentTest extends AsyncTestCase
             ->tap($this->createCallback(1));
 
         $source->emit(1)->ignore();
-
         $source->error($exception);
 
         $iterator = $pipeline->getIterator();

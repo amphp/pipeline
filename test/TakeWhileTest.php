@@ -8,19 +8,25 @@ use Amp\Pipeline;
 
 class TakeWhileTest extends AsyncTestCase
 {
-    public function testValuesEmitted(): void
+    public function testAllValuesTrue(): void
     {
-        $expected = 2;
-        $values = [1, 2, 3];
-        $pipeline = Pipeline\fromIterable($values)->takeWhile(fn ($value) => $value < 3)->getIterator();
+        $pipeline = Pipeline\fromIterable([1, 2, 3])->takeWhile(fn ($value) => $value < 3);
 
-        $emitted = 0;
-        while ($pipeline->continue()) {
-            $emitted++;
-            self::assertSame(\array_shift($values), $pipeline->getValue());
-        }
+        self::assertSame([1, 2, 3], $pipeline->toArray());
+    }
 
-        self::assertSame($expected, $emitted);
+    public function testSomeValuesTrue(): void
+    {
+        $pipeline = Pipeline\fromIterable([1, 2, 3, 4, 5])->takeWhile(fn ($value) => $value < 3);
+
+        self::assertSame([1, 2, 3], $pipeline->toArray());
+    }
+
+    public function testSomeValuesTrueAfterFalse(): void
+    {
+        $pipeline = Pipeline\fromIterable([1, 2, 3, 4, 5, 4, 3, 2, 1])->takeWhile(fn ($value) => $value < 3);
+
+        self::assertSame([1, 2, 3], $pipeline->toArray());
     }
 
     public function testPipelineFails(): void
