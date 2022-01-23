@@ -80,7 +80,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
         $iterator = $generator->getIterator();
         while ($iterator->continue()) {
-            $output .= $iterator->get();
+            $output .= $iterator->getValue();
             delay(self::TIMEOUT);
         }
 
@@ -125,7 +125,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
         $iterator = $generator->getIterator();
         self::assertTrue($iterator->continue());
-        self::assertSame(0, $iterator->get());
+        self::assertSame(0, $iterator->getValue());
 
         self::assertFalse($invoked);
 
@@ -193,7 +193,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
         self::assertFalse($invoked);
 
         self::assertTrue($generator->continue());
-        self::assertSame(0, $generator->get());
+        self::assertSame(0, $generator->getValue());
         self::assertTrue($invoked);
 
         self::assertFalse($generator->continue());

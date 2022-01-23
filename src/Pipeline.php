@@ -389,15 +389,12 @@ final class Pipeline implements \IteratorAggregate
 
         foreach ($this->intermediateOperations as [$concurrency, $ordered, $operation]) {
             $destination = new Source;
-            $position = 0;
 
             if ($concurrency === 1) {
-                async(static function () use ($source, $destination, $operation, &$position): void {
+                async(static function () use ($source, $destination, $operation): void {
                     try {
-                        foreach ($source as $value) {
-                            $currentPosition = $position++;
-
-                            foreach ($operation($value, $currentPosition) as $emit) {
+                        foreach ($source as $position => $value) {
+                            foreach ($operation($value, $position) as $emit) {
                                 $destination->yield($emit);
                             }
                         }
@@ -421,26 +418,23 @@ final class Pipeline implements \IteratorAggregate
                         $source,
                         $destination,
                         $operation,
-                        $sequence,
-                        &$position
+                        $sequence
                     ): void {
-                        foreach ($source as $value) {
-                            $currentPosition = $position++;
-
+                        foreach ($source as $position => $value) {
                             if ($destination->isComplete()) {
                                 return;
                             }
 
                             // The operation runs concurrently, but the emits are at the correct position
-                            $result = $operation($value, $currentPosition);
+                            $result = $operation($value, $position);
 
-                            $sequence?->await($currentPosition);
+                            $sequence?->await($position);
 
                             foreach ($result as $emit) {
                                 $destination->yield($emit);
                             }
 
-                            $sequence?->arrive($currentPosition);
+                            $sequence?->arrive($position);
                         }
                     });
                 }
@@ -460,8 +454,6 @@ final class Pipeline implements \IteratorAggregate
             }
 
             $source = $destination;
-
-            unset($position);
         }
 
         return $source instanceof Source ? new ConcurrentSourceIterator($source) : $source;

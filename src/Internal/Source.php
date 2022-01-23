@@ -6,7 +6,6 @@ use Amp\Cancellation;
 use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\Internal;
-use Amp\Pipeline\ConcurrentIterator;
 use Amp\Pipeline\DisposedException;
 use Revolt\EventLoop;
 use Revolt\EventLoop\FiberLocal;
@@ -19,9 +18,8 @@ use Revolt\EventLoop\Suspension;
  * @internal
  *
  * @template T
- * @template-implements ConcurrentIterator<T>
  */
-final class Source implements \IteratorAggregate
+final class Source
 {
     private const CONTINUE = [null];
 
@@ -49,6 +47,9 @@ final class Source implements \IteratorAggregate
     private int $bufferSize;
 
     /** @var FiberLocal<T> */
+    private FiberLocal $currentPosition;
+
+    /** @var FiberLocal<T> */
     private FiberLocal $currentValue;
 
     /** @var FiberLocal<bool> */
@@ -61,7 +62,8 @@ final class Source implements \IteratorAggregate
         }
 
         $this->bufferSize = $bufferSize;
-        $this->currentValue = new FiberLocal(static fn () => throw new \Error('Call continue() before calling get()'));
+        $this->currentPosition = new FiberLocal(static fn () => throw new \Error('Call continue() before calling getPosition()'));
+        $this->currentValue = new FiberLocal(static fn () => throw new \Error('Call continue() before calling getValue()'));
         $this->currentValueUnavailable = new FiberLocal(static fn () => false);
     }
 
@@ -82,13 +84,15 @@ final class Source implements \IteratorAggregate
         if (\array_key_exists($position, $this->emittedValues)) {
             $value = $this->emittedValues[$position];
             unset($this->emittedValues[$position]);
+            $this->currentPosition->set($position);
             $this->currentValue->set($value);
             return true;
         }
 
         if ($this->completed || $this->disposed) {
-            $this->currentValueUnavailable->set(true);
+            $this->currentPosition->set(null);
             $this->currentValue->set(null);
+            $this->currentValueUnavailable->set(true);
 
             if ($this->exception) {
                 throw $this->exception;
@@ -123,11 +127,14 @@ final class Source implements \IteratorAggregate
             $value = $suspension->suspend();
 
             if ($value === $this->currentValueUnavailable) {
+                $this->currentPosition->set(null);
+                $this->currentValue->set(null);
                 $this->currentValueUnavailable->set(true);
 
                 return false;
             }
 
+            $this->currentPosition->set($position);
             $this->currentValue->set($value);
 
             return true;
@@ -140,17 +147,30 @@ final class Source implements \IteratorAggregate
     /**
      * @return T
      */
-    public function get(): mixed
+    public function getValue(): mixed
     {
         if ($this->exception) {
             throw $this->exception;
         }
 
         if ($this->currentValueUnavailable->get()) {
-            throw new \Error('Pipeline complete, cannot call get()');
+            throw new \Error('Pipeline complete, cannot call getValue()');
         }
 
         return $this->currentValue->get();
+    }
+
+    public function getPosition(): int
+    {
+        if ($this->exception) {
+            throw $this->exception;
+        }
+
+        if ($this->currentValueUnavailable->get()) {
+            throw new \Error('Pipeline complete, cannot call getPosition()');
+        }
+
+        return $this->currentPosition->get();
     }
 
     /**
@@ -170,13 +190,6 @@ final class Source implements \IteratorAggregate
             if ($this->disposed) {
                 $this->triggerDisposal();
             }
-        }
-    }
-
-    public function getIterator(): \Traversable
-    {
-        while ($this->continue()) {
-            yield $this->get();
         }
     }
 

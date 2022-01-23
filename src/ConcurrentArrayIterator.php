@@ -35,7 +35,7 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
         return false;
     }
 
-    public function get(): mixed
+    public function getValue(): mixed
     {
         $position = $this->currentPosition->get();
         if ($position === null) {
@@ -43,6 +43,16 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
         }
 
         return $this->values[$position];
+    }
+
+    public function getPosition(): int
+    {
+        $position = $this->currentPosition->get();
+        if ($position === null) {
+            throw new \Error('continue() returned false, no position available afterwards');
+        }
+
+        return $position;
     }
 
     public function dispose(): void

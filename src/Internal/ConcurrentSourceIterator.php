@@ -25,9 +25,14 @@ final class ConcurrentSourceIterator implements ConcurrentIterator, \IteratorAgg
         return $this->source->continue($cancellation);
     }
 
-    public function get(): mixed
+    public function getValue(): mixed
     {
-        return $this->source->get();
+        return $this->source->getValue();
+    }
+
+    public function getPosition(): int
+    {
+        return $this->source->getPosition();
     }
 
     public function dispose(): void
@@ -37,11 +42,8 @@ final class ConcurrentSourceIterator implements ConcurrentIterator, \IteratorAgg
 
     public function getIterator(): \Traversable
     {
-        // Don't replace this with: return $this->source->getIterator();
-        // PHP will call getIterator and GC this instance, triggering a dispose operation.
-
-        while ($this->continue()) {
-            yield $this->get();
+        while ($this->source->continue()) {
+            yield $this->source->getPosition() => $this->source->getValue();
         }
     }
 }

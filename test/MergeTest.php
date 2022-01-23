@@ -80,7 +80,7 @@ class MergeTest extends AsyncTestCase
         $this->setTimeout(0.3);
 
         while ($pipeline->continue()) {
-            if ($pipeline->get() === 7) {
+            if ($pipeline->getValue() === 7) {
                 $pipeline->dispose();
             }
         }

@@ -175,7 +175,7 @@ function zip(array $pipelines): Pipeline
             $next = Future\await(\array_map(
                 static fn (ConcurrentIterator $iterator) => async(static function () use ($iterator) {
                     if ($iterator->continue()) {
-                        return [$iterator->get()];
+                        return [$iterator->getValue()];
                     }
 
                     return null;

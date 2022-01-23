@@ -19,7 +19,7 @@ class SkipTest extends AsyncTestCase
         $emitted = 0;
         while ($pipeline->continue()) {
             $emitted++;
-            self::assertSame(\array_shift($values), $pipeline->get());
+            self::assertSame(\array_shift($values), $pipeline->getValue());
         }
 
         self::assertSame($count - 1, $emitted);

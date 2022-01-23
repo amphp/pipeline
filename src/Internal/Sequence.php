@@ -12,7 +12,9 @@ final class Sequence
 
     public function await(int $position): void
     {
-        if ($position <= $this->position) {
+        \assert($position >= $this->position);
+
+        if ($position === $this->position) {
             return;
         }
 

@@ -31,7 +31,7 @@ try {
     for ($i = 0; $i < 11; ++$i) {
         $futures[] = async(function () use ($iterator): ?int {
             if ($iterator->continue()) {
-                return $iterator->get();
+                return $iterator->getValue();
             }
 
             return null;

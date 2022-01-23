@@ -30,7 +30,18 @@ interface ConcurrentIterator extends \Traversable
      * @return T The current value emitted by the iterator. If the iterator has completed or {@see continue()} has
      * not been called, an {@see \Error} will be thrown.
      */
-    public function get(): mixed;
+    public function getValue(): mixed;
+
+    /**
+     * Returns the current position of the iterator for the current fiber.
+     *
+     * Advance the iterator to the next position using {@see continue()}, which must be called before this method may be
+     * called for each position.
+     *
+     * @return T The current position of the iterator. If the iterator has completed or {@see continue()} has
+     * not been called, an {@see \Error} will be thrown.
+     */
+    public function getPosition(): int;
 
     /**
      * Disposes the iterator, indicating the consumer is no longer interested in the iterator output.

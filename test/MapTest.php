@@ -56,6 +56,24 @@ class MapTest extends AsyncTestCase
         self::assertSame(3, $count);
     }
 
+    public function testMapFilterConcurrentOrdering(): void
+    {
+        $count = 0;
+        $values = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        $generator = Pipeline\fromIterable(function () use ($values) {
+            foreach ($values as $value) {
+                yield $value;
+            }
+        });
+
+        $pipeline = $generator->concurrent(4)->map(function ($value) use (&$count): int {
+            ++$count;
+            return $value + 1;
+        });
+
+        self::assertSame([2, 3, 4, 5, 6, 7, 8, 9, 10], $pipeline->toArray());
+    }
+
     /**
      * @depends testValuesEmitted
      */
