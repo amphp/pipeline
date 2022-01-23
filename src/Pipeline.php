@@ -130,6 +130,54 @@ final class Pipeline implements \IteratorAggregate
         return $max;
     }
 
+    /**
+     * @param \Closure(T): bool $predicate
+     *
+     * @return bool
+     */
+    public function allMatch(\Closure $predicate): bool
+    {
+        foreach ($this->map($predicate) as $value) {
+            if (!$value) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param \Closure(T): bool $predicate
+     *
+     * @return bool
+     */
+    public function anyMatch(\Closure $predicate): bool
+    {
+        foreach ($this->map($predicate) as $value) {
+            if ($value) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param \Closure(T): bool $predicate
+     *
+     * @return bool
+     */
+    public function noneMatch(\Closure $predicate): bool
+    {
+        foreach ($this->map($predicate) as $value) {
+            if ($value) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function process(int $concurrency, \Closure $operator): self
     {
         if ($this->used) {
