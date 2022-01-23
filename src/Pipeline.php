@@ -340,16 +340,39 @@ final class Pipeline implements \IteratorAggregate
      */
     public function takeWhile(\Closure $predicate): self
     {
-        return $this
-            ->map(fn (mixed $value) => [$predicate($value), $value])
-            ->process(1, function (array $value) {
-                if ($value[0]) {
-                    yield $value[1];
-                    return true;
+        $sequence = new Sequence;
+        $taking = true;
+
+        return $this->process(
+            $this->concurrency,
+            function (mixed $value, int $position) use ($sequence, $predicate, &$taking) {
+                if (!$taking) {
+                    return false;
                 }
 
-                return false;
-            });
+                $predicateResult = $predicate($value);
+
+                $sequence->await($position);
+
+                if ($taking && $predicateResult) {
+                    $sequence->arrive($position);
+                    return [$value];
+                }
+
+                $taking = false;
+                $sequence->arrive($position);
+
+                return (static function () {
+                    // turn into generator
+                    if (false) {
+                        /** @noinspection PhpUnreachableStatementInspection */
+                        yield;
+                    }
+
+                    return false;
+                })();
+            }
+        );
     }
 
     /**
