@@ -48,8 +48,11 @@ final class Source implements \IteratorAggregate
 
     private int $bufferSize;
 
-    /** @var FiberLocal<T>|null */
-    private ?FiberLocal $currentValue;
+    /** @var FiberLocal<T> */
+    private FiberLocal $currentValue;
+
+    /** @var FiberLocal<bool> */
+    private FiberLocal $currentValueUnavailable;
 
     public function __construct(int $bufferSize = 0)
     {
@@ -59,6 +62,7 @@ final class Source implements \IteratorAggregate
 
         $this->bufferSize = $bufferSize;
         $this->currentValue = new FiberLocal(static fn () => throw new \Error('Call continue() before calling get()'));
+        $this->currentValueUnavailable = new FiberLocal(static fn () => false);
     }
 
     public function continue(?Cancellation $cancellation = null): bool
@@ -78,12 +82,13 @@ final class Source implements \IteratorAggregate
         if (\array_key_exists($position, $this->emittedValues)) {
             $value = $this->emittedValues[$position];
             unset($this->emittedValues[$position]);
-            $this->currentValue?->set($value);
+            $this->currentValue->set($value);
             return true;
         }
 
         if ($this->completed || $this->disposed) {
-            $this->currentValue = null;
+            $this->currentValueUnavailable->set(true);
+            $this->currentValue->set(null);
 
             if ($this->exception) {
                 throw $this->exception;
@@ -117,7 +122,9 @@ final class Source implements \IteratorAggregate
         try {
             $value = $suspension->suspend();
 
-            if (!$this->currentValue) {
+            if ($value === $this->currentValueUnavailable) {
+                $this->currentValueUnavailable->set(true);
+
                 return false;
             }
 
@@ -135,11 +142,11 @@ final class Source implements \IteratorAggregate
      */
     public function get(): mixed
     {
-        if (!$this->currentValue) {
-            if ($this->exception) {
-                throw $this->exception;
-            }
+        if ($this->exception) {
+            throw $this->exception;
+        }
 
+        if ($this->currentValueUnavailable->get()) {
             throw new \Error('Pipeline complete, cannot call get()');
         }
 
@@ -403,12 +410,11 @@ final class Source implements \IteratorAggregate
         $exception = $this->exception ?? null;
 
         if ($waiting) {
-            $this->currentValue = null;
             foreach ($waiting as $suspension) {
                 if ($exception) {
                     $suspension->throw($exception);
                 } else {
-                    $suspension->resume();
+                    $suspension->resume($this->currentValueUnavailable);
                 }
             }
         }

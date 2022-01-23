@@ -31,12 +31,28 @@ class MapTest extends AsyncTestCase
         $pipeline = $generator->map(function ($value) use (&$count): int {
             ++$count;
             return $value + 1;
-        })->getIterator();
+        });
 
-        while ($pipeline->continue()) {
-            self::assertSame(\array_shift($values) + 1, $pipeline->get());
-        }
+        self::assertSame([2, 3, 4], $pipeline->toArray());
+        self::assertSame(3, $count);
+    }
 
+    public function testValuesEmittedConcurrent(): void
+    {
+        $count = 0;
+        $values = [1, 2, 3];
+        $generator = Pipeline\fromIterable(function () use ($values) {
+            foreach ($values as $value) {
+                yield $value;
+            }
+        });
+
+        $pipeline = $generator->concurrent(2)->map(function ($value) use (&$count): int {
+            ++$count;
+            return $value + 1;
+        });
+
+        self::assertSame([2, 3, 4], $pipeline->toArray());
         self::assertSame(3, $count);
     }
 
