@@ -3,18 +3,19 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
+use Amp\Pipeline\Internal\ConcurrentSourceIterator;
 
 /**
  * Emitter is a container for a Pipeline that can emit values using the emit() method and completed using the
  * complete() and fail() methods. The contained Pipeline may be accessed using the pipeline() method. This object should
  * not be returned as part of a public API, but used internally to create and emit values to a Pipeline.
  *
- * @template TValue
+ * @template T
  */
 final class Emitter
 {
-    /** @var Internal\EmitSource<TValue> Has public emit, complete, and fail methods. */
-    private Internal\EmitSource $source;
+    /** @var Internal\Source<T> Has public emit, complete, and fail methods. */
+    private Internal\Source $source;
 
     private bool $used = false;
 
@@ -24,7 +25,7 @@ final class Emitter
      */
     public function __construct(int $bufferSize = 0)
     {
-        $this->source = new Internal\EmitSource($bufferSize);
+        $this->source = new Internal\Source($bufferSize);
     }
 
     public function __destruct()
@@ -38,7 +39,7 @@ final class Emitter
      * Returns a Pipeline that can be given to an API consumer. This method may be called only once!
      * Use {@see share()} to create a source that can create any number of identical pipelines.
      *
-     * @return Pipeline<TValue>
+     * @return Pipeline<T>
      *
      * @throws \Error If this method is called more than once.
      */
@@ -53,7 +54,7 @@ final class Emitter
 
         $this->used = true;
 
-        return new Pipeline($this->source, true);
+        return new Pipeline(new ConcurrentSourceIterator($this->source));
     }
 
     /**
@@ -61,7 +62,7 @@ final class Emitter
      * Use {@see yield()} to wait until the value is consumed or use {@see await()} on the promise returned
      * to wait at a later time.
      *
-     * @param TValue $value
+     * @param T $value
      *
      * @return Future<null> Resolves with null when the emitted value has been consumed or fails with
      *                       {@see DisposedException} if the pipeline has been disposed.
@@ -75,7 +76,7 @@ final class Emitter
      * Emits a value to the pipeline and does not return until the emitted value is consumed.
      * Use {@see emit()} to emit a value without waiting for the value to be consumed.
      *
-     * @param TValue $value
+     * @param T $value
      *
      * @throws DisposedException Thrown if the pipeline is disposed.
      */

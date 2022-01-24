@@ -6,7 +6,7 @@ use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
 
-class EachTest extends AsyncTestCase
+class ForEachTest extends AsyncTestCase
 {
     public function testPipelineFails(): void
     {
@@ -18,7 +18,7 @@ class EachTest extends AsyncTestCase
 
         $this->expectExceptionObject($exception);
 
-        Pipeline\each($source->pipe(), $this->createCallback(1));
+        $source->pipe()->forEach($this->createCallback(1));
     }
 
     public function testReduce(): void
@@ -27,6 +27,6 @@ class EachTest extends AsyncTestCase
 
         $pipeline = Pipeline\fromIterable($values);
 
-        Pipeline\each($pipeline, $this->createCallback(\count($values)));
+        $pipeline->forEach($this->createCallback(\count($values)));
     }
 }

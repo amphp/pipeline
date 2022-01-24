@@ -1,65 +1,62 @@
 <?php
 
-namespace Amp\Pipeline\Internal\Operator;
+namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
-use Amp\Pipeline\Emitter;
 
-class MapTest extends AsyncTestCase
+class FilterTest extends AsyncTestCase
 {
     public function testNoValuesEmitted(): void
     {
         $source = new Emitter;
 
-        /** @noinspection PhpUnusedLocalVariableInspection */
-        $pipeline = $source->pipe()->pipe(Pipeline\map($this->createCallback(0)));
+        $pipeline = $source->pipe()->filter($this->createCallback(0));
 
         $source->complete();
+
+        self::assertSame(0, $pipeline->count());
     }
 
     public function testValuesEmitted(): void
     {
         $count = 0;
         $values = [1, 2, 3];
+        $expected = [1, 3];
         $generator = Pipeline\fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
         });
 
-        $pipeline = $generator->pipe(Pipeline\map(function ($value) use (&$count): int {
+        $pipeline = $generator->filter(function ($value) use (&$count): bool {
             ++$count;
-            return $value + 1;
-        }));
+            return (bool) ($value & 1);
+        });
 
-        while ($pipeline->continue()) {
-            self::assertSame(\array_shift($values) + 1, $pipeline->get());
-        }
-
+        self::assertSame($expected, $pipeline->toArray());
         self::assertSame(3, $count);
     }
 
     /**
      * @depends testValuesEmitted
      */
-    public function testOnNextCallbackThrows(): void
+    public function testCallbackThrows(): void
     {
         $values = [1, 2, 3];
         $exception = new TestException;
-
         $generator = Pipeline\fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
         });
 
-        $pipeline = $generator->pipe(Pipeline\map(fn () => throw $exception));
+        $pipeline = $generator->filter(fn () => throw $exception);
 
         $this->expectExceptionObject($exception);
 
-        $pipeline->continue();
+        $pipeline->toArray();
     }
 
     public function testPipelineFails(): void
@@ -67,12 +64,12 @@ class MapTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Emitter;
 
-        $iterator = $source->pipe()->pipe(Pipeline\map($this->createCallback(0)));
+        $pipeline = $source->pipe()->filter($this->createCallback(0));
 
         $source->error($exception);
 
         $this->expectExceptionObject($exception);
 
-        $iterator->continue();
+        $pipeline->toArray();
     }
 }

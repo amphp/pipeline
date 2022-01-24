@@ -25,11 +25,11 @@ class EmitterTest extends AsyncTestCase
         $value = 'Emitted Value';
 
         $future = $this->source->emit($value);
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
 
         self::assertFalse($future->isComplete());
         self::assertTrue($pipeline->continue());
-        self::assertSame($value, $pipeline->get());
+        self::assertSame($value, $pipeline->getValue());
         self::assertTrue($future->isComplete());
 
         // Future will not complete until another value is emitted or pipeline completed.
@@ -53,7 +53,7 @@ class EmitterTest extends AsyncTestCase
         $this->source->error($exception = new \Exception);
         self::assertTrue($this->source->isComplete());
 
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
 
         try {
             $pipeline->continue();
@@ -81,9 +81,9 @@ class EmitterTest extends AsyncTestCase
     {
         $this->source->emit(null);
 
-        $pipe = $this->source->pipe();
+        $pipe = $this->source->pipe()->getIterator();
         self::assertTrue($pipe->continue());
-        self::assertNull($pipe->get());
+        self::assertNull($pipe->getValue());
     }
 
     public function testDoubleComplete(): void
@@ -106,23 +106,23 @@ class EmitterTest extends AsyncTestCase
 
     public function testDoubleStart(): void
     {
-        $pipeline = $this->source->pipe();
+        $this->source->pipe();
 
         $this->expectException(\Error::class);
         $this->expectExceptionMessage('A pipeline may be started only once');
 
-        $pipeline = $this->source->pipe();
+        $this->source->pipe();
     }
 
     public function testEmitAfterContinue(): void
     {
         $value = 'Emitted Value';
 
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
 
         $future = async(function () use ($pipeline) {
             $pipeline->continue();
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $backPressure = $this->source->emit($value);
@@ -131,7 +131,7 @@ class EmitterTest extends AsyncTestCase
 
         $future = async(function () use ($pipeline) {
             $pipeline->continue();
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $future->ignore();
@@ -143,7 +143,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testContinueAfterComplete(): void
     {
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
 
         $this->source->complete();
 
@@ -152,7 +152,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testContinueAfterFail(): void
     {
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
 
         $this->source->error(new \Exception('Pipeline failed'));
 
@@ -164,7 +164,7 @@ class EmitterTest extends AsyncTestCase
 
     public function testCompleteAfterContinue(): void
     {
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
 
         $future = async(fn () => $pipeline->continue());
         self::assertInstanceOf(Future::class, $future);
@@ -181,10 +181,10 @@ class EmitterTest extends AsyncTestCase
         $invoked = 0;
         foreach (\range(1, 5) as $value) {
             $future = $this->source->emit($value);
-            EventLoop::queue(function () use (&$invoked, $future): void {
+            EventLoop::queue(static function () use (&$invoked, $future): void {
                 try {
                     $future->await();
-                } catch (DisposedException $exception) {
+                } catch (DisposedException) {
                     // Ignore disposal.
                 } finally {
                     $invoked++;
@@ -217,7 +217,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(1)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -231,7 +231,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(1)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -247,17 +247,17 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(1)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
 
     public function testEmitAfterAutomaticDisposalWithPendingContinueFuture(): void
     {
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
         $future = async(function () use ($pipeline) {
             $pipeline->continue();
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         unset($pipeline); // Trigger automatic disposal.
@@ -270,17 +270,17 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(2)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
 
     public function testEmitAfterExplicitDisposalWithPendingContinueFuture(): void
     {
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
         $future = async(function () use ($pipeline) {
             $pipeline->continue();
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
         $pipeline->dispose();
         self::assertTrue($this->source->isDisposed());
@@ -288,7 +288,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $future->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -304,7 +304,7 @@ class EmitterTest extends AsyncTestCase
         try {
             $this->source->emit(2)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
         }
     }
@@ -352,28 +352,24 @@ class EmitterTest extends AsyncTestCase
 
         self::assertFalse($future1->isComplete());
 
-        $pipeline = $this->source->pipe();
-        self::assertFalse($pipeline->isComplete());
+        $pipeline = $this->source->pipe()->getIterator();
 
         self::assertTrue($pipeline->continue());
-        self::assertSame(1, $pipeline->get());
+        self::assertSame(1, $pipeline->getValue());
         self::assertTrue($future1->isComplete());
         self::assertFalse($future2->isComplete());
-        self::assertFalse($pipeline->isComplete());
 
         self::assertTrue($pipeline->continue());
-        self::assertSame(2, $pipeline->get());
-        self::assertTrue($pipeline->isComplete());
+        self::assertSame(2, $pipeline->getValue());
         self::assertTrue($future1->isComplete());
         self::assertTrue($future2->isComplete());
-        self::assertTrue($pipeline->isComplete());
 
         self::assertFalse($pipeline->continue());
 
         $this->expectException(\Error::class);
         $this->expectExceptionMessage('complete');
 
-        $pipeline->get();
+        $pipeline->getValue();
     }
 
     public function testBackPressureOnDisposal(): void
@@ -399,28 +395,28 @@ class EmitterTest extends AsyncTestCase
 
     public function testCancellation(): void
     {
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
 
         $cancellation = new DeferredCancellation();
 
         $future1 = async(function () use ($pipeline) {
             $pipeline->continue();
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $future2 = async(function () use ($pipeline, $cancellation) {
             $pipeline->continue($cancellation->getCancellation());
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $future3 = async(function () use ($pipeline) {
             $pipeline->continue();
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $future4 = async(function () use ($pipeline) {
             $pipeline->continue();
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $cancellation->cancel();
@@ -443,18 +439,18 @@ class EmitterTest extends AsyncTestCase
 
     public function testCancellationThenEmitAdditionalValues(): void
     {
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
 
         $cancellation = new DeferredCancellation();
 
         $future1 = async(function () use ($pipeline) {
             $pipeline->continue();
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $future2 = async(function () use ($pipeline, $cancellation) {
             $pipeline->continue($cancellation->getCancellation());
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $cancellation->cancel();
@@ -468,10 +464,10 @@ class EmitterTest extends AsyncTestCase
         self::assertSame(1, $future1->await());
 
         self::assertTrue($pipeline->continue());
-        self::assertSame(2, $pipeline->get());
+        self::assertSame(2, $pipeline->getValue());
 
         self::assertTrue($pipeline->continue());
-        self::assertSame(3, $pipeline->get());
+        self::assertSame(3, $pipeline->getValue());
 
         $this->source->complete();
 
@@ -481,23 +477,23 @@ class EmitterTest extends AsyncTestCase
 
     public function testCancellationAfterEmitted(): void
     {
-        $pipeline = $this->source->pipe();
+        $pipeline = $this->source->pipe()->getIterator();
 
         $cancellation = new DeferredCancellation();
 
         $future1 = async(function () use ($pipeline) {
             self::assertTrue($pipeline->continue());
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $future2 = async(function () use ($pipeline, $cancellation) {
             self::assertTrue($pipeline->continue($cancellation->getCancellation()));
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $future3 = async(function () use ($pipeline) {
             self::assertTrue($pipeline->continue());
-            return $pipeline->get();
+            return $pipeline->getValue();
         });
 
         $future4 = async(function () use ($pipeline) {
@@ -528,7 +524,7 @@ class EmitterTest extends AsyncTestCase
     public function testBufferSize(int $bufferSize): void
     {
         $source = new Emitter($bufferSize);
-        $pipeline = $source->pipe();
+        $pipeline = $source->pipe()->getIterator();
 
         for ($i = 0; $i < $bufferSize; $i++) {
             self::assertTrue($source->emit('.')->isComplete());

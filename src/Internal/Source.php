@@ -17,9 +17,9 @@ use Revolt\EventLoop\Suspension;
  *
  * @internal
  *
- * @template TValue
+ * @template T
  */
-final class EmitSource
+final class Source implements \IteratorAggregate
 {
     private const CONTINUE = [null];
 
@@ -27,7 +27,7 @@ final class EmitSource
 
     private ?\Throwable $exception = null;
 
-    /** @var array<int, TValue> */
+    /** @var array<int, T> */
     private array $emittedValues = [];
 
     /** @var array<int, DeferredFuture<null>|Suspension> */
@@ -46,8 +46,11 @@ final class EmitSource
 
     private int $bufferSize;
 
-    /** @var FiberLocal<TValue>|null */
-    private ?FiberLocal $currentValue;
+    /** @var FiberLocal<int|null> */
+    private FiberLocal $currentPosition;
+
+    /** @var FiberLocal<T|null> */
+    private FiberLocal $currentValue;
 
     public function __construct(int $bufferSize = 0)
     {
@@ -56,7 +59,8 @@ final class EmitSource
         }
 
         $this->bufferSize = $bufferSize;
-        $this->currentValue = new FiberLocal(static fn () => throw new \Error('Call continue() before calling get()'));
+        $this->currentPosition = new FiberLocal(static fn () => throw new \Error('Call continue() before calling getPosition()'));
+        $this->currentValue = new FiberLocal(static fn () => throw new \Error('Call continue() before calling getValue()'));
     }
 
     public function continue(?Cancellation $cancellation = null): bool
@@ -76,12 +80,14 @@ final class EmitSource
         if (\array_key_exists($position, $this->emittedValues)) {
             $value = $this->emittedValues[$position];
             unset($this->emittedValues[$position]);
-            $this->currentValue?->set($value);
+            $this->currentPosition->set($position);
+            $this->currentValue->set($value);
             return true;
         }
 
         if ($this->completed || $this->disposed) {
-            $this->currentValue = null;
+            $this->currentPosition->set(null);
+            $this->currentValue->set(null);
 
             if ($this->exception) {
                 throw $this->exception;
@@ -115,10 +121,15 @@ final class EmitSource
         try {
             $value = $suspension->suspend();
 
-            if (!$this->currentValue) {
+            // This is just a marker, because we can't set fiber locals from other fibers
+            if ($value === $this->currentPosition) {
+                $this->currentPosition->set(null);
+                $this->currentValue->set(null);
+
                 return false;
             }
 
+            $this->currentPosition->set($position);
             $this->currentValue->set($value);
 
             return true;
@@ -129,19 +140,25 @@ final class EmitSource
     }
 
     /**
-     * @return TValue
+     * @return T
      */
-    public function get(): mixed
+    public function getValue(): mixed
     {
-        if (!$this->currentValue) {
-            if ($this->exception) {
-                throw $this->exception;
-            }
-
-            throw new \Error('Pipeline complete, cannot call get()');
+        if ($this->currentPosition->get() === null) {
+            throw new \Error('Pipeline complete, cannot call getValue()');
         }
 
         return $this->currentValue->get();
+    }
+
+    public function getPosition(): int
+    {
+        $position = $this->currentPosition->get();
+        if ($position === null) {
+            throw new \Error('Pipeline complete, cannot call getPosition()');
+        }
+
+        return $position;
     }
 
     /**
@@ -165,7 +182,7 @@ final class EmitSource
     }
 
     /**
-     * @param TValue $value
+     * @param T $value
      * @param int $position
      *
      * @return array|null Returns [?\Throwable, mixed] or null if no send value is available.
@@ -215,7 +232,7 @@ final class EmitSource
      * Emits a value from the pipeline. The returned promise is resolved once the emitted value has been consumed or
      * if the pipeline is completed, failed, or disposed.
      *
-     * @param TValue $value Value to emit from the pipeline.
+     * @param T $value Value to emit from the pipeline.
      *
      * @return Future Resolves once the value has been consumed on the pipeline.
      */
@@ -241,7 +258,7 @@ final class EmitSource
     /**
      * Emits a value from the pipeline, suspending execution until the value is consumed.
      *
-     * @param TValue $value Value to emit from the pipeline.
+     * @param T $value Value to emit from the pipeline.
      */
     public function yield(mixed $value): void
     {
@@ -394,12 +411,11 @@ final class EmitSource
         $exception = $this->exception ?? null;
 
         if ($waiting) {
-            $this->currentValue = null;
             foreach ($waiting as $suspension) {
                 if ($exception) {
                     $suspension->throw($exception);
                 } else {
-                    $suspension->resume();
+                    $suspension->resume($this->currentPosition);
                 }
             }
         }
@@ -420,6 +436,13 @@ final class EmitSource
         /** @psalm-suppress RedundantCondition */
         if (isset($this->waiting)) {
             $this->resolvePending();
+        }
+    }
+
+    public function getIterator(): \Traversable
+    {
+        while ($this->continue()) {
+            yield $this->getPosition() => $this->getValue();
         }
     }
 }

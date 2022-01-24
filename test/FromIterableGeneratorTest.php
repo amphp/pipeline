@@ -17,9 +17,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Return value of argument #1 ($iterable) must be of type iterable, null returned');
 
-        $generator = fromIterable(static fn () => null);
-
-        $generator->continue();
+        fromIterable(static fn () => null);
     }
 
     public function testThrowingClosure(): void
@@ -28,9 +26,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
         $this->expectExceptionObject($exception);
 
-        $generator = fromIterable(static fn () => throw $exception);
-
-        $generator->continue();
+        fromIterable(static fn () => throw $exception);
     }
 
     public function testYield(): void
@@ -41,9 +37,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
             yield $value;
         });
 
-        self::assertTrue($generator->continue());
-        self::assertSame($value, $generator->get());
-        self::assertFalse($generator->continue());
+        self::assertSame([1], $generator->toArray());
     }
 
     /**
@@ -61,7 +55,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
         $deferred->error($exception);
 
         try {
-            $generator->continue();
+            $generator->toArray();
             self::fail("Awaiting a failed future should fail the pipeline");
         } catch (TestException $reason) {
             self::assertSame($reason, $exception);
@@ -84,8 +78,9 @@ class FromIterableGeneratorTest extends AsyncTestCase
             $time = now() - $time;
         });
 
-        while ($generator->continue()) {
-            $output .= $generator->get();
+        $iterator = $generator->getIterator();
+        while ($iterator->continue()) {
+            $output .= $iterator->getValue();
             delay(self::TIMEOUT);
         }
 
@@ -108,8 +103,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
                 throw $exception;
             });
 
-            $generator->continue();
-            $generator->continue();
+            $generator->toArray();
 
             self::fail("The exception thrown from the generator should fail the pipeline");
         } catch (TestException $caught) {
@@ -129,20 +123,21 @@ class FromIterableGeneratorTest extends AsyncTestCase
             }
         });
 
-        self::assertTrue($generator->continue());
-        self::assertSame(0, $generator->get());
+        $iterator = $generator->getIterator();
+        self::assertTrue($iterator->continue());
+        self::assertSame(0, $iterator->getValue());
 
         self::assertFalse($invoked);
 
-        $generator->dispose();
+        $iterator->dispose();
 
         delay(0); // Tick event loop to destroy generator.
 
         try {
-            $generator->continue();
-            $generator->continue();
+            $iterator->continue();
+            $iterator->continue();
             self::fail("Pipeline should have been disposed");
-        } catch (DisposedException $exception) {
+        } catch (DisposedException) {
             self::assertTrue($invoked);
         }
     }
@@ -158,7 +153,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
             } catch (DisposedException) {
                 yield 1;
             }
-        });
+        })->getIterator();
 
         $generator->dispose();
 
@@ -177,7 +172,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
             }
 
             return 0;
-        });
+        })->getIterator();
 
         $generator->dispose();
 
@@ -193,12 +188,12 @@ class FromIterableGeneratorTest extends AsyncTestCase
         $generator = fromIterable(function () use (&$invoked) {
             $invoked = true;
             yield 0;
-        });
+        })->getIterator();
 
         self::assertFalse($invoked);
 
         self::assertTrue($generator->continue());
-        self::assertSame(0, $generator->get());
+        self::assertSame(0, $generator->getValue());
         self::assertTrue($invoked);
 
         self::assertFalse($generator->continue());

@@ -29,14 +29,12 @@ class MergeTest extends AsyncTestCase
     public function testMerge(array $array, array $expected): void
     {
         $pipelines = \array_map(static function (array $iterator): Pipeline\Pipeline {
-            return Pipeline\fromIterable($iterator)->pipe(Pipeline\postpone(0.01));
+            return Pipeline\fromIterable($iterator)->tap(fn () => delay(0.01));
         }, $array);
 
         $pipeline = Pipeline\merge($pipelines);
 
-        while ($pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $pipeline->get());
-        }
+        self::assertSame($expected, $pipeline->toArray());
     }
 
     /**
@@ -63,9 +61,7 @@ class MergeTest extends AsyncTestCase
 
         $pipeline = Pipeline\merge($pipelines);
 
-        while ($pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $pipeline->get());
-        }
+        self::assertSame($expected, $pipeline->toArray());
     }
 
     /**
@@ -75,16 +71,16 @@ class MergeTest extends AsyncTestCase
     {
         $pipelines = [];
 
-        $pipelines[] = Pipeline\fromIterable([1, 2, 3, 4, 5])->pipe(Pipeline\postpone(0.1));
-        $pipelines[] = Pipeline\fromIterable([6, 7, 8, 9, 10])->pipe(Pipeline\postpone(0.1));
+        $pipelines[] = Pipeline\fromIterable([1, 2, 3, 4, 5])->tap(fn () => delay(0.1));
+        $pipelines[] = Pipeline\fromIterable([6, 7, 8, 9, 10])->tap(fn () => delay(0.1));
 
-        $pipeline = Pipeline\merge($pipelines);
+        $pipeline = Pipeline\merge($pipelines)->getIterator();
 
         $this->expectException(DisposedException::class);
         $this->setTimeout(0.3);
 
         while ($pipeline->continue()) {
-            if ($pipeline->get() === 7) {
+            if ($pipeline->getValue() === 7) {
                 $pipeline->dispose();
             }
         }
@@ -104,7 +100,7 @@ class MergeTest extends AsyncTestCase
         $pipeline = Pipeline\merge([$generator, Pipeline\fromIterable(\range(1, 5))]);
 
         try {
-            Pipeline\discard($pipeline);
+            $pipeline->forEach(fn () => null);
             self::fail("The exception used to fail the pipeline should be thrown from continue()");
         } catch (TestException $reason) {
             self::assertSame($exception, $reason);

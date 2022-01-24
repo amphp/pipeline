@@ -19,10 +19,10 @@ class FromIterableTest extends AsyncTestCase
             }
         })();
 
-        $pipeline = Pipeline\fromIterable($generator);
+        $pipeline = Pipeline\fromIterable($generator)->getIterator();
 
         while ($pipeline->continue()) {
-            self::assertSame(\array_shift($expected), $pipeline->get());
+            self::assertSame(\array_shift($expected), $pipeline->getValue());
         }
 
         self::assertEmpty($expected);
@@ -53,11 +53,11 @@ class FromIterableTest extends AsyncTestCase
     public function testInterval(): void
     {
         $count = 3;
-        $pipeline = Pipeline\fromIterable(\range(1, $count));
+        $pipeline = Pipeline\fromIterable(\range(1, $count))->getIterator();
 
         $i = 0;
         while ($pipeline->continue()) {
-            self::assertSame(++$i, $pipeline->get());
+            self::assertSame(++$i, $pipeline->getValue());
         }
 
         self::assertSame($count, $i);
@@ -69,7 +69,7 @@ class FromIterableTest extends AsyncTestCase
     public function testSlowConsumer(): void
     {
         $count = 5;
-        $pipeline = Pipeline\fromIterable(\range(1, $count));
+        $pipeline = Pipeline\fromIterable(\range(1, $count))->getIterator();
 
         for ($i = 0; $pipeline->continue(); ++$i) {
             delay(self::TIMEOUT * 2);
