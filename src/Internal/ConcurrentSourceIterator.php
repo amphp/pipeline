@@ -6,7 +6,7 @@ use Amp\Cancellation;
 use Amp\Pipeline\ConcurrentIterator;
 
 /** @internal */
-final class ConcurrentSourceIterator implements ConcurrentIterator, \IteratorAggregate
+final class ConcurrentSourceIterator implements ConcurrentIterator
 {
     private Source $source;
 
