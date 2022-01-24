@@ -306,16 +306,16 @@ final class Pipeline implements \IteratorAggregate
 
                 $predicateResult = $predicate($value);
 
-                $sequence->await($position);
+                $sequence->start($position);
 
                 /** @psalm-suppress RedundantCondition */
                 if ($skipping && $predicateResult) {
-                    $sequence->arrive($position);
+                    $sequence->end($position);
                     return [];
                 }
 
                 $skipping = false;
-                $sequence->arrive($position);
+                $sequence->end($position);
 
                 return [$value];
             }
@@ -363,16 +363,16 @@ final class Pipeline implements \IteratorAggregate
 
                 $predicateResult = $predicate($value);
 
-                $sequence->await($position);
+                $sequence->start($position);
 
                 /** @psalm-suppress RedundantCondition */
                 if ($taking && $predicateResult) {
-                    $sequence->arrive($position);
+                    $sequence->end($position);
                     return [$value];
                 }
 
                 $taking = false;
-                $sequence->arrive($position);
+                $sequence->end($position);
 
                 return [self::$stop];
             }
@@ -460,7 +460,7 @@ final class Pipeline implements \IteratorAggregate
                             // The operation runs concurrently, but the emits are at the correct position
                             $iterable = $operation($value, $position);
 
-                            $sequence?->await($position);
+                            $sequence?->start($position);
 
                             foreach ($iterable as $emit) {
                                 /** @psalm-suppress TypeDoesNotContainType */
@@ -471,7 +471,7 @@ final class Pipeline implements \IteratorAggregate
                                 $destination->yield($emit);
                             }
 
-                            $sequence?->arrive($position);
+                            $sequence?->end($position);
                         }
                     });
                 }

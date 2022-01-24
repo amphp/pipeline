@@ -10,7 +10,7 @@ final class Sequence
     private int $position = 0;
     private array $suspensions = [];
 
-    public function await(int $position): void
+    public function start(int $position): void
     {
         \assert($position >= $this->position);
 
@@ -25,7 +25,7 @@ final class Sequence
         $suspension->suspend();
     }
 
-    public function arrive(int $position): void
+    public function end(int $position): void
     {
         \assert($position === $this->position);
 
