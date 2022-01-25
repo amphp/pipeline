@@ -31,7 +31,7 @@ class TakeWhileTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
         $iterator = $source->pipe()->takeWhile(fn ($value) => $value < 3)->getIterator();
 

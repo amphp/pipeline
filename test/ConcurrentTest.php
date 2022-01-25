@@ -10,7 +10,7 @@ class ConcurrentTest extends AsyncTestCase
 {
     public function testNoValuesEmitted(): void
     {
-        $source = new Emitter;
+        $source = new Queue;
 
         $pipeline = $source->pipe()
             ->concurrent(3)
@@ -55,13 +55,13 @@ class ConcurrentTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
         $pipeline = $source->pipe()
             ->concurrent(3)
             ->tap($this->createCallback(1));
 
-        $source->emit(1)->ignore();
+        $source->enqueue(1)->ignore();
         $source->error($exception);
 
         $iterator = $pipeline->getIterator();

@@ -75,7 +75,7 @@ class ConcatTest extends AsyncTestCase
     }
 
     /**
-     * @depends testConcat
+     * @depends testConcatPipeline
      */
     public function testConcatWithFailedPipeline(): void
     {

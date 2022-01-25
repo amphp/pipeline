@@ -18,7 +18,7 @@ class TakeTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
         $iterator = $source->pipe()->take(2)->getIterator();
 

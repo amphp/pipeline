@@ -3,32 +3,32 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Amp\Pipeline\Emitter;
-use Revolt\EventLoop;
+use Amp\Pipeline\Queue;
+use function Amp\async;
 use function Amp\delay;
 
 try {
-    /** @psalm-var Emitter<int> $source */
-    $emitter = new Emitter;
-    $pipeline = $emitter->pipe();
+    /** @psalm-var Queue<int> $source */
+    $queue = new Queue;
+    $pipeline = $queue->pipe();
 
-    EventLoop::queue(function () use ($emitter): void {
+    async(function () use ($queue): void {
         delay(0.5);
-        $emitter->yield(1);
+        $queue->push(1);
         delay(1.5);
-        $emitter->yield(2);
+        $queue->push(2);
         delay(1);
-        $emitter->yield(3);
+        $queue->push(3);
         delay(2);
-        $emitter->yield(4);
-        $emitter->yield(5);
-        $emitter->yield(6);
-        $emitter->yield(7);
+        $queue->push(4);
+        $queue->push(5);
+        $queue->push(6);
+        $queue->push(7);
         delay(2);
-        $emitter->yield(8);
-        $emitter->yield(9);
-        $emitter->yield(10);
-        $emitter->complete();
+        $queue->push(8);
+        $queue->push(9);
+        $queue->push(10);
+        $queue->complete();
     });
 
     foreach ($pipeline as $value) {

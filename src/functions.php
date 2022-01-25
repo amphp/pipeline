@@ -17,7 +17,7 @@ use function Amp\async;
  */
 function merge(array $pipelines): Pipeline
 {
-    $emitter = new Emitter;
+    $queue = new Queue;
 
     $futures = [];
     foreach ($pipelines as $key => $pipeline) {
@@ -30,24 +30,24 @@ function merge(array $pipelines): Pipeline
             ));
         }
 
-        $futures[] = async(static function () use ($emitter, $pipeline): void {
+        $futures[] = async(static function () use ($queue, $pipeline): void {
             foreach ($pipeline as $value) {
-                if ($emitter->isComplete()) {
+                if ($queue->isComplete()) {
                     return;
                 }
 
-                $emitter->yield($value);
+                $queue->push($value);
             }
         });
     }
 
-    EventLoop::queue(static function () use ($emitter, $futures, $pipelines): void {
+    EventLoop::queue(static function () use ($queue, $futures, $pipelines): void {
         try {
             Future\await($futures);
 
-            $emitter->complete();
+            $queue->complete();
         } catch (\Throwable $exception) {
-            $emitter->error($exception);
+            $queue->error($exception);
         } finally {
             foreach ($pipelines as $pipeline) {
                 $pipeline->dispose();
@@ -55,7 +55,7 @@ function merge(array $pipelines): Pipeline
         }
     });
 
-    return $emitter->pipe();
+    return $queue->pipe();
 }
 
 /**

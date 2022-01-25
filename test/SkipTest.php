@@ -27,7 +27,7 @@ class SkipTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
         $iterator = $source->pipe()->skip(1)->getIterator();
 
