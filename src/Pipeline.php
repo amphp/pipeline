@@ -54,6 +54,10 @@ final class Pipeline implements \IteratorAggregate
             return $iterable;
         }
 
+        if ($iterable instanceof ConcurrentIterator) {
+            return new self($iterable);
+        }
+
         if (\is_array($iterable)) {
             return new self(new ConcurrentArrayIterator($iterable));
         }
