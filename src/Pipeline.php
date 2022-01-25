@@ -18,6 +18,35 @@ final class Pipeline implements \IteratorAggregate
 {
     private static \stdClass $stop;
 
+    /**
+     * Concatenates the given pipelines into a single pipeline in sequential order.
+     *
+     * The prior pipeline must complete before values are taken from any subsequent pipelines.
+     *
+     * @template T
+     *
+     * @param Pipeline<T>[] $pipelines
+     *
+     * @return self<T>
+     */
+    public static function concat(array $pipelines): self
+    {
+        foreach ($pipelines as $key => $pipeline) {
+            if (!$pipeline instanceof self) {
+                throw new \TypeError(\sprintf(
+                    'Argument #1 ($pipelines) must be of type array<%s>, %s given at key %s',
+                    self::class,
+                    \get_debug_type($pipeline),
+                    $key
+                ));
+            }
+        }
+
+        return new self(new ConcurrentConcatIterator(
+            \array_map(static fn (self $pipeline) => $pipeline->getIterator(), $pipelines)
+        ));
+    }
+
     private ConcurrentIterator $source;
 
     private int $concurrency = 1;
@@ -400,7 +429,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function toArray(): array
     {
-        return \iterator_to_array($this);
+        return \iterator_to_array($this, false);
     }
 
     /**

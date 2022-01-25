@@ -112,39 +112,6 @@ function merge(array $pipelines): Pipeline
 }
 
 /**
- * Concatenates the given pipelines into a single pipeline, emitting from a single pipeline at a time. The
- * prior pipeline must complete before values are emitted from any subsequent pipelines. Pipelines are concatenated
- * in the order given (iteration order of the array).
- *
- * @template T
- *
- * @param Pipeline<T>[] $pipelines
- *
- * @return Pipeline<T>
- */
-function concat(array $pipelines): Pipeline
-{
-    foreach ($pipelines as $key => $pipeline) {
-        if (!$pipeline instanceof Pipeline) {
-            throw new \TypeError(\sprintf(
-                'Argument #1 ($pipelines) must be of type array<%s>, %s given at key %s',
-                Pipeline::class,
-                \get_debug_type($pipeline),
-                $key
-            ));
-        }
-    }
-
-    return fromIterable(static function () use ($pipelines): \Generator {
-        foreach ($pipelines as $pipeline) {
-            foreach ($pipeline as $value) {
-                yield $value;
-            }
-        }
-    });
-}
-
-/**
  * Combines all given pipelines into one pipeline, emitting an array of values only after each pipeline has emitted a
  * value. The returned pipeline completes when any pipeline completes or errors when any pipeline errors.
  *

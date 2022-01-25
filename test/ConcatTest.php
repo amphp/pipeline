@@ -5,6 +5,8 @@ namespace Amp\Pipeline;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
 use Amp\Pipeline;
+use function Amp\async;
+use function Amp\Future\awaitFirst;
 
 class ConcatTest extends AsyncTestCase
 {
@@ -23,17 +25,54 @@ class ConcatTest extends AsyncTestCase
      * @param array $array
      * @param array $expected
      */
-    public function testConcat(array $array, array $expected): void
+    public function testConcatIterator(array $array, array $expected): void
+    {
+        $iterators = \array_map(static function (iterable $iterable): ConcurrentIterator {
+            return Pipeline\fromIterable($iterable)->getIterator();
+        }, $array);
+
+        $iterator = new ConcurrentConcatIterator($iterators);
+
+        self::assertSame($expected, (new Pipeline\Pipeline($iterator))->toArray());
+    }
+
+    /**
+     * @dataProvider getArrays
+     *
+     * @param array $array
+     * @param array $expected
+     */
+    public function testConcatPipeline(array $array, array $expected): void
     {
         $pipelines = \array_map(static function (iterable $iterable): Pipeline\Pipeline {
             return Pipeline\fromIterable($iterable);
         }, $array);
 
-        $pipeline = Pipeline\concat($pipelines);
+        $pipeline = Pipeline\Pipeline::concat($pipelines);
 
-        foreach ($pipeline as $value) {
-            self::assertSame(\array_shift($expected), $value);
-        }
+        self::assertSame($expected, $pipeline->toArray());
+    }
+
+    public function testConcurrency(): void
+    {
+        // We need a slow known-size iterator here, so the second fiber can jump right to the second iterator
+        $iterator1 = new ConcurrentDelayedArrayIterator(1, [1]);
+        $iterator2 = fromIterable(function () {
+            yield 2;
+        })->getIterator();
+
+        $iterator = new ConcurrentConcatIterator([$iterator1, $iterator2]);
+
+        $future1 = async(function () use ($iterator) {
+            $iterator->continue();
+            return $iterator->getValue();
+        });
+        $future2 = async(function () use ($iterator) {
+            $iterator->continue();
+            return $iterator->getValue();
+        });
+
+        self::assertSame(2, awaitFirst([$future1, $future2]));
     }
 
     /**
@@ -48,7 +87,7 @@ class ConcatTest extends AsyncTestCase
             throw $exception;
         });
 
-        $pipeline = (Pipeline\concat([
+        $pipeline = (Pipeline\Pipeline::concat([
             Pipeline\fromIterable(\range(1, 5)),
             $generator,
             Pipeline\fromIterable(\range(7, 10)),
@@ -71,7 +110,6 @@ class ConcatTest extends AsyncTestCase
     {
         $this->expectException(\TypeError::class);
 
-        /** @noinspection PhpParamsInspection */
-        Pipeline\concat([1]);
+        Pipeline\Pipeline::concat([1]);
     }
 }
