@@ -6,7 +6,6 @@ use Amp\Future;
 use Amp\Pipeline\Internal\ConcurrentSourceIterator;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\Source;
-use Revolt\EventLoop;
 use function Amp\async;
 
 /**
@@ -64,7 +63,7 @@ final class Pipeline implements \IteratorAggregate
 
         $source = new Source();
 
-        EventLoop::queue(static function () use ($iterable, $source): void {
+        async(static function () use ($iterable, $source): void {
             try {
                 foreach ($iterable as $value) {
                     $source->yield($value);
