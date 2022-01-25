@@ -5,7 +5,6 @@ namespace Amp\Pipeline;
 use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline;
 use function Amp\async;
 use function Amp\delay;
 
@@ -28,11 +27,11 @@ class ZipTest extends AsyncTestCase
      */
     public function testZip(array $array, array $expected): void
     {
-        $pipelines = \array_map(static function (array $iterator): Pipeline\Pipeline {
-            return Pipeline\fromIterable($iterator);
+        $pipelines = \array_map(static function (array $iterator): Pipeline {
+            return Pipeline::fromIterable($iterator);
         }, $array);
 
-        $pipeline = Pipeline\zip($pipelines);
+        $pipeline = zip($pipelines);
 
         self::assertSame($expected, $pipeline->toArray());
     }
@@ -52,19 +51,19 @@ class ZipTest extends AsyncTestCase
         $values2 = [$this->asyncValue(0.02, 4), $this->asyncValue(0.04, 5), $this->asyncValue(0.06, 6)];
         $expected = [['one' => 1, 'two' => 4], ['one' => 2, 'two' => 5], ['one' => 3, 'two' => 6]];
 
-        $pipelines['one'] = fromIterable(function () use ($values1) {
+        $pipelines['one'] = Pipeline::fromClosure(function () use ($values1) {
             foreach ($values1 as $value) {
                 yield $value->await();
             }
         });
 
-        $pipelines['two'] = fromIterable(function () use ($values2) {
+        $pipelines['two'] = Pipeline::fromClosure(function () use ($values2) {
             foreach ($values2 as $value) {
                 yield $value->await();
             }
         });
 
-        $pipeline = Pipeline\zip($pipelines);
+        $pipeline = zip($pipelines);
 
         self::assertSame($expected, $pipeline->toArray());
     }
@@ -76,10 +75,10 @@ class ZipTest extends AsyncTestCase
     {
         $pipelines = [];
 
-        $pipelines[] = Pipeline\fromIterable([1, 2, 3, 4, 5])->tap(fn () => delay(0.1));
-        $pipelines[] = Pipeline\fromIterable([6, 7, 8, 9, 10])->tap(fn () => delay(0.1));
+        $pipelines[] = Pipeline::fromIterable([1, 2, 3, 4, 5])->tap(fn () => delay(0.1));
+        $pipelines[] = Pipeline::fromIterable([6, 7, 8, 9, 10])->tap(fn () => delay(0.1));
 
-        $pipeline = Pipeline\zip($pipelines)->getIterator();
+        $pipeline = zip($pipelines)->getIterator();
 
         $this->expectException(DisposedException::class);
         $this->setTimeout(0.3);
@@ -97,12 +96,12 @@ class ZipTest extends AsyncTestCase
     public function testZipWithFailedPipeline(): void
     {
         $exception = new TestException;
-        $generator = fromIterable(static function () use ($exception) {
+        $generator = Pipeline::fromClosure(static function () use ($exception) {
             yield 1; // Emit once before failing.
             throw $exception;
         });
 
-        $pipeline = Pipeline\zip([$generator, Pipeline\fromIterable(\range(1, 5))]);
+        $pipeline = zip([$generator, Pipeline::fromIterable(\range(1, 5))]);
 
         try {
             $pipeline->forEach(fn () => null);
@@ -116,7 +115,7 @@ class ZipTest extends AsyncTestCase
     {
         $this->expectException(\TypeError::class);
 
-        Pipeline\zip([1]);
+        zip([1]);
     }
 
     private function asyncValue(float $delay, mixed $value): Future

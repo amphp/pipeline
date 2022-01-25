@@ -3,7 +3,6 @@
 namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
-use Amp\Pipeline;
 use function Amp\delay;
 
 class FromIterableTest extends AsyncTestCase
@@ -13,13 +12,13 @@ class FromIterableTest extends AsyncTestCase
     public function testTraversable(): void
     {
         $expected = \range(1, 4);
-        $generator = (static function () {
+        $generator = static function () {
             foreach (\range(1, 4) as $value) {
                 yield $value;
             }
-        })();
+        };
 
-        $pipeline = Pipeline\fromIterable($generator)->getIterator();
+        $pipeline = Pipeline::fromClosure($generator)->getIterator();
 
         while ($pipeline->continue()) {
             self::assertSame(\array_shift($expected), $pipeline->getValue());
@@ -35,7 +34,7 @@ class FromIterableTest extends AsyncTestCase
     {
         $this->expectException(\TypeError::class);
 
-        Pipeline\fromIterable($arg);
+        Pipeline::fromIterable($arg);
     }
 
     public function provideInvalidIteratorArguments(): array
@@ -53,7 +52,7 @@ class FromIterableTest extends AsyncTestCase
     public function testInterval(): void
     {
         $count = 3;
-        $pipeline = Pipeline\fromIterable(\range(1, $count))->getIterator();
+        $pipeline = Pipeline::fromIterable(\range(1, $count))->getIterator();
 
         $i = 0;
         while ($pipeline->continue()) {
@@ -69,7 +68,7 @@ class FromIterableTest extends AsyncTestCase
     public function testSlowConsumer(): void
     {
         $count = 5;
-        $pipeline = Pipeline\fromIterable(\range(1, $count))->getIterator();
+        $pipeline = Pipeline::fromIterable(\range(1, $count))->getIterator();
 
         for ($i = 0; $pipeline->continue(); ++$i) {
             delay(self::TIMEOUT * 2);

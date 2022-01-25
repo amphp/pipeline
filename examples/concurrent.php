@@ -3,10 +3,10 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Amp\Pipeline;
+use Amp\Pipeline\Pipeline;
 use function Amp\delay;
 
-$pipeline = Pipeline\fromIterable(function (): \Generator {
+$pipeline = Pipeline::fromClosure(function (): \Generator {
     for ($i = 0; $i < 100; ++$i) {
         yield $i;
     }

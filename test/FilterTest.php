@@ -4,7 +4,6 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline;
 
 class FilterTest extends AsyncTestCase
 {
@@ -24,7 +23,7 @@ class FilterTest extends AsyncTestCase
         $count = 0;
         $values = [1, 2, 3];
         $expected = [1, 3];
-        $generator = Pipeline\fromIterable(function () use ($values) {
+        $generator = Pipeline::fromClosure(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
@@ -46,7 +45,7 @@ class FilterTest extends AsyncTestCase
     {
         $values = [1, 2, 3];
         $exception = new TestException;
-        $generator = Pipeline\fromIterable(function () use ($values) {
+        $generator = Pipeline::fromClosure(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }

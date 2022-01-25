@@ -4,7 +4,6 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline;
 
 class TapTest extends AsyncTestCase
 {
@@ -13,7 +12,7 @@ class TapTest extends AsyncTestCase
         $values = [1, 2, 3];
 
         $invoked = 0;
-        $pipeline = Pipeline\fromIterable($values)->tap(function () use (&$invoked): void {
+        $pipeline = Pipeline::fromIterable($values)->tap(function () use (&$invoked): void {
             $invoked++;
         });
 

@@ -6,6 +6,7 @@ use Amp\Future;
 use Amp\Pipeline\Internal\ConcurrentSourceIterator;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\Source;
+use Revolt\EventLoop;
 use function Amp\async;
 
 /**
@@ -19,15 +20,73 @@ final class Pipeline implements \IteratorAggregate
     private static \stdClass $stop;
 
     /**
+     * Creates a pipeline from the given closure returning an iterable.
+     *
+     * @template Ts
+     *
+     * @param \Closure():iterable<array-key, Ts> $iterable Elements to emit.
+     *
+     * @return self<Ts>
+     */
+    public static function fromClosure(\Closure $closure): Pipeline
+    {
+        $iterable = $closure();
+
+        if (!\is_iterable($iterable)) {
+            throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
+        }
+
+        return self::fromIterable($iterable);
+    }
+
+    /**
+     * Creates a pipeline from the given iterable.
+     *
+     * @template Ts
+     *
+     * @param iterable<array-key, Ts> $iterable
+     *
+     * @return self<Ts>
+     */
+    public static function fromIterable(iterable $iterable): self
+    {
+        if ($iterable instanceof self) {
+            return $iterable;
+        }
+
+        if (\is_array($iterable)) {
+            return new self(new ConcurrentArrayIterator($iterable));
+        }
+
+        $source = new Source();
+
+        EventLoop::queue(static function () use ($iterable, $source): void {
+            try {
+                foreach ($iterable as $value) {
+                    $source->yield($value);
+                }
+
+                $source->complete();
+            } catch (\Throwable $exception) {
+                $source->error($exception);
+            } finally {
+                $source->dispose();
+            }
+        });
+
+        return new Pipeline(new ConcurrentSourceIterator($source));
+    }
+
+    /**
      * Concatenates the given pipelines into a single pipeline in sequential order.
      *
      * The prior pipeline must complete before values are taken from any subsequent pipelines.
      *
-     * @template T
+     * @template Ts
      *
-     * @param Pipeline<T>[] $pipelines
+     * @param Pipeline<Ts>[] $pipelines
      *
-     * @return self<T>
+     * @return self<Ts>
      */
     public static function concat(array $pipelines): self
     {

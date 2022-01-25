@@ -3,61 +3,8 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
-use Amp\Pipeline\Internal\ConcurrentSourceIterator;
-use Amp\Pipeline\Internal\Source;
 use Revolt\EventLoop;
 use function Amp\async;
-
-/**
- * Creates a pipeline from the given iterable, emitting each value.
- *
- * @template T
- *
- * @param iterable<array-key, T>|\Closure():iterable<array-key, T> $iterable Elements to emit.
- *
- * @return Pipeline<T>
- */
-function fromIterable(\Closure|iterable $iterable): Pipeline
-{
-    if ($iterable instanceof \Closure) {
-        $iterable = $iterable();
-
-        if (!\is_iterable($iterable)) {
-            throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
-        }
-    }
-
-    if ($iterable instanceof Pipeline) {
-        return $iterable;
-    }
-
-    if (\is_array($iterable)) {
-        return new Pipeline(new ConcurrentArrayIterator($iterable));
-    }
-
-    /** @psalm-suppress RedundantConditionGivenDocblockType */
-    if (!$iterable instanceof \Generator) {
-        $iterable = (static fn () => yield from $iterable)();
-    }
-
-    $source = new Source();
-
-    EventLoop::queue(static function () use ($iterable, $source): void {
-        try {
-            foreach ($iterable as $value) {
-                $source->yield($value);
-            }
-
-            $source->complete();
-        } catch (\Throwable $exception) {
-            $source->error($exception);
-        } finally {
-            $source->dispose();
-        }
-    });
-
-    return new Pipeline(new ConcurrentSourceIterator($source));
-}
 
 /**
  * Creates a pipeline that emits values emitted from any pipeline in the array of pipelines.
@@ -139,7 +86,7 @@ function zip(array $pipelines): Pipeline
         $iterators[$key] = $pipeline->getIterator();
     }
 
-    return fromIterable(static function () use ($iterators): \Generator {
+    return Pipeline::fromClosure(static function () use ($iterators): \Generator {
         while (true) {
             $next = Future\await(\array_map(
                 static fn (ConcurrentIterator $iterator) => async(static function () use ($iterator) {

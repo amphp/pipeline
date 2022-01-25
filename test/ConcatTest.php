@@ -4,7 +4,6 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline;
 use function Amp\async;
 use function Amp\Future\awaitFirst;
 
@@ -28,12 +27,12 @@ class ConcatTest extends AsyncTestCase
     public function testConcatIterator(array $array, array $expected): void
     {
         $iterators = \array_map(static function (iterable $iterable): ConcurrentIterator {
-            return Pipeline\fromIterable($iterable)->getIterator();
+            return Pipeline::fromIterable($iterable)->getIterator();
         }, $array);
 
         $iterator = new ConcurrentConcatIterator($iterators);
 
-        self::assertSame($expected, (new Pipeline\Pipeline($iterator))->toArray());
+        self::assertSame($expected, (new Pipeline($iterator))->toArray());
     }
 
     /**
@@ -44,11 +43,11 @@ class ConcatTest extends AsyncTestCase
      */
     public function testConcatPipeline(array $array, array $expected): void
     {
-        $pipelines = \array_map(static function (iterable $iterable): Pipeline\Pipeline {
-            return Pipeline\fromIterable($iterable);
+        $pipelines = \array_map(static function (iterable $iterable): Pipeline {
+            return Pipeline::fromIterable($iterable);
         }, $array);
 
-        $pipeline = Pipeline\Pipeline::concat($pipelines);
+        $pipeline = Pipeline::concat($pipelines);
 
         self::assertSame($expected, $pipeline->toArray());
     }
@@ -57,7 +56,7 @@ class ConcatTest extends AsyncTestCase
     {
         // We need a slow known-size iterator here, so the second fiber can jump right to the second iterator
         $iterator1 = new ConcurrentDelayedArrayIterator(1, [1]);
-        $iterator2 = fromIterable(function () {
+        $iterator2 = Pipeline::fromClosure(function () {
             yield 2;
         })->getIterator();
 
@@ -82,15 +81,15 @@ class ConcatTest extends AsyncTestCase
     {
         $exception = new TestException;
         $expected = \range(1, 6);
-        $generator = fromIterable(static function () use ($exception) {
+        $generator = Pipeline::fromClosure(static function () use ($exception) {
             yield 6; // Emit once before failing.
             throw $exception;
         });
 
-        $pipeline = (Pipeline\Pipeline::concat([
-            Pipeline\fromIterable(\range(1, 5)),
+        $pipeline = (Pipeline::concat([
+            Pipeline::fromIterable(\range(1, 5)),
             $generator,
-            Pipeline\fromIterable(\range(7, 10)),
+            Pipeline::fromIterable(\range(7, 10)),
         ]));
 
         try {
@@ -110,6 +109,6 @@ class ConcatTest extends AsyncTestCase
     {
         $this->expectException(\TypeError::class);
 
-        Pipeline\Pipeline::concat([1]);
+        Pipeline::concat([1]);
     }
 }

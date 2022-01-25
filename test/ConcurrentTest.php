@@ -4,7 +4,6 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline;
 use function Amp\delay;
 
 class ConcurrentTest extends AsyncTestCase
@@ -26,7 +25,7 @@ class ConcurrentTest extends AsyncTestCase
     {
         $range = \range(0, 100);
 
-        $source = Pipeline\fromIterable($range);
+        $source = Pipeline::fromIterable($range);
 
         $results = $source->concurrent(3)
             ->tap(fn (int $value) => delay(\random_int(0, 10) / 1000))
@@ -39,7 +38,7 @@ class ConcurrentTest extends AsyncTestCase
     {
         $range = \range(0, 100);
 
-        $source = Pipeline\fromIterable($range);
+        $source = Pipeline::fromIterable($range);
 
         $results = $source->concurrent(3)
             ->unordered()

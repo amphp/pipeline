@@ -17,7 +17,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Return value of argument #1 ($iterable) must be of type iterable, null returned');
 
-        fromIterable(static fn () => null);
+        Pipeline::fromClosure(static fn () => null);
     }
 
     public function testThrowingClosure(): void
@@ -26,14 +26,14 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
         $this->expectExceptionObject($exception);
 
-        fromIterable(static fn () => throw $exception);
+        Pipeline::fromClosure(static fn () => throw $exception);
     }
 
     public function testYield(): void
     {
         $value = 1;
 
-        $generator = fromIterable(function () use ($value) {
+        $generator = Pipeline::fromClosure(function () use ($value) {
             yield $value;
         });
 
@@ -48,7 +48,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
         $exception = new TestException;
         $deferred = new DeferredFuture;
 
-        $generator = fromIterable(function () use ($deferred) {
+        $generator = Pipeline::fromClosure(function () use ($deferred) {
             yield $deferred->getFuture()->await();
         });
 
@@ -70,7 +70,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
         $output = '';
         $yields = 5;
 
-        $generator = fromIterable(function () use (&$time, $yields) {
+        $generator = Pipeline::fromClosure(function () use (&$time, $yields) {
             $time = now();
             for ($i = 0; $i < $yields; ++$i) {
                 yield $i;
@@ -98,7 +98,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
         $exception = new TestException;
 
         try {
-            $generator = fromIterable(function () use ($exception) {
+            $generator = Pipeline::fromClosure(function () use ($exception) {
                 yield 1;
                 throw $exception;
             });
@@ -114,7 +114,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
     public function testDisposal(): void
     {
         $invoked = false;
-        $generator = fromIterable(function () use (&$invoked) {
+        $generator = Pipeline::fromClosure(function () use (&$invoked) {
             try {
                 yield 0;
                 yield 1;
@@ -147,7 +147,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
      */
     public function testYieldAfterDisposal(): void
     {
-        $generator = fromIterable(function () {
+        $generator = Pipeline::fromClosure(function () {
             try {
                 yield 0;
             } catch (DisposedException) {
@@ -164,7 +164,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
     public function testGetReturnAfterDisposal(): void
     {
-        $generator = fromIterable(function () {
+        $generator = Pipeline::fromClosure(function () {
             try {
                 yield 0;
             } catch (DisposedException) {
@@ -185,7 +185,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
     public function testGeneratorStartsOnlyAfterCallingContinue(): void
     {
         $invoked = false;
-        $generator = fromIterable(function () use (&$invoked) {
+        $generator = Pipeline::fromClosure(function () use (&$invoked) {
             $invoked = true;
             yield 0;
         })->getIterator();
@@ -203,7 +203,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
     {
         $values = [];
 
-        $generator = fromIterable(function () {
+        $generator = Pipeline::fromClosure(function () {
             yield 1;
             yield 2;
             yield 3;

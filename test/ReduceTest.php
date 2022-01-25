@@ -4,7 +4,6 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline;
 
 class ReduceTest extends AsyncTestCase
 {
@@ -12,7 +11,7 @@ class ReduceTest extends AsyncTestCase
     {
         $values = [1, 2, 3, 4, 5];
 
-        $pipeline = Pipeline\fromIterable($values);
+        $pipeline = Pipeline::fromIterable($values);
 
         $result = $pipeline->reduce(fn (int $carry, int $emitted) => $carry + $emitted, 0);
 

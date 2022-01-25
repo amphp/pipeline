@@ -4,7 +4,6 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline;
 
 class SkipTest extends AsyncTestCase
 {
@@ -12,7 +11,7 @@ class SkipTest extends AsyncTestCase
     {
         $values = [1, 2, 3];
         $count = \count($values);
-        $pipeline = Pipeline\fromIterable($values)->skip(1)->getIterator();
+        $pipeline = Pipeline::fromIterable($values)->skip(1)->getIterator();
 
         \array_shift($values); // Shift off the first value that should be skipped.
 

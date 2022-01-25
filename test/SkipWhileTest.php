@@ -4,13 +4,12 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use Amp\Pipeline;
 
 class SkipWhileTest extends AsyncTestCase
 {
     public function testValuesEmitted(): void
     {
-        $pipeline = Pipeline\fromIterable([1, 2, 3])
+        $pipeline = Pipeline::fromIterable([1, 2, 3])
             ->skipWhile(fn ($value) => $value < 2);
 
         self::assertSame([2, 3], $pipeline->toArray());
@@ -20,7 +19,7 @@ class SkipWhileTest extends AsyncTestCase
     {
         $invoked = 0;
 
-        $pipeline = Pipeline\fromIterable([1, 2, 3])
+        $pipeline = Pipeline::fromIterable([1, 2, 3])
             ->skipWhile(function ($value) use (&$invoked) {
                 $invoked++;
 
@@ -49,7 +48,7 @@ class SkipWhileTest extends AsyncTestCase
     {
         $exception = new TestException;
 
-        $iterator = Pipeline\fromIterable([1, 2, 3])->skipWhile(fn ($value) => throw $exception)->getIterator();
+        $iterator = Pipeline::fromIterable([1, 2, 3])->skipWhile(fn ($value) => throw $exception)->getIterator();
 
         $this->expectExceptionObject($exception);
 

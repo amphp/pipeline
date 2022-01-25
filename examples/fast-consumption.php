@@ -3,13 +3,13 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use Amp\Pipeline\Pipeline;
 use function Amp\async;
 use function Amp\delay;
-use function Amp\Pipeline\fromIterable;
 
 try {
-    /** @psalm-var \Amp\Pipeline\Pipeline<int> $pipeline */
-    $iterator = fromIterable(function (): \Generator {
+    /** @psalm-var Amp\Pipeline\ConcurrentIterator<int> $iterator */
+    $iterator = Pipeline::fromClosure(function (): \Generator {
         yield 1;
         delay(0.5);
         yield 2;
@@ -39,7 +39,9 @@ try {
     }
 
     foreach ($futures as $key => $future) {
-        if (null === $yielded = $future->await()) {
+        $yielded = $future->await();
+
+        if ($yielded === null) {
             \printf("Async generator completed after yielding %d values\n", $key);
             break;
         }
