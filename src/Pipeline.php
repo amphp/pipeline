@@ -3,9 +3,9 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
-use Amp\Pipeline\Internal\ConcurrentSourceIterator;
+use Amp\Pipeline\Internal\ConcurrentQueueIterator;
+use Amp\Pipeline\Internal\QueueState;
 use Amp\Pipeline\Internal\Sequence;
-use Amp\Pipeline\Internal\Source;
 use function Amp\async;
 
 /**
@@ -61,12 +61,12 @@ final class Pipeline implements \IteratorAggregate
             return new self(new ConcurrentArrayIterator($iterable));
         }
 
-        $source = new Source();
+        $source = new QueueState();
 
         async(static function () use ($iterable, $source): void {
             try {
                 foreach ($iterable as $value) {
-                    $source->yield($value);
+                    $source->push($value);
                 }
 
                 $source->complete();
@@ -77,7 +77,7 @@ final class Pipeline implements \IteratorAggregate
             }
         });
 
-        return new Pipeline(new ConcurrentSourceIterator($source));
+        return new Pipeline(new ConcurrentQueueIterator($source));
     }
 
     /**
@@ -508,7 +508,7 @@ final class Pipeline implements \IteratorAggregate
         $source = $this->source;
 
         foreach ($this->intermediateOperations as [$concurrency, $ordered, $operation]) {
-            $destination = new Source;
+            $destination = new QueueState;
 
             if ($concurrency === 1) {
                 async(static function () use ($source, $destination, $operation): void {
@@ -520,7 +520,7 @@ final class Pipeline implements \IteratorAggregate
                                     break 2;
                                 }
 
-                                $destination->yield($emit);
+                                $destination->push($emit);
                             }
                         }
 
@@ -559,7 +559,7 @@ final class Pipeline implements \IteratorAggregate
                                     break 2;
                                 }
 
-                                $destination->yield($emit);
+                                $destination->push($emit);
                             }
 
                             $sequence?->end($position);
@@ -581,7 +581,7 @@ final class Pipeline implements \IteratorAggregate
             $source = $destination;
         }
 
-        return $source instanceof Source ? new ConcurrentSourceIterator($source) : $source;
+        return $source instanceof QueueState ? new ConcurrentQueueIterator($source) : $source;
     }
 
     public function dispose(): void

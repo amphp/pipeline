@@ -26,14 +26,14 @@ class TapTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
         $invoked = 0;
         $pipeline = $source->pipe()->tap(function () use (&$invoked): void {
             $invoked++;
         });
 
-        $source->emit(1)->ignore();
+        $source->enqueue(1)->ignore();
         $source->error($exception);
 
         try {
@@ -49,11 +49,11 @@ class TapTest extends AsyncTestCase
     public function testTapCallbackThrows(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
         $pipeline = $source->pipe()->tap(fn () => throw $exception);
 
-        $source->emit(1)->ignore();
+        $source->enqueue(1)->ignore();
 
         $this->expectExceptionObject($exception);
 

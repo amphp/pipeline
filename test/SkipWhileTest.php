@@ -33,7 +33,7 @@ class SkipWhileTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
         $iterator = $source->pipe()->skipWhile(fn ($value) => $value < 2)->getIterator();
 

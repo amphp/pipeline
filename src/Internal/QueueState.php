@@ -6,6 +6,7 @@ use Amp\Cancellation;
 use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\Internal;
+use Amp\Pipeline\ConcurrentIterator;
 use Amp\Pipeline\DisposedException;
 use Revolt\EventLoop;
 use Revolt\EventLoop\FiberLocal;
@@ -13,13 +14,13 @@ use Revolt\EventLoop\Suspension;
 
 /**
  * Class used internally by {@see Pipeline} implementations. Do not use this class in your code, instead compose your
- * class from one of the available classes implementing {@see Pipeline}.
+ * class from one of the available classes implementing {@see ConcurrentIterator}.
  *
  * @internal
  *
  * @template T
  */
-final class Source implements \IteratorAggregate
+final class QueueState implements \IteratorAggregate
 {
     private const CONTINUE = [null];
 
@@ -187,12 +188,12 @@ final class Source implements \IteratorAggregate
      *
      * @return array|null Returns [?\Throwable, mixed] or null if no send value is available.
      *
-     * @throws \Error If the pipeline has completed.
+     * @throws \Error If the queue has completed.
      */
-    private function push(mixed $value, int $position): ?array
+    private function doPush(mixed $value, int $position): ?array
     {
         if ($this->completed) {
-            throw new \Error("Pipelines cannot emit values after calling complete");
+            throw new \Error("Values cannot be enqueued after calling complete");
         }
 
         if (!empty($this->waiting)) {
@@ -236,10 +237,10 @@ final class Source implements \IteratorAggregate
      *
      * @return Future Resolves once the value has been consumed on the pipeline.
      */
-    public function emit(mixed $value): Future
+    public function enqueue(mixed $value): Future
     {
         $position = $this->emitPosition++;
-        $next = $this->push($value, $position);
+        $next = $this->doPush($value, $position);
 
         if ($next === null) {
             $this->backpressure[$position] = $deferred = new DeferredFuture;
@@ -260,10 +261,10 @@ final class Source implements \IteratorAggregate
      *
      * @param T $value Value to emit from the pipeline.
      */
-    public function yield(mixed $value): void
+    public function push(mixed $value): void
     {
         $position = $this->emitPosition++;
-        $next = $this->push($value, $position);
+        $next = $this->doPush($value, $position);
 
         if ($next === null) {
             $this->backpressure[$position] = $suspension = EventLoop::getSuspension();
@@ -335,7 +336,7 @@ final class Source implements \IteratorAggregate
     private function finalize(?\Throwable $exception = null, bool $disposed = false): void
     {
         if ($this->completed) {
-            $message = "Pipeline has already been completed";
+            $message = "Queue has already been completed";
 
             if (isset($this->resolutionTrace)) {
                 $trace = Internal\formatStacktrace($this->resolutionTrace);

@@ -10,9 +10,9 @@ class ForEachTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
-        $source->emit(1)->ignore();
+        $source->enqueue(1)->ignore();
         $source->error($exception);
 
         $this->expectExceptionObject($exception);

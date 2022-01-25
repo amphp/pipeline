@@ -9,7 +9,7 @@ class MapTest extends AsyncTestCase
 {
     public function testNoValuesEmitted(): void
     {
-        $source = new Emitter;
+        $source = new Queue;
 
         /** @noinspection PhpUnusedLocalVariableInspection */
         $pipeline = $source->pipe()->map($this->createCallback(0));
@@ -97,7 +97,7 @@ class MapTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
         $iterator = $source->pipe()->map($this->createCallback(0))->getIterator();
 

@@ -9,7 +9,7 @@ class FilterTest extends AsyncTestCase
 {
     public function testNoValuesEmitted(): void
     {
-        $source = new Emitter;
+        $source = new Queue;
 
         $pipeline = $source->pipe()->filter($this->createCallback(0));
 
@@ -61,7 +61,7 @@ class FilterTest extends AsyncTestCase
     public function testPipelineFails(): void
     {
         $exception = new TestException;
-        $source = new Emitter;
+        $source = new Queue;
 
         $pipeline = $source->pipe()->filter($this->createCallback(0));
 
