@@ -5,7 +5,9 @@ namespace Amp\Pipeline;
 use Amp\DeferredFuture;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
+use function Amp\async;
 use function Amp\delay;
+use function Amp\Future\awaitAll;
 use function Amp\now;
 
 class FromIterableGeneratorTest extends AsyncTestCase
@@ -38,6 +40,71 @@ class FromIterableGeneratorTest extends AsyncTestCase
         });
 
         self::assertSame([1], $generator->toArray());
+    }
+
+    public function testLazy(): void
+    {
+        $generator = Pipeline::fromClosure(static function () {
+            print '1';
+            yield;
+            print '2';
+            yield;
+            print '3';
+        });
+
+        // ensure async is already executed
+        delay(0);
+
+        print 'a';
+
+        $iterator = $generator->getIterator();
+
+        print 'b';
+
+        $iterator->continue();
+
+        print 'c';
+
+        $iterator->continue();
+
+        print 'd';
+
+        $this->expectOutputString('ab1c2d');
+    }
+
+    public function testLazyConcurrent(): void
+    {
+        $generator = Pipeline::fromClosure(static function () {
+            print '1';
+            yield;
+            print '2';
+            delay(1);
+            print '3';
+            yield;
+            print '4';
+            yield;
+            print '5';
+        });
+
+        // ensure async is already executed
+        delay(0);
+
+        print 'a';
+        $iterator = $generator->getIterator();
+
+        print 'b';
+        $iterator->continue();
+
+        print 'c';
+        $futures[] = async(fn () => $iterator->continue());
+        $futures[] = async(fn () => $iterator->continue());
+
+        print 'd';
+        awaitAll($futures);
+
+        print 'e';
+
+        $this->expectOutputString('ab1cd234e');
     }
 
     /**
@@ -114,16 +181,15 @@ class FromIterableGeneratorTest extends AsyncTestCase
     public function testDisposal(): void
     {
         $invoked = false;
-        $generator = Pipeline::fromClosure(function () use (&$invoked) {
+        $iterator = Pipeline::fromClosure(function () use (&$invoked) {
             try {
                 yield 0;
                 yield 1;
             } finally {
                 $invoked = true;
             }
-        });
+        })->getIterator();
 
-        $iterator = $generator->getIterator();
         self::assertTrue($iterator->continue());
         self::assertSame(0, $iterator->getValue());
 
@@ -134,7 +200,6 @@ class FromIterableGeneratorTest extends AsyncTestCase
         delay(0); // Tick event loop to destroy generator.
 
         try {
-            $iterator->continue();
             $iterator->continue();
             self::fail("Pipeline should have been disposed");
         } catch (DisposedException) {
@@ -180,7 +245,6 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
         $generator->continue();
     }
-
 
     public function testGeneratorStartsOnlyAfterCallingContinue(): void
     {
