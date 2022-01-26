@@ -2,13 +2,9 @@
 
 namespace Amp\Pipeline;
 
-use Amp\Future;
-use Amp\Pipeline\Internal\ConcurrentQueueIterator;
 use Amp\Pipeline\Internal\FlatMapOperation;
-use Amp\Pipeline\Internal\QueueState;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\SortOperation;
-use function Amp\async;
 
 /**
  * A pipeline is an asynchronous set of ordered values.
