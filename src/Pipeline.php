@@ -169,7 +169,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function min(?\Closure $compare = null, mixed $default = null): mixed
     {
-        $compare ??= static fn ($a, $b) => $a <=> $b;
+        $compare ??= static fn (mixed $a, mixed $b): int => $a <=> $b;
         $min = $default;
         $first = true;
 
@@ -199,7 +199,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function max(?\Closure $compare = null, mixed $default = null): mixed
     {
-        $compare ??= static fn ($a, $b) => $a <=> $b;
+        $compare ??= static fn (mixed $a, mixed $b): int => $a <=> $b;
         $max = $default;
         $first = true;
 
@@ -304,7 +304,8 @@ final class Pipeline implements \IteratorAggregate
             throw new \Error('Pipeline consumption has already been started');
         }
 
-        $this->intermediateOperations[] = new SortOperation($compare ?? static fn ($a, $b) => $a <=> $b);
+        $compare ??= static fn (mixed $a, mixed $b): int => $a <=> $b;
+        $this->intermediateOperations[] = new SortOperation($compare);
 
         return $this->ordered();
     }
@@ -314,7 +315,7 @@ final class Pipeline implements \IteratorAggregate
      *
      * @template R
      *
-     * @param \Closure(T):iterable<R> $flatMap
+     * @param \Closure(T, int):iterable<R> $flatMap
      *
      * @return self<R>
      */
@@ -326,6 +327,7 @@ final class Pipeline implements \IteratorAggregate
 
         $this->intermediateOperations[] = new FlatMapOperation($this->concurrency, $this->ordered, $flatMap);
 
+        /** @var self<R> */
         return $this;
     }
 
@@ -464,6 +466,7 @@ final class Pipeline implements \IteratorAggregate
                 return [$value];
             }
 
+            /** @var T[] */
             return [FlatMapOperation::getStopMarker()];
         });
     }
@@ -483,7 +486,7 @@ final class Pipeline implements \IteratorAggregate
         return $this->flatMap(
             function (mixed $value, int $position) use ($sequence, $predicate, &$taking) {
                 if (!$taking) {
-                    return false;
+                    return [];
                 }
 
                 $predicateResult = $predicate($value);
@@ -499,6 +502,7 @@ final class Pipeline implements \IteratorAggregate
                 $taking = false;
                 $sequence->resume($position);
 
+                /** @var T[] */
                 return [FlatMapOperation::getStopMarker()];
             }
         );
