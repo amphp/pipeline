@@ -42,10 +42,7 @@
     "autoload": {
         "psr-4": {
             "Amp\\Pipeline\\": "src"
-        },
-        "files": [
-            "src/functions.php"
-        ]
+        }
     },
     "extra": {
         "branch-alias": {
