@@ -67,6 +67,8 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
 
     public function dispose(): void
     {
+        $this->sequence->resume(\PHP_INT_MAX - 1);
+
         $this->iterator->dispose();
     }
 

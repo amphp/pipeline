@@ -201,6 +201,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
         try {
             $iterator->continue();
+
             self::fail("Pipeline should have been disposed");
         } catch (DisposedException) {
             self::assertTrue($invoked);
