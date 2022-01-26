@@ -61,23 +61,7 @@ final class Pipeline implements \IteratorAggregate
             return new self(new ConcurrentArrayIterator($iterable));
         }
 
-        $source = new QueueState();
-
-        async(static function () use ($iterable, $source): void {
-            try {
-                foreach ($iterable as $value) {
-                    $source->push($value);
-                }
-
-                $source->complete();
-            } catch (\Throwable $exception) {
-                $source->error($exception);
-            } finally {
-                $source->dispose();
-            }
-        });
-
-        return new Pipeline(new ConcurrentQueueIterator($source));
+        return new self(new ConcurrentIterableIterator($iterable));
     }
 
     /**
@@ -397,16 +381,16 @@ final class Pipeline implements \IteratorAggregate
 
                 $predicateResult = $predicate($value);
 
-                $sequence->start($position);
+                $sequence->await($position);
 
                 /** @psalm-suppress RedundantCondition */
                 if ($skipping && $predicateResult) {
-                    $sequence->end($position);
+                    $sequence->resume($position);
                     return [];
                 }
 
                 $skipping = false;
-                $sequence->end($position);
+                $sequence->resume($position);
 
                 return [$value];
             }
@@ -454,16 +438,16 @@ final class Pipeline implements \IteratorAggregate
 
                 $predicateResult = $predicate($value);
 
-                $sequence->start($position);
+                $sequence->await($position);
 
                 /** @psalm-suppress RedundantCondition */
                 if ($taking && $predicateResult) {
-                    $sequence->end($position);
+                    $sequence->resume($position);
                     return [$value];
                 }
 
                 $taking = false;
-                $sequence->end($position);
+                $sequence->resume($position);
 
                 return [self::$stop];
             }
@@ -551,7 +535,7 @@ final class Pipeline implements \IteratorAggregate
                             // The operation runs concurrently, but the emits are at the correct position
                             $iterable = $operation($value, $position);
 
-                            $sequence?->start($position);
+                            $sequence?->await($position);
 
                             foreach ($iterable as $emit) {
                                 /** @psalm-suppress TypeDoesNotContainType */
@@ -562,7 +546,7 @@ final class Pipeline implements \IteratorAggregate
                                 $destination->push($emit);
                             }
 
-                            $sequence?->end($position);
+                            $sequence?->resume($position);
                         }
                     });
                 }

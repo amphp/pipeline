@@ -10,11 +10,9 @@ final class Sequence
     private int $position = 0;
     private array $suspensions = [];
 
-    public function start(int $position): void
+    public function await(int $position): void
     {
-        \assert($position >= $this->position);
-
-        if ($position === $this->position) {
+        if ($position <= $this->position) {
             return;
         }
 
@@ -25,15 +23,29 @@ final class Sequence
         $suspension->suspend();
     }
 
-    public function end(int $position): void
+    public function resume(int $position): void
     {
-        \assert($position === $this->position);
-
-        $this->position++;
-
-        if (isset($this->suspensions[$this->position])) {
-            $this->suspensions[$this->position]->resume();
-            unset($this->suspensions[$this->position]);
+        if ($position < $this->position) {
+            return;
         }
+
+        $newPosition = \max($position, $this->position) + 1;
+
+        if ($newPosition === \PHP_INT_MAX) {
+            foreach ($this->suspensions as $suspension) {
+                $suspension->resume();
+            }
+
+            $this->suspensions = [];
+        } else {
+            for ($i = $this->position + 1; $i <= $newPosition; $i++) {
+                if (isset($this->suspensions[$i])) {
+                    $this->suspensions[$i]->resume();
+                    unset($this->suspensions[$i]);
+                }
+            }
+        }
+
+        $this->position = $newPosition;
     }
 }
