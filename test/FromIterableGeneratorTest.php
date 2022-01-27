@@ -109,7 +109,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
     public function testLazyConcurrentTap(): void
     {
-        $generator = Pipeline::fromClosure(static function () {
+        $generator = Pipeline::fromIterable(static function () {
             print '1';
             yield;
             print '2';
