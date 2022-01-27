@@ -32,7 +32,6 @@ final class FlatMapOperation implements IntermediateOperation
 
     public function __invoke(ConcurrentIterator $source): ConcurrentIterator
     {
-        $destination = new QueueState;
         $stop = self::getStopMarker();
 
         if ($this->concurrency === 1) {
@@ -50,51 +49,6 @@ final class FlatMapOperation implements IntermediateOperation
             })());
         }
 
-        $futures = [];
-
-        $sequence = $this->ordered ? new Sequence : null;
-
-        for ($i = 0; $i < $this->concurrency; $i++) {
-            $futures[] = async(function () use (
-                $source,
-                $destination,
-                $sequence,
-                $stop
-            ): void {
-                foreach ($source as $position => $value) {
-                    if ($destination->isComplete()) {
-                        return;
-                    }
-
-                    // The operation runs concurrently, but the emits are at the correct position
-                    $iterable = ($this->flatMap)($value, $position);
-
-                    $sequence?->await($position);
-
-                    foreach ($iterable as $emit) {
-                        /** @psalm-suppress TypeDoesNotContainType */
-                        if ($emit === $stop || $destination->isComplete()) {
-                            return;
-                        }
-
-                        $destination->push($emit);
-                    }
-
-                    $sequence?->resume($position);
-                }
-            });
-        }
-
-        async(static function () use ($futures, $source, $destination): void {
-            try {
-                await($futures);
-                $destination->complete();
-            } catch (\Throwable $exception) {
-                $destination->error($exception);
-                $source->dispose();
-            }
-        });
-
-        return new ConcurrentQueueIterator($destination);
+        return new ConcurrentFlatMapIterator($source, $this->concurrency, $this->ordered, $this->flatMap);
     }
 }

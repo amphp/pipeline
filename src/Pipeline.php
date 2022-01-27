@@ -2,6 +2,7 @@
 
 namespace Amp\Pipeline;
 
+use Amp\Pipeline\Internal\ConcurrentBufferingIterator;
 use Amp\Pipeline\Internal\FlatMapOperation;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\SortOperation;
@@ -148,7 +149,7 @@ final class Pipeline implements \IteratorAggregate
     {
         $count = 0;
 
-        foreach ($this as $ignored) {
+        foreach ($this->buffer() as $ignored) {
             $count++;
         }
 
@@ -169,7 +170,7 @@ final class Pipeline implements \IteratorAggregate
         $min = $default;
         $first = true;
 
-        foreach ($this as $value) {
+        foreach ($this->buffer() as $value) {
             if ($first) {
                 $first = false;
                 $min = $value;
@@ -199,7 +200,7 @@ final class Pipeline implements \IteratorAggregate
         $max = $default;
         $first = true;
 
-        foreach ($this as $value) {
+        foreach ($this->buffer() as $value) {
             if ($first) {
                 $first = false;
                 $max = $value;
@@ -222,7 +223,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function allMatch(\Closure $predicate): bool
     {
-        foreach ($this->map($predicate) as $value) {
+        foreach ($this->map($predicate)->buffer() as $value) {
             if (!$value) {
                 return false;
             }
@@ -238,7 +239,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function anyMatch(\Closure $predicate): bool
     {
-        foreach ($this->map($predicate) as $value) {
+        foreach ($this->map($predicate)->buffer() as $value) {
             if ($value) {
                 return true;
             }
@@ -254,7 +255,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function noneMatch(\Closure $predicate): bool
     {
-        foreach ($this->map($predicate) as $value) {
+        foreach ($this->map($predicate)->buffer() as $value) {
             if ($value) {
                 return false;
             }
@@ -282,7 +283,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function toArray(): array
     {
-        return \iterator_to_array($this, false);
+        return \iterator_to_array($this->buffer(), false);
     }
 
     /**
@@ -522,6 +523,11 @@ final class Pipeline implements \IteratorAggregate
         }
 
         return $source;
+    }
+
+    private function buffer(): ConcurrentIterator
+    {
+        return new ConcurrentBufferingIterator($this->getIterator(), $this->concurrency, $this->ordered);
     }
 
     public function dispose(): void
