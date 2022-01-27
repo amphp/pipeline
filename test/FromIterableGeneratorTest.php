@@ -107,6 +107,32 @@ class FromIterableGeneratorTest extends AsyncTestCase
         $this->expectOutputString('ab1cd234e');
     }
 
+    public function testLazyConcurrentTap(): void
+    {
+        $generator = Pipeline::fromIterable(static function () {
+            print '1';
+            yield;
+            print '2';
+            delay(1);
+            print '3';
+            yield;
+            print '4';
+            yield;
+            print '5';
+        });
+
+        // ensure async is already executed
+        delay(0);
+
+        print 'a';
+        $generator->concurrent(2)->tap(fn () => null)->getIterator(); // lazy and does nothing
+        print 'b';
+        delay(1);
+        print 'c';
+
+        $this->expectOutputString('abc');
+    }
+
     /**
      * @depends testYield
      */

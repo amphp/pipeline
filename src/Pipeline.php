@@ -2,12 +2,11 @@
 
 namespace Amp\Pipeline;
 
-use Amp\Future;
+use Amp\Pipeline\Internal\ConcurrentBufferingIterator;
 use Amp\Pipeline\Internal\ConcurrentClosureIterator;
-use Amp\Pipeline\Internal\ConcurrentQueueIterator;
-use Amp\Pipeline\Internal\QueueState;
+use Amp\Pipeline\Internal\FlatMapOperation;
 use Amp\Pipeline\Internal\Sequence;
-use function Amp\async;
+use Amp\Pipeline\Internal\SortOperation;
 
 /**
  * A pipeline is an asynchronous set of ordered values.
@@ -17,8 +16,6 @@ use function Amp\async;
  */
 final class Pipeline implements \IteratorAggregate
 {
-    private static \stdClass $stop;
-
     /**
      * Creates a pipeline from the given iterable or closure returning an iterable.
      *
@@ -91,7 +88,7 @@ final class Pipeline implements \IteratorAggregate
             }
         }
 
-        return new self(new ConcurrentConcatIterator(
+        return new self(new ConcurrentChainedIterator(
             \array_map(static fn (self $pipeline) => $pipeline->getIterator(), $pipelines)
         ));
     }
@@ -111,9 +108,6 @@ final class Pipeline implements \IteratorAggregate
      */
     public function __construct(ConcurrentIterator $source)
     {
-        /** @psalm-suppress RedundantPropertyInitializationCheck */
-        self::$stop ??= new \stdClass;
-
         $this->source = $source;
     }
 
@@ -126,6 +120,10 @@ final class Pipeline implements \IteratorAggregate
 
     public function concurrent(int $concurrency): self
     {
+        if ($concurrency < 1) {
+            throw new \ValueError('Argument #1 ($concurrency) must be positive, got ' . $concurrency);
+        }
+
         $this->concurrency = $concurrency;
 
         return $this;
@@ -133,9 +131,7 @@ final class Pipeline implements \IteratorAggregate
 
     public function sequential(): self
     {
-        $this->concurrency = 1;
-
-        return $this;
+        return $this->concurrent(1);
     }
 
     public function ordered(): self
@@ -156,7 +152,7 @@ final class Pipeline implements \IteratorAggregate
     {
         $count = 0;
 
-        foreach ($this as $ignored) {
+        foreach ($this->buffer() as $ignored) {
             $count++;
         }
 
@@ -166,23 +162,24 @@ final class Pipeline implements \IteratorAggregate
     /**
      * @template R
      *
-     * @param \Closure(T, T): int $comparator
+     * @param null|\Closure(T, T): int $compare
      * @param R $default
      *
      * @return T|R
      */
-    public function min(\Closure $comparator, mixed $default = null): mixed
+    public function min(?\Closure $compare = null, mixed $default = null): mixed
     {
+        $compare ??= static fn (mixed $a, mixed $b): int => $a <=> $b;
         $min = $default;
         $first = true;
 
-        foreach ($this as $value) {
+        foreach ($this->buffer() as $value) {
             if ($first) {
                 $first = false;
                 $min = $value;
             } else {
                 /** @var T $min */
-                $comparison = $comparator($min, $value);
+                $comparison = $compare($min, $value);
                 if ($comparison > 0) {
                     $min = $value;
                 }
@@ -195,23 +192,24 @@ final class Pipeline implements \IteratorAggregate
     /**
      * @template R
      *
-     * @param \Closure(T, T): int $comparator
+     * @param null|\Closure(T, T): int $compare
      * @param R $default
      *
      * @return T|R
      */
-    public function max(\Closure $comparator, mixed $default = null): mixed
+    public function max(?\Closure $compare = null, mixed $default = null): mixed
     {
+        $compare ??= static fn (mixed $a, mixed $b): int => $a <=> $b;
         $max = $default;
         $first = true;
 
-        foreach ($this as $value) {
+        foreach ($this->buffer() as $value) {
             if ($first) {
                 $first = false;
                 $max = $value;
             } else {
                 /** @var T $max */
-                $comparison = $comparator($max, $value);
+                $comparison = $compare($max, $value);
                 if ($comparison < 0) {
                     $max = $value;
                 }
@@ -228,7 +226,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function allMatch(\Closure $predicate): bool
     {
-        foreach ($this->map($predicate) as $value) {
+        foreach ($this->map($predicate)->buffer() as $value) {
             if (!$value) {
                 return false;
             }
@@ -244,7 +242,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function anyMatch(\Closure $predicate): bool
     {
-        foreach ($this->map($predicate) as $value) {
+        foreach ($this->map($predicate)->buffer() as $value) {
             if ($value) {
                 return true;
             }
@@ -260,7 +258,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function noneMatch(\Closure $predicate): bool
     {
-        foreach ($this->map($predicate) as $value) {
+        foreach ($this->map($predicate)->buffer() as $value) {
             if ($value) {
                 return false;
             }
@@ -269,14 +267,67 @@ final class Pipeline implements \IteratorAggregate
         return true;
     }
 
-    private function process(int $concurrency, \Closure $operator): self
+    /**
+     * Invokes the given callback for each value emitted on the pipeline.
+     *
+     * @param \Closure(T):void $forEach
+     *
+     * @return void
+     */
+    public function forEach(\Closure $forEach): void
+    {
+        $this->tap($forEach)->count();
+    }
+
+    /**
+     * Collects all items into an array.
+     *
+     * @return array<int, T>
+     */
+    public function toArray(): array
+    {
+        return \iterator_to_array($this->buffer(), false);
+    }
+
+    /**
+     * Sorts values, requires buffering all values.
+     *
+     * @template R
+     *
+     * @param null|\Closure(T, T):int $compare
+     *
+     * @return self<R>
+     */
+    public function sorted(?\Closure $compare = null): self
     {
         if ($this->used) {
-            throw new \Error('Can\'t add new operations once a terminal operation has been invoked');
+            throw new \Error('Pipeline consumption has already been started');
         }
 
-        $this->intermediateOperations[] = [$concurrency, $this->ordered, $operator];
+        $compare ??= static fn (mixed $a, mixed $b): int => $a <=> $b;
+        $this->intermediateOperations[] = new SortOperation($compare);
 
+        return $this->ordered();
+    }
+
+    /**
+     * Maps values, flattening one level.
+     *
+     * @template R
+     *
+     * @param \Closure(T, int):iterable<R> $flatMap
+     *
+     * @return self<R>
+     */
+    public function flatMap(\Closure $flatMap): self
+    {
+        if ($this->used) {
+            throw new \Error('Pipeline consumption has already been started');
+        }
+
+        $this->intermediateOperations[] = new FlatMapOperation($this->concurrency, $this->ordered, $flatMap);
+
+        /** @var self<R> */
         return $this;
     }
 
@@ -291,7 +342,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function map(\Closure $map): self
     {
-        return $this->process($this->concurrency, fn (mixed $value) => [$map($value)]);
+        return $this->flatMap(fn (mixed $value) => [$map($value)]);
     }
 
     /**
@@ -303,7 +354,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function filter(\Closure $filter): self
     {
-        return $this->process($this->concurrency, fn (mixed $value) => $filter($value) ? [$value] : []);
+        return $this->flatMap(fn (mixed $value) => $filter($value) ? [$value] : []);
     }
 
     /**
@@ -315,7 +366,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function tap(\Closure $tap): self
     {
-        return $this->process($this->concurrency, function (mixed $value) use ($tap) {
+        return $this->flatMap(function (mixed $value) use ($tap) {
             $tap($value);
 
             return [$value];
@@ -350,7 +401,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function skip(int $count): self
     {
-        return $this->process($this->concurrency, function (mixed $value) use ($count) {
+        return $this->flatMap(function (mixed $value) use ($count) {
             static $i = 0;
 
             if ($i++ < $count) {
@@ -375,8 +426,7 @@ final class Pipeline implements \IteratorAggregate
         $sequence = new Sequence;
         $skipping = true;
 
-        return $this->process(
-            $this->concurrency,
+        return $this->flatMap(
             function (mixed $value, int $position) use ($sequence, $predicate, &$skipping) {
                 if (!$skipping) {
                     return [$value];
@@ -409,14 +459,15 @@ final class Pipeline implements \IteratorAggregate
      */
     public function take(int $count): self
     {
-        return $this->process($this->concurrency, function (mixed $value) use ($count) {
+        return $this->flatMap(function (mixed $value) use ($count) {
             static $i = 0;
 
             if ($i++ < $count) {
                 return [$value];
             }
 
-            return [self::$stop];
+            /** @var T[] */
+            return [FlatMapOperation::getStopMarker()];
         });
     }
 
@@ -432,11 +483,10 @@ final class Pipeline implements \IteratorAggregate
         $sequence = new Sequence;
         $taking = true;
 
-        return $this->process(
-            $this->concurrency,
+        return $this->flatMap(
             function (mixed $value, int $position) use ($sequence, $predicate, &$taking) {
                 if (!$taking) {
-                    return false;
+                    return [];
                 }
 
                 $predicateResult = $predicate($value);
@@ -452,33 +502,10 @@ final class Pipeline implements \IteratorAggregate
                 $taking = false;
                 $sequence->resume($position);
 
-                return [self::$stop];
+                /** @var T[] */
+                return [FlatMapOperation::getStopMarker()];
             }
         );
-    }
-
-    /**
-     * Invokes the given callback for each value emitted on the pipeline.
-     *
-     * @param \Closure(T):void $forEach
-     *
-     * @return void
-     */
-    public function forEach(\Closure $forEach): void
-    {
-        foreach ($this->tap($forEach) as $ignored) {
-            // noop
-        }
-    }
-
-    /**
-     * Collects all items into an array.
-     *
-     * @return array<int, T>
-     */
-    public function toArray(): array
-    {
-        return \iterator_to_array($this, false);
     }
 
     /**
@@ -494,81 +521,16 @@ final class Pipeline implements \IteratorAggregate
 
         $source = $this->source;
 
-        foreach ($this->intermediateOperations as [$concurrency, $ordered, $operation]) {
-            $destination = new QueueState;
-
-            if ($concurrency === 1) {
-                async(static function () use ($source, $destination, $operation): void {
-                    try {
-                        foreach ($source as $position => $value) {
-                            $iterable = $operation($value, $position);
-                            foreach ($iterable as $emit) {
-                                if ($emit === self::$stop) {
-                                    break 2;
-                                }
-
-                                $destination->push($emit);
-                            }
-                        }
-
-                        $destination->complete();
-                        $source->dispose();
-                    } catch (\Throwable $e) {
-                        $destination->error($e);
-                        $source->dispose();
-                    }
-                });
-            } else {
-                $futures = [];
-
-                $sequence = $ordered ? new Sequence : null;
-
-                for ($i = 0; $i < $concurrency; $i++) {
-                    $futures[] = async(function () use (
-                        $source,
-                        $destination,
-                        $operation,
-                        $sequence
-                    ): void {
-                        foreach ($source as $position => $value) {
-                            if ($destination->isComplete()) {
-                                return;
-                            }
-
-                            // The operation runs concurrently, but the emits are at the correct position
-                            $iterable = $operation($value, $position);
-
-                            $sequence?->await($position);
-
-                            foreach ($iterable as $emit) {
-                                /** @psalm-suppress TypeDoesNotContainType */
-                                if ($emit === self::$stop || $destination->isComplete()) {
-                                    break 2;
-                                }
-
-                                $destination->push($emit);
-                            }
-
-                            $sequence?->resume($position);
-                        }
-                    });
-                }
-
-                async(static function () use ($futures, $source, $destination): void {
-                    try {
-                        Future\await($futures);
-                        $destination->complete();
-                    } catch (\Throwable $exception) {
-                        $destination->error($exception);
-                        $source->dispose();
-                    }
-                });
-            }
-
-            $source = $destination;
+        foreach ($this->intermediateOperations as $intermediateOperation) {
+            $source = $intermediateOperation($source);
         }
 
-        return $source instanceof QueueState ? new ConcurrentQueueIterator($source) : $source;
+        return $source;
+    }
+
+    private function buffer(): ConcurrentIterator
+    {
+        return new ConcurrentBufferingIterator($this->getIterator(), $this->concurrency, $this->ordered);
     }
 
     public function dispose(): void

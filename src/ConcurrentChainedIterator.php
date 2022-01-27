@@ -13,7 +13,7 @@ use Revolt\EventLoop\FiberLocal;
  * @template T
  * @template-implements ConcurrentIterator<T>
  */
-final class ConcurrentConcatIterator implements ConcurrentIterator
+final class ConcurrentChainedIterator implements ConcurrentIterator
 {
     /** @var ConcurrentIterator<T>[] */
     private array $iterators;
