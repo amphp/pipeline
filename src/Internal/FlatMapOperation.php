@@ -4,8 +4,6 @@ namespace Amp\Pipeline\Internal;
 
 use Amp\Pipeline\ConcurrentIterableIterator;
 use Amp\Pipeline\ConcurrentIterator;
-use function Amp\async;
-use function Amp\Future\await;
 
 /**
  * @template T
