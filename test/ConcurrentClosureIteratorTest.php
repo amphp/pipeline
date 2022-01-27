@@ -4,6 +4,7 @@ namespace Amp\Pipeline;
 
 use Amp\CancelledException;
 use Amp\PHPUnit\AsyncTestCase;
+use Amp\Pipeline\Internal\ConcurrentClosureIterator;
 use Amp\TimeoutCancellation;
 use function Amp\delay;
 

@@ -1,12 +1,16 @@
 <?php
 
-namespace Amp\Pipeline;
+namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
 use Amp\CancelledException;
+use Amp\Pipeline\ConcurrentIterator;
+use Amp\Pipeline\DisposedException;
 use Revolt\EventLoop\FiberLocal;
 
 /**
+ * @internal
+ *
  * @template T
  * @template-implements ConcurrentIterator<T>
  */

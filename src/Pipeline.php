@@ -3,6 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Future;
+use Amp\Pipeline\Internal\ConcurrentClosureIterator;
 use Amp\Pipeline\Internal\ConcurrentQueueIterator;
 use Amp\Pipeline\Internal\QueueState;
 use Amp\Pipeline\Internal\Sequence;
