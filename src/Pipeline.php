@@ -2,8 +2,8 @@
 
 namespace Amp\Pipeline;
 
-use Amp\Pipeline\Internal\ConcurrentClosureIterator;
 use Amp\Pipeline\Internal\ConcurrentBufferingIterator;
+use Amp\Pipeline\Internal\ConcurrentClosureIterator;
 use Amp\Pipeline\Internal\FlatMapOperation;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\SortOperation;
