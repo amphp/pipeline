@@ -85,7 +85,7 @@ final class Pipeline implements \IteratorAggregate
             }
         }
 
-        return new self(new ConcurrentConcatIterator(
+        return new self(new ConcurrentChainedIterator(
             \array_map(static fn (self $pipeline) => $pipeline->getIterator(), $pipelines)
         ));
     }

@@ -30,7 +30,7 @@ class ConcatTest extends AsyncTestCase
             return Pipeline::fromIterable($iterable)->getIterator();
         }, $array);
 
-        $iterator = new ConcurrentConcatIterator($iterators);
+        $iterator = new ConcurrentChainedIterator($iterators);
 
         self::assertSame($expected, (new Pipeline($iterator))->toArray());
     }
@@ -60,7 +60,7 @@ class ConcatTest extends AsyncTestCase
             yield 2;
         })->getIterator();
 
-        $iterator = new ConcurrentConcatIterator([$iterator1, $iterator2]);
+        $iterator = new ConcurrentChainedIterator([$iterator1, $iterator2]);
 
         $future1 = async(function () use ($iterator) {
             $iterator->continue();
