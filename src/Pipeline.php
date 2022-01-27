@@ -2,6 +2,7 @@
 
 namespace Amp\Pipeline;
 
+use Amp\Pipeline\Internal\ConcurrentClosureIterator;
 use Amp\Pipeline\Internal\ConcurrentBufferingIterator;
 use Amp\Pipeline\Internal\FlatMapOperation;
 use Amp\Pipeline\Internal\Sequence;
@@ -16,36 +17,24 @@ use Amp\Pipeline\Internal\SortOperation;
 final class Pipeline implements \IteratorAggregate
 {
     /**
-     * Creates a pipeline from the given closure returning an iterable.
+     * Creates a pipeline from the given iterable or closure returning an iterable.
      *
      * @template Ts
      *
-     * @param \Closure():iterable<array-key, Ts> $iterable Elements to emit.
+     * @param (\Closure():iterable<array-key, Ts>)|iterable<array-key, Ts> $iterable
      *
      * @return self<Ts>
      */
-    public static function fromClosure(\Closure $closure): Pipeline
+    public static function fromIterable(\Closure|iterable $iterable): self
     {
-        $iterable = $closure();
+        if ($iterable instanceof \Closure) {
+            $iterable = $iterable();
 
-        if (!\is_iterable($iterable)) {
-            throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
+            if (!\is_iterable($iterable)) {
+                throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
+            }
         }
 
-        return self::fromIterable($iterable);
-    }
-
-    /**
-     * Creates a pipeline from the given iterable.
-     *
-     * @template Ts
-     *
-     * @param iterable<array-key, Ts> $iterable
-     *
-     * @return self<Ts>
-     */
-    public static function fromIterable(iterable $iterable): self
-    {
         if ($iterable instanceof self) {
             return $iterable;
         }
@@ -59,6 +48,20 @@ final class Pipeline implements \IteratorAggregate
         }
 
         return new self(new ConcurrentIterableIterator($iterable));
+    }
+
+    /**
+     * Creates an infinite pipeline from the given closure invoking it repeatedly for each value.
+     *
+     * @template Ts
+     *
+     * @param \Closure(\Amp\Cancellation): Ts $supplier Elements to emit.
+     *
+     * @return self<Ts>
+     */
+    public static function generate(\Closure $supplier): Pipeline
+    {
+        return new self(new ConcurrentClosureIterator($supplier));
     }
 
     /**

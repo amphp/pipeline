@@ -237,7 +237,7 @@ final class QueueState implements \IteratorAggregate
      *
      * @return Future Resolves once the value has been consumed on the pipeline.
      */
-    public function enqueue(mixed $value): Future
+    public function pushAsync(mixed $value): Future
     {
         $position = $this->emitPosition++;
         $next = $this->doPush($value, $position);

@@ -24,7 +24,7 @@ class QueueTest extends AsyncTestCase
     {
         $value = 'Emitted Value';
 
-        $future = $this->queue->enqueue($value);
+        $future = $this->queue->pushAsync($value);
         $iterator = $this->queue->iterate();
 
         self::assertFalse($future->isComplete());
@@ -71,7 +71,7 @@ class QueueTest extends AsyncTestCase
         $this->expectExceptionMessage('Values cannot be enqueued after calling complete');
 
         $this->queue->complete();
-        $this->queue->enqueue(1)->await();
+        $this->queue->pushAsync(1)->await();
     }
 
     /**
@@ -79,7 +79,7 @@ class QueueTest extends AsyncTestCase
      */
     public function testEmittingNull(): void
     {
-        $this->queue->enqueue(null);
+        $this->queue->pushAsync(null);
 
         $pipe = $this->queue->pipe()->getIterator();
         self::assertTrue($pipe->continue());
@@ -123,7 +123,7 @@ class QueueTest extends AsyncTestCase
             return $pipeline->getValue();
         });
 
-        $backPressure = $this->queue->enqueue($value);
+        $backPressure = $this->queue->pushAsync($value);
 
         self::assertSame($value, $future->await());
 
@@ -178,7 +178,7 @@ class QueueTest extends AsyncTestCase
 
         $invoked = 0;
         foreach (\range(1, 5) as $value) {
-            $future = $this->queue->enqueue($value);
+            $future = $this->queue->pushAsync($value);
             EventLoop::queue(static function () use (&$invoked, $future): void {
                 try {
                     $future->await();
@@ -213,7 +213,7 @@ class QueueTest extends AsyncTestCase
         self::assertTrue($this->queue->isDisposed());
 
         try {
-            $this->queue->enqueue(1)->await();
+            $this->queue->pushAsync(1)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
         } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
@@ -227,7 +227,7 @@ class QueueTest extends AsyncTestCase
         self::assertTrue($this->queue->isDisposed());
 
         try {
-            $this->queue->enqueue(1)->await();
+            $this->queue->pushAsync(1)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
         } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
@@ -243,7 +243,7 @@ class QueueTest extends AsyncTestCase
         delay(0.01);
 
         try {
-            $this->queue->enqueue(1)->await();
+            $this->queue->pushAsync(1)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
         } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
@@ -260,13 +260,13 @@ class QueueTest extends AsyncTestCase
 
         unset($pipeline); // Trigger automatic disposal.
         self::assertFalse($this->queue->isDisposed());
-        $this->queue->enqueue(1)->ignore();
+        $this->queue->pushAsync(1)->ignore();
         self::assertSame(1, $future->await());
 
         self::assertTrue($this->queue->isDisposed());
 
         try {
-            $this->queue->enqueue(2)->await();
+            $this->queue->pushAsync(2)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
         } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
@@ -294,13 +294,13 @@ class QueueTest extends AsyncTestCase
     public function testEmitAfterDestruct(): void
     {
         $pipeline = $this->queue->pipe();
-        $future = $this->queue->enqueue(1);
+        $future = $this->queue->pushAsync(1);
         unset($pipeline);
         self::assertTrue($this->queue->isDisposed());
         $future->ignore();
 
         try {
-            $this->queue->enqueue(2)->await();
+            $this->queue->pushAsync(2)->await();
             $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
         } catch (DisposedException) {
             delay(0); // Trigger disposal callback in defer.
@@ -342,8 +342,8 @@ class QueueTest extends AsyncTestCase
 
     public function testBackPressureOnComplete(): void
     {
-        $future1 = $this->queue->enqueue(1);
-        $future2 = $this->queue->enqueue(2);
+        $future1 = $this->queue->pushAsync(1);
+        $future2 = $this->queue->pushAsync(2);
         $this->queue->complete();
 
         delay(0.01);
@@ -372,8 +372,8 @@ class QueueTest extends AsyncTestCase
 
     public function testBackPressureOnDisposal(): void
     {
-        $future1 = $this->queue->enqueue(1);
-        $future2 = $this->queue->enqueue(2);
+        $future1 = $this->queue->pushAsync(1);
+        $future2 = $this->queue->pushAsync(2);
 
         $future1->ignore();
         $future2->ignore();
@@ -421,9 +421,9 @@ class QueueTest extends AsyncTestCase
 
         delay(0); // Tick event loop to trigger cancellation callback.
 
-        $this->queue->enqueue(1);
-        $this->queue->enqueue(2);
-        $this->queue->enqueue(3);
+        $this->queue->pushAsync(1);
+        $this->queue->pushAsync(2);
+        $this->queue->pushAsync(3);
 
         self::assertSame(1, $future1->await());
         self::assertSame(2, $future3->await());
@@ -455,9 +455,9 @@ class QueueTest extends AsyncTestCase
 
         delay(0); // Tick event loop to trigger cancellation callback.
 
-        $this->queue->enqueue(1);
-        $this->queue->enqueue(2);
-        $this->queue->enqueue(3);
+        $this->queue->pushAsync(1);
+        $this->queue->pushAsync(2);
+        $this->queue->pushAsync(3);
 
         self::assertSame(1, $future1->await());
 
@@ -499,9 +499,9 @@ class QueueTest extends AsyncTestCase
             return null;
         });
 
-        $this->queue->enqueue(1);
-        $this->queue->enqueue(2);
-        $this->queue->enqueue(3);
+        $this->queue->pushAsync(1);
+        $this->queue->pushAsync(2);
+        $this->queue->pushAsync(3);
 
         $cancellation->cancel();
 
@@ -525,16 +525,16 @@ class QueueTest extends AsyncTestCase
         $pipeline = $source->pipe()->getIterator();
 
         for ($i = 0; $i < $bufferSize; $i++) {
-            self::assertTrue($source->enqueue('.')->isComplete());
+            self::assertTrue($source->pushAsync('.')->isComplete());
         }
 
-        $blocked = $source->enqueue('x');
+        $blocked = $source->pushAsync('x');
         self::assertFalse($blocked->isComplete());
 
         self::assertTrue($pipeline->continue());
         self::assertTrue($blocked->isComplete());
 
-        self::assertFalse($source->enqueue('x')->isComplete());
+        self::assertFalse($source->pushAsync('x')->isComplete());
 
         if ($bufferSize === 0) {
             return;
@@ -543,7 +543,7 @@ class QueueTest extends AsyncTestCase
         self::assertTrue($pipeline->continue());
         self::assertTrue($pipeline->continue());
 
-        self::assertTrue($source->enqueue('.')->isComplete());
+        self::assertTrue($source->pushAsync('.')->isComplete());
     }
 
     public function provideBufferSize(): iterable

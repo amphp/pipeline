@@ -23,7 +23,7 @@ class FilterTest extends AsyncTestCase
         $count = 0;
         $values = [1, 2, 3];
         $expected = [1, 3];
-        $generator = Pipeline::fromClosure(function () use ($values) {
+        $generator = Pipeline::fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
@@ -45,7 +45,7 @@ class FilterTest extends AsyncTestCase
     {
         $values = [1, 2, 3];
         $exception = new TestException;
-        $generator = Pipeline::fromClosure(function () use ($values) {
+        $generator = Pipeline::fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }

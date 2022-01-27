@@ -18,7 +18,7 @@ class FromIterableTest extends AsyncTestCase
             }
         };
 
-        $pipeline = Pipeline::fromClosure($generator)->getIterator();
+        $pipeline = Pipeline::fromIterable($generator)->getIterator();
 
         while ($pipeline->continue()) {
             self::assertSame(\array_shift($expected), $pipeline->getValue());

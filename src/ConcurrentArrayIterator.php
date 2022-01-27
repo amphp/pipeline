@@ -25,6 +25,10 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
 
     public function continue(?Cancellation $cancellation = null): bool
     {
+        if ($this->disposed) {
+            throw $this->disposed;
+        }
+
         $position = $this->position++;
         if ($position < $this->size) {
             $this->currentPosition->set($position);

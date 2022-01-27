@@ -14,7 +14,7 @@ try {
     }));
 
     /** @psalm-var Pipeline<int> $pipeline */
-    $pipeline = Pipeline::fromClosure(function (): \Generator {
+    $pipeline = Pipeline::fromIterable(function (): \Generator {
         yield 1;
         delay(0.5);
         yield 2;

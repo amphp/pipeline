@@ -3,7 +3,7 @@
 namespace Amp\Pipeline;
 
 /**
- * Will be thrown from {@see Queue::push()} or used to fail the future returned from {@see Queue::enqueue()}
+ * Will be thrown from {@see Queue::push()} or used to fail the future returned from {@see Queue::pushAsync()}
  * if the associated iterator is disposed.
  */
 final class DisposedException extends \Exception

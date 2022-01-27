@@ -64,19 +64,19 @@ final class Queue
      *
      * @param T $value
      *
-     * @return Future<null> Resolves with null when the emitted value has been consumed or fails with
+     * @return Future<null> Completes with null when the emitted value has been consumed or errors with
      *                       {@see DisposedException} if the queue has been disposed.
      */
-    public function enqueue(mixed $value): Future
+    public function pushAsync(mixed $value): Future
     {
-        return $this->state->enqueue($value);
+        return $this->state->pushAsync($value);
     }
 
     /**
      * Pushes a value to the buffer or waits until the value is consumed if the buffer is full or the queue is
      * unbuffered.
      *
-     * Use {@see enqueue()} to enqueue a value without waiting for consumption or free buffer space.
+     * Use {@see pushAsync()} to push a value without waiting for consumption or free buffer space.
      *
      * @param T $value
      *

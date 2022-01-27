@@ -12,7 +12,7 @@ class ForEachTest extends AsyncTestCase
         $exception = new TestException;
         $source = new Queue;
 
-        $source->enqueue(1)->ignore();
+        $source->pushAsync(1)->ignore();
         $source->error($exception);
 
         $this->expectExceptionObject($exception);
