@@ -7,7 +7,12 @@ use Amp\Pipeline\ConcurrentIterator;
 use function Amp\async;
 use function Amp\Future\await;
 
-/** @internal */
+/**
+ * @template T
+ * @template R
+ *
+ * @internal
+ */
 final class FlatMapOperation implements IntermediateOperation
 {
     public static function getStopMarker(): object
@@ -21,8 +26,14 @@ final class FlatMapOperation implements IntermediateOperation
 
     private bool $ordered;
 
+    /** @var \Closure(T, int):iterable<R> */
     private \Closure $flatMap;
 
+    /**
+     * @param int $concurrency
+     * @param bool $ordered
+     * @param \Closure(T, int):iterable<R> $flatMap
+     */
     public function __construct(int $concurrency, bool $ordered, \Closure $flatMap)
     {
         $this->concurrency = $concurrency;
