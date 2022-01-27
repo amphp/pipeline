@@ -56,7 +56,7 @@ class ConcatTest extends AsyncTestCase
     {
         // We need a slow known-size iterator here, so the second fiber can jump right to the second iterator
         $iterator1 = new ConcurrentDelayedArrayIterator(1, [1]);
-        $iterator2 = Pipeline::fromClosure(function () {
+        $iterator2 = Pipeline::fromIterable(function () {
             yield 2;
         })->getIterator();
 
@@ -81,7 +81,7 @@ class ConcatTest extends AsyncTestCase
     {
         $exception = new TestException;
         $expected = \range(1, 6);
-        $generator = Pipeline::fromClosure(static function () use ($exception) {
+        $generator = Pipeline::fromIterable(static function () use ($exception) {
             yield 6; // Emit once before failing.
             throw $exception;
         });

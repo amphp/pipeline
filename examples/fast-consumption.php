@@ -9,7 +9,7 @@ use function Amp\delay;
 
 try {
     /** @psalm-var Amp\Pipeline\ConcurrentIterator<int> $iterator */
-    $iterator = Pipeline::fromClosure(function (): \Generator {
+    $iterator = Pipeline::fromIterable(function (): \Generator {
         yield 1;
         delay(0.5);
         yield 2;

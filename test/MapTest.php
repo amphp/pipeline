@@ -21,7 +21,7 @@ class MapTest extends AsyncTestCase
     {
         $count = 0;
         $values = [1, 2, 3];
-        $generator = Pipeline::fromClosure(function () use ($values) {
+        $generator = Pipeline::fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
@@ -40,7 +40,7 @@ class MapTest extends AsyncTestCase
     {
         $count = 0;
         $values = [1, 2, 3];
-        $generator = Pipeline::fromClosure(function () use ($values) {
+        $generator = Pipeline::fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
@@ -59,7 +59,7 @@ class MapTest extends AsyncTestCase
     {
         $count = 0;
         $values = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        $generator = Pipeline::fromClosure(function () use ($values) {
+        $generator = Pipeline::fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }
@@ -81,7 +81,7 @@ class MapTest extends AsyncTestCase
         $values = [1, 2, 3];
         $exception = new TestException;
 
-        $generator = Pipeline::fromClosure(function () use ($values) {
+        $generator = Pipeline::fromIterable(function () use ($values) {
             foreach ($values as $value) {
                 yield $value;
             }

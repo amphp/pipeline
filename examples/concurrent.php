@@ -6,7 +6,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use Amp\Pipeline\Pipeline;
 use function Amp\delay;
 
-$pipeline = Pipeline::fromClosure(function (): \Generator {
+$pipeline = Pipeline::fromIterable(function (): \Generator {
     for ($i = 0; $i < 100; ++$i) {
         yield $i;
     }
