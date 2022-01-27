@@ -4,6 +4,7 @@ namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
 use Amp\CancelledException;
+use Amp\Future;
 use Amp\Pipeline\ConcurrentIterator;
 use function Amp\async;
 use function Amp\Future\await;
@@ -39,40 +40,74 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
         $order = $ordered ? new Sequence : null;
 
         $producePosition = 0;
+        $errorPosition = \PHP_INT_MAX;
+        $orderErrorPosition = 0;
         $futures = [];
 
         for ($i = 0; $i < $concurrency; $i++) {
-            $futures[] = async(function () use ($queue, $iterator, $flatMap, $order, &$producePosition) {
-                $this->consumer->await(++$producePosition);
+            $futures[] = async(function () use (
+                $queue,
+                $iterator,
+                $flatMap,
+                $order,
+                &$producePosition,
+                &$orderErrorPosition,
+                &$errorPosition
+            ) {
+                try {
+                    $currentPosition = ++$producePosition;
+                    $this->consumer->await($currentPosition);
 
-                foreach ($iterator as $position => $value) {
-                    // The operation runs concurrently, but the emits are at the correct position
-                    $iterable = $flatMap($value, $position);
+                    foreach ($iterator as $position => $value) {
+                        $orderErrorPosition = \max($orderErrorPosition, $position);
 
-                    $order?->await($position);
+                        // The operation runs concurrently, but the emits are at the correct position
+                        $iterable = $flatMap($value, $position);
 
-                    foreach ($iterable as $item) {
-                        $queue->push($item);
+                        $order?->await($position);
+
+                        foreach ($iterable as $item) {
+                            $queue->push($item);
+                        }
+
+                        $order?->resume($position);
+
+                        $currentPosition = ++$producePosition;
+                        $this->consumer->await($currentPosition);
                     }
+                } catch (\Throwable $exception) {
+                    $errorPosition = \min($errorPosition, $currentPosition);
 
-                    $order?->resume($position);
-                    $this->consumer->await(++$producePosition);
+                    throw $exception;
                 }
 
                 $this->consumer->resume(\PHP_INT_MAX - 1);
             });
         }
 
-        async(function () use ($futures, $queue) {
-            try {
-                await($futures);
-                $queue->complete();
-            } catch (\Throwable $e) {
-                $queue->error($e);
-            } finally {
-                $queue->dispose();
+        async(function () use ($futures, $queue, $order, &$errorPosition, &$orderErrorPosition) {
+            $earliestErrorPosition = \PHP_INT_MAX;
+            $earliestException = null;
+
+            foreach (Future::iterate($futures) as $future) {
+                try {
+                    $future->await();
+                } catch (\Throwable $exception) {
+                    if ($errorPosition < $earliestErrorPosition) {
+                        $earliestException = $exception;
+                        $earliestErrorPosition = $errorPosition;
+                        $this->consumer->error($errorPosition - 1, $exception);
+                        $order?->error($orderErrorPosition, $exception);
+                    }
+                }
             }
-        });
+
+            if ($earliestException) {
+                $queue->error($earliestException);
+            } else {
+                $queue->complete();
+            }
+        })->finally(fn () => $queue->dispose());
     }
 
     public function continue(?Cancellation $cancellation = null): bool

@@ -3,7 +3,6 @@
 namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
-use Amp\CancelledException;
 use Amp\Pipeline\ConcurrentIterator;
 use Amp\Pipeline\DisposedException;
 use Revolt\EventLoop\FiberLocal;
@@ -26,6 +25,8 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
 
     private int $position = 0;
 
+    private Sequence $sequence;
+
     private ?\Throwable $exception = null;
 
     public function __construct(\Closure $supplier)
@@ -33,27 +34,33 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
         $this->supplier = $supplier;
         $this->currentValue = new FiberLocal(fn () => throw new \Error('Call continue() before calling get()'));
         $this->currentPosition = new FiberLocal(fn () => throw new \Error('Call continue() before calling get()'));
+        $this->sequence = new Sequence;
     }
 
     public function continue(?Cancellation $cancellation = null): bool
     {
+        $this->sequence->resume($this->position);
+
         if ($this->exception) {
             throw $this->exception;
         }
 
         try {
-            $value = ($this->supplier)($cancellation);
-            $this->currentValue->set($value);
             $position = $this->position++;
+
+            $this->currentValue->set(($this->supplier)());
             $this->currentPosition->set($position);
-        } catch (CancelledException $cancelledException) {
-            throw $cancelledException;
         } catch (\Throwable $exception) {
+            $this->exception ??= $exception;
+        }
+
+        $this->sequence->await($position);
+
+        if ($this->exception) {
             $this->currentValue->set(null);
             $this->currentPosition->set(null);
-            $this->exception = $exception;
 
-            throw $exception;
+            throw $this->exception;
         }
 
         return true;

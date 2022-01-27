@@ -4,6 +4,8 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
+use function Amp\async;
+use function Amp\delay;
 
 class MapTest extends AsyncTestCase
 {
@@ -106,5 +108,116 @@ class MapTest extends AsyncTestCase
         $this->expectExceptionObject($exception);
 
         $iterator->continue();
+    }
+
+    public function testPipelineFailsConcurrent1(): void
+    {
+        $this->expectOutputString('abc');
+
+        $iterator = Pipeline::generate(static fn () => null)->concurrent(3)->map(function () {
+            static $i = 0;
+
+            $current = ++$i;
+
+            if ($current === 3) {
+                print 'b';
+
+                throw new TestException('3');
+            }
+
+            if ($current === 2) {
+                print 'a';
+
+                delay(0.5);
+
+                print 'c';
+
+                throw new TestException('2');
+            }
+
+            delay(1);
+
+            return $current;
+        })->getIterator();
+
+        $future1 = async(function () use ($iterator) {
+            $iterator->continue();
+
+            return $iterator->getValue();
+        });
+
+        $future2 = async(function () use ($iterator) {
+            $iterator->continue();
+
+            return $iterator->getValue();
+        });
+
+        $future3 = async(function () use ($iterator) {
+            $iterator->continue();
+
+            return $iterator->getValue();
+        });
+
+        self::assertSame(1, $future1->await());
+
+        try {
+            $future2->await();
+            self::fail('Missing exception');
+        } catch (TestException $e) {
+            self::assertSame('2', $e->getMessage());
+        }
+
+        try {
+            $future3->await();
+            self::fail('Missing exception');
+        } catch (TestException $e) {
+            self::assertSame('2', $e->getMessage());
+        }
+    }
+
+
+    public function testPipelineFailsConcurrent2(): void
+    {
+        $this->expectOutputString('1245');
+
+        $iterator = Pipeline::generate(static fn () => null)->concurrent(10)->map(function () {
+            static $i = 0;
+
+            $current = ++$i;
+
+            if ($current === 3) {
+                throw new TestException('3');
+            }
+
+            delay(1);
+
+            print $current;
+
+            return $current;
+        })->getIterator();
+
+        $futures = [];
+
+        for ($i = 0; $i < 5; $i++) {
+            $futures[] = async(function () use ($iterator) {
+                self::assertTrue($iterator->continue());
+
+                return $iterator->getValue();
+            });
+        }
+
+        for ($i = 0; $i < 5; $i++) {
+            if ($i < 3) {
+                self::assertSame($i + 1, $futures[$i]->await());
+                continue;
+            }
+
+            try {
+                $futures[$i]->await();
+                self::fail('Missing exception');
+            } catch (TestException $e) {
+                self::assertSame('3', $e->getMessage());
+            }
+        }
     }
 }
