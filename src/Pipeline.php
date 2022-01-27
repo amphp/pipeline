@@ -23,13 +23,13 @@ final class Pipeline implements \IteratorAggregate
      *
      * @template Ts
      *
-     * @param \Closure():iterable<array-key, Ts> $iterable Elements to emit.
+     * @param \Closure():iterable<array-key, Ts> $supplier Elements to emit.
      *
      * @return self<Ts>
      */
-    public static function fromClosure(\Closure $closure): Pipeline
+    public static function fromClosure(\Closure $supplier): Pipeline
     {
-        $iterable = $closure();
+        $iterable = $supplier();
 
         if (!\is_iterable($iterable)) {
             throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
@@ -62,6 +62,20 @@ final class Pipeline implements \IteratorAggregate
         }
 
         return new self(new ConcurrentIterableIterator($iterable));
+    }
+
+    /**
+     * Creates an infinite pipeline from the given closure invoking it repeatedly for each value.
+     *
+     * @template Ts
+     *
+     * @param \Closure(\Amp\Cancellation): Ts $supplier Elements to emit.
+     *
+     * @return self<Ts>
+     */
+    public static function generate(\Closure $supplier): Pipeline
+    {
+        return new self(new ConcurrentClosureIterator($supplier));
     }
 
     /**
