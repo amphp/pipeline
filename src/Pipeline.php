@@ -343,7 +343,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function map(\Closure $map): self
     {
-        return $this->flatMap(fn (mixed $value) => [$map($value)]);
+        return $this->flatMap(static fn (mixed $value) => [$map($value)]);
     }
 
     /**
@@ -355,7 +355,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function filter(\Closure $filter): self
     {
-        return $this->flatMap(fn (mixed $value) => $filter($value) ? [$value] : []);
+        return $this->flatMap(static fn (mixed $value) => $filter($value) ? [$value] : []);
     }
 
     /**
@@ -367,7 +367,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function tap(\Closure $tap): self
     {
-        return $this->flatMap(function (mixed $value) use ($tap) {
+        return $this->flatMap(static function (mixed $value) use ($tap) {
             $tap($value);
 
             return [$value];
@@ -402,7 +402,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function delay(float $delay): self
     {
-        return $this->tap(fn () => delay($delay));
+        return $this->tap(static fn () => delay($delay));
     }
 
     /**
@@ -414,7 +414,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function skip(int $count): self
     {
-        return $this->flatMap(function (mixed $value) use ($count) {
+        return $this->flatMap(static function (mixed $value) use ($count) {
             static $i = 0;
 
             if ($i++ < $count) {
@@ -440,7 +440,7 @@ final class Pipeline implements \IteratorAggregate
         $skipping = true;
 
         return $this->flatMap(
-            function (mixed $value, int $position) use ($sequence, $predicate, &$skipping) {
+            static function (mixed $value, int $position) use ($sequence, $predicate, &$skipping) {
                 if (!$skipping) {
                     return [$value];
                 }
@@ -472,7 +472,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function take(int $count): self
     {
-        return $this->flatMap(function (mixed $value) use ($count) {
+        return $this->flatMap(static function (mixed $value) use ($count) {
             static $i = 0;
 
             if ($i++ < $count) {
@@ -497,7 +497,7 @@ final class Pipeline implements \IteratorAggregate
         $taking = true;
 
         return $this->flatMap(
-            function (mixed $value, int $position) use ($sequence, $predicate, &$taking) {
+            static function (mixed $value, int $position) use ($sequence, $predicate, &$taking) {
                 if (!$taking) {
                     return [];
                 }
