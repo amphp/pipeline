@@ -16,9 +16,7 @@ use function Amp\Future\await;
  */
 final class ConcurrentFlatMapIterator implements ConcurrentIterator
 {
-    private Sequence $consumer;
-
-    private int $consumePosition = 0;
+    private Limit $limit;
 
     /** @var ConcurrentIterator<T> */
     private ConcurrentIterator $iterator;
@@ -33,17 +31,16 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
      */
     public function __construct(ConcurrentIterator $iterator, int $concurrency, bool $ordered, \Closure $flatMap)
     {
-        $queue = new QueueState();
+        $queue = new QueueState;
         $this->iterator = new ConcurrentQueueIterator($queue);
-        $this->consumer = new Sequence;
+        $this->limit = new Limit;
         $order = $ordered ? new Sequence : null;
 
-        $producePosition = 0;
         $futures = [];
 
         for ($i = 0; $i < $concurrency; $i++) {
-            $futures[] = async(function () use ($queue, $iterator, $flatMap, $order, &$producePosition) {
-                $this->consumer->await(++$producePosition);
+            $futures[] = async(function () use ($queue, $iterator, $flatMap, $order) {
+                $this->limit->await();
 
                 foreach ($iterator as $position => $value) {
                     // The operation runs concurrently, but the emits are at the correct position
@@ -53,13 +50,13 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
 
                     foreach ($iterable as $item) {
                         $queue->push($item);
+                        $this->limit->await();
                     }
 
                     $order?->resume($position);
-                    $this->consumer->await(++$producePosition);
                 }
 
-                $this->consumer->resume(\PHP_INT_MAX - 1);
+                $this->limit->ignore();
             });
         }
 
@@ -77,12 +74,12 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
 
     public function continue(?Cancellation $cancellation = null): bool
     {
-        $this->consumer->resume($this->consumePosition++);
+        $this->limit->provide(1);
 
         try {
             return $this->iterator->continue($cancellation);
         } catch (CancelledException $cancelledException) {
-            $this->consumePosition--;
+            $this->limit->provide(-1);
 
             throw $cancelledException;
         }
@@ -100,9 +97,8 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
 
     public function dispose(): void
     {
-        $this->consumer->resume(\PHP_INT_MAX - 1);
-
         $this->iterator->dispose();
+        $this->limit->ignore();
     }
 
     public function getIterator(): \Traversable

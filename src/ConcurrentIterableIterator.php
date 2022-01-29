@@ -3,9 +3,10 @@
 namespace Amp\Pipeline;
 
 use Amp\Cancellation;
+use Amp\CancelledException;
 use Amp\Pipeline\Internal\ConcurrentQueueIterator;
+use Amp\Pipeline\Internal\Limit;
 use Amp\Pipeline\Internal\QueueState;
-use Amp\Pipeline\Internal\Sequence;
 use function Amp\async;
 
 /**
@@ -14,9 +15,7 @@ use function Amp\async;
  */
 final class ConcurrentIterableIterator implements ConcurrentIterator
 {
-    private Sequence $sequence;
-
-    private int $consumePosition = 0;
+    private Limit $limit;
 
     /** @var ConcurrentIterator<T> */
     private ConcurrentIterator $iterator;
@@ -28,15 +27,15 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
     {
         $queue = new QueueState();
         $this->iterator = new ConcurrentQueueIterator($queue);
-        $this->sequence = new Sequence;
+        $this->limit = new Limit;
 
         async(function () use ($queue, $iterable) {
             try {
-                $this->sequence->await($producePosition = 1);
+                $this->limit->await();
 
                 foreach ($iterable as $value) {
                     $queue->push($value);
-                    $this->sequence->await(++$producePosition);
+                    $this->limit->await();
                 }
 
                 $queue->complete();
@@ -50,9 +49,15 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
 
     public function continue(?Cancellation $cancellation = null): bool
     {
-        $this->sequence->resume($this->consumePosition++);
+        $this->limit->provide(1);
 
-        return $this->iterator->continue($cancellation);
+        try {
+            return $this->iterator->continue($cancellation);
+        } catch (CancelledException $cancelledException) {
+            $this->limit->provide(-1);
+
+            throw $cancelledException;
+        }
     }
 
     public function getValue(): mixed
@@ -67,9 +72,8 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
 
     public function dispose(): void
     {
-        $this->sequence->resume(\PHP_INT_MAX - 1);
-
         $this->iterator->dispose();
+        $this->limit->ignore();
     }
 
     public function getIterator(): \Traversable
