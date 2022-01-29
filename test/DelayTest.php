@@ -22,6 +22,11 @@ class DelayTest extends AsyncTestCase
         $this->setTimeout(0.1);
         $pipeline = Pipeline::fromIterable(\range(1, 50));
         $pipeline->concurrent(10)->delay(0.01)->toArray();
+    }
 
+    public function testInvalidDelay(): void
+    {
+        $this->expectException(\Error::class);
+        Pipeline::fromIterable([1])->delay(-1)->forEach(fn () => null);
     }
 }
