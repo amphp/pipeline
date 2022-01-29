@@ -50,7 +50,7 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
 
                     foreach ($iterable as $item) {
                         $queue->push($item);
-                        $this->limit->await();
+                        $this->limit->provide(-1); // don't await, because it might lead to deadlocks with order?->await
                     }
 
                     $order?->resume($position);

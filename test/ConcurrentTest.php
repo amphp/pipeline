@@ -4,7 +4,9 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
+use function Amp\async;
 use function Amp\delay;
+use function Amp\Future\await;
 
 class ConcurrentTest extends AsyncTestCase
 {
@@ -72,5 +74,28 @@ class ConcurrentTest extends AsyncTestCase
         $this->expectExceptionObject($exception);
 
         $iterator->continue();
+    }
+
+    public function testConcurrentIteratorContinue()
+    {
+        $pipeline = Pipeline::fromIterable(function (): \Generator {
+            for ($i = 0; $i < 100; ++$i) {
+                yield $i;
+            }
+        });
+
+        $results = $pipeline->concurrent(10)
+            ->tap(fn () => delay(1))
+            ->map(fn (int $input): int => $input * 10)
+            ->filter(fn (int $input) => $input % 3 === 0)
+            ->tap(fn ($value) => print $value . ' ')
+            ->getIterator();
+
+        $this->expectOutputString('0 30 ');
+
+        $futures[] = async(fn () => $results->continue());
+        $futures[] = async(fn () => $results->continue());
+
+        await($futures);
     }
 }
