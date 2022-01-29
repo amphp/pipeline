@@ -21,6 +21,23 @@ class TakeWhileTest extends AsyncTestCase
         self::assertSame([1, 2], $pipeline->toArray());
     }
 
+    public function testSomeValuesConcurrentLazy(): void
+    {
+        $pipeline = Pipeline::fromIterable(function () {
+            print '.';
+            yield 1;
+            print '.';
+            yield 2;
+            print '.';
+            yield 3;
+            print '.';
+        })->concurrent(2)->takeWhile(fn ($value) => $value < 2);
+
+        $this->expectOutputString('...');
+
+        self::assertSame([1], $pipeline->toArray());
+    }
+
     public function testSomeValuesTrueAfterFalse(): void
     {
         $pipeline = Pipeline::fromIterable([1, 2, 3, 4, 5, 4, 3, 2, 1])->takeWhile(fn ($value) => $value < 3);

@@ -36,10 +36,12 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
         $this->limit = new Limit;
         $order = $ordered ? new Sequence : null;
 
+        $stop = FlatMapOperation::getStopMarker();
+
         $futures = [];
 
         for ($i = 0; $i < $concurrency; $i++) {
-            $futures[] = async(function () use ($queue, $iterator, $flatMap, $order) {
+            $futures[] = async(function () use ($queue, $iterator, $flatMap, $order, $stop) {
                 $this->limit->await();
 
                 foreach ($iterator as $position => $value) {
@@ -49,6 +51,11 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
                     $order?->await($position);
 
                     foreach ($iterable as $item) {
+                        if ($item === $stop) {
+                            $queue->complete();
+                            break 2;
+                        }
+
                         $queue->push($item);
                         $this->limit->provide(-1); // don't await, because it might lead to deadlocks with order?->await
                     }

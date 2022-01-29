@@ -41,9 +41,9 @@ final class FlatMapOperation implements IntermediateOperation
 
     public function __invoke(ConcurrentIterator $source): ConcurrentIterator
     {
-        $stop = self::getStopMarker();
-
         if ($this->concurrency === 1) {
+            $stop = self::getStopMarker();
+
             return new ConcurrentIterableIterator((function () use ($source, $stop): iterable {
                 foreach ($source as $position => $value) {
                     $iterable = ($this->flatMap)($value, $position);
