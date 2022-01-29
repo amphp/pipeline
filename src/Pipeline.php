@@ -7,6 +7,7 @@ use Amp\Pipeline\Internal\ConcurrentClosureIterator;
 use Amp\Pipeline\Internal\FlatMapOperation;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\SortOperation;
+use function Amp\delay;
 
 /**
  * A pipeline is an asynchronous set of ordered values.
@@ -390,6 +391,18 @@ final class Pipeline implements \IteratorAggregate
         }
 
         return $result;
+    }
+
+    /**
+     * Delays each item by $delay seconds.
+     *
+     * @param float $delay
+     *
+     * @return self<T>
+     */
+    public function delay(float $delay): self
+    {
+        return $this->tap(fn () => delay($delay));
     }
 
     /**
