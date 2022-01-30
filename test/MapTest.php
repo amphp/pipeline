@@ -178,24 +178,26 @@ class MapTest extends AsyncTestCase
 
     public function testPipelineFailsConcurrent2(): void
     {
-        $this->expectOutputString('1234678910');
+        $this->expectOutputString('1234');
 
         $failAt = 5;
-        $iterator = Pipeline::generate(static fn () => null)->concurrent(10)->map(function () use ($failAt) {
-            static $i = 0;
+        $iterator = Pipeline::generate(static fn () => null)
+            ->concurrent(10)
+            ->map(function () use ($failAt): int {
+                static $i = 0;
 
-            $current = ++$i;
+                $current = ++$i;
 
-            if ($current === $failAt) {
-                throw new TestException('3');
-            }
+                if ($current === $failAt) {
+                    throw new TestException('3');
+                }
 
-            delay(0.1);
+                delay(0.1);
 
-            print $current;
-
-            return $current;
-        })->getIterator();
+                return $current;
+            })
+            ->tap(static fn (int $value) => print $value)
+            ->getIterator();
 
         $futures = [];
 
