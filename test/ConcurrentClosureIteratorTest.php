@@ -29,7 +29,11 @@ class ConcurrentClosureIteratorTest extends AsyncTestCase
         }
 
         self::assertTrue($iterator->continue(new TimeoutCancellation(1)));
-        self::assertSame(2, $iterator->getValue());
+        self::assertSame(1, $iterator->getValue());
         self::assertSame(0, $iterator->getPosition());
+
+        self::assertTrue($iterator->continue(new TimeoutCancellation(1)));
+        self::assertSame(2, $iterator->getValue());
+        self::assertSame(1, $iterator->getPosition());
     }
 }

@@ -47,6 +47,8 @@ final class QueueState implements \IteratorAggregate
 
     private int $bufferSize;
 
+    private int $positionOffset = 0;
+
     /** @var FiberLocal<int|null> */
     private FiberLocal $currentPosition;
 
@@ -81,7 +83,7 @@ final class QueueState implements \IteratorAggregate
         if (\array_key_exists($position, $this->emittedValues)) {
             $value = $this->emittedValues[$position];
             unset($this->emittedValues[$position]);
-            $this->currentPosition->set($position);
+            $this->currentPosition->set($position - $this->positionOffset);
             $this->currentValue->set($value);
             return true;
         }
@@ -102,16 +104,16 @@ final class QueueState implements \IteratorAggregate
 
         if ($cancellation) {
             $waiting = &$this->waiting;
-            $emitPosition = &$this->emitPosition;
+            $offset = &$this->positionOffset;
             $id = $cancellation->subscribe(static function (\Throwable $exception) use (
                 &$waiting,
-                &$emitPosition,
+                &$offset,
                 $suspension,
             ): void {
                 foreach ($waiting as $key => $pending) {
                     if ($pending === $suspension) {
                         unset($waiting[$key]);
-                        ++$emitPosition;
+                        ++$offset;
                         $suspension->throw($exception);
                         return;
                     }
@@ -130,7 +132,7 @@ final class QueueState implements \IteratorAggregate
                 return false;
             }
 
-            $this->currentPosition->set($position);
+            $this->currentPosition->set($position - $this->positionOffset);
             $this->currentValue->set($value);
 
             return true;
@@ -239,7 +241,7 @@ final class QueueState implements \IteratorAggregate
      */
     public function pushAsync(mixed $value): Future
     {
-        $position = $this->emitPosition++;
+        $position = $this->emitPosition++ + $this->positionOffset;
         $next = $this->doPush($value, $position);
 
         if ($next === null) {
@@ -263,7 +265,7 @@ final class QueueState implements \IteratorAggregate
      */
     public function push(mixed $value): void
     {
-        $position = $this->emitPosition++;
+        $position = $this->emitPosition++ + $this->positionOffset;
         $next = $this->doPush($value, $position);
 
         if ($next === null) {
