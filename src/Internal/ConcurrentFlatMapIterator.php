@@ -39,8 +39,13 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
         for ($i = 0; $i < $concurrency; $i++) {
             $futures[] = async(function () use ($queue, $iterator, $flatMap, $order, $stop) {
                 foreach ($iterator as $position => $value) {
-                    // The operation runs concurrently, but the emits are at the correct position
-                    $iterable = $flatMap($value, $position);
+                    try {
+                        // The operation runs concurrently, but the emits are at the correct position
+                        $iterable = $flatMap($value, $position);
+                    } catch (\Throwable $exception) {
+                        $order?->await($position);
+                        throw $exception;
+                    }
 
                     $order?->await($position);
 
