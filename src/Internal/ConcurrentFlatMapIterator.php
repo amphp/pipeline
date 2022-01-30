@@ -16,8 +16,6 @@ use function Amp\Future\await;
  */
 final class ConcurrentFlatMapIterator implements ConcurrentIterator
 {
-    private Limit $limit;
-
     /** @var ConcurrentIterator<T> */
     private ConcurrentIterator $iterator;
 
@@ -33,7 +31,6 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
     {
         $queue = new QueueState;
         $this->iterator = new ConcurrentQueueIterator($queue);
-        $this->limit = new Limit;
         $order = $ordered ? new Sequence : null;
 
         $stop = FlatMapOperation::getStopMarker();
@@ -42,8 +39,6 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
 
         for ($i = 0; $i < $concurrency; $i++) {
             $futures[] = async(function () use ($queue, $iterator, $flatMap, $order, $stop) {
-                $this->limit->await();
-
                 foreach ($iterator as $position => $value) {
                     // The operation runs concurrently, but the emits are at the correct position
                     $iterable = $flatMap($value, $position);
@@ -57,13 +52,10 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
                         }
 
                         $queue->push($item);
-                        $this->limit->provide(-1); // don't await, because it might lead to deadlocks with order?->await
                     }
 
                     $order?->resume($position);
                 }
-
-                $this->limit->ignore();
             });
         }
 
@@ -81,15 +73,7 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
 
     public function continue(?Cancellation $cancellation = null): bool
     {
-        $this->limit->provide(1);
-
-        try {
-            return $this->iterator->continue($cancellation);
-        } catch (CancelledException $cancelledException) {
-            $this->limit->provide(-1);
-
-            throw $cancelledException;
-        }
+        return $this->iterator->continue($cancellation);
     }
 
     public function getValue(): mixed
@@ -105,7 +89,6 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
     public function dispose(): void
     {
         $this->iterator->dispose();
-        $this->limit->ignore();
     }
 
     public function getIterator(): \Traversable

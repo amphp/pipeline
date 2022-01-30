@@ -3,9 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Cancellation;
-use Amp\CancelledException;
 use Amp\Pipeline\Internal\ConcurrentQueueIterator;
-use Amp\Pipeline\Internal\Limit;
 use Amp\Pipeline\Internal\QueueState;
 use function Amp\async;
 
@@ -15,8 +13,6 @@ use function Amp\async;
  */
 final class ConcurrentIterableIterator implements ConcurrentIterator
 {
-    private Limit $limit;
-
     /** @var ConcurrentIterator<T> */
     private ConcurrentIterator $iterator;
 
@@ -27,15 +23,11 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
     {
         $queue = new QueueState();
         $this->iterator = new ConcurrentQueueIterator($queue);
-        $this->limit = new Limit;
 
         async(function () use ($queue, $iterable) {
             try {
-                $this->limit->await();
-
                 foreach ($iterable as $value) {
                     $queue->push($value);
-                    $this->limit->await();
                 }
 
                 $queue->complete();
@@ -49,15 +41,7 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
 
     public function continue(?Cancellation $cancellation = null): bool
     {
-        $this->limit->provide(1);
-
-        try {
-            return $this->iterator->continue($cancellation);
-        } catch (CancelledException $cancelledException) {
-            $this->limit->provide(-1);
-
-            throw $cancelledException;
-        }
+        return $this->iterator->continue($cancellation);
     }
 
     public function getValue(): mixed
@@ -73,7 +57,6 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
     public function dispose(): void
     {
         $this->iterator->dispose();
-        $this->limit->ignore();
     }
 
     public function getIterator(): \Traversable

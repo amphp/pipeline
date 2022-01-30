@@ -42,97 +42,6 @@ class FromIterableGeneratorTest extends AsyncTestCase
         self::assertSame([1], $generator->toArray());
     }
 
-    public function testLazy(): void
-    {
-        $generator = Pipeline::fromIterable(static function () {
-            print '1';
-            yield;
-            print '2';
-            yield;
-            print '3';
-        });
-
-        // ensure async is already executed
-        delay(0);
-
-        print 'a';
-
-        $iterator = $generator->getIterator();
-
-        print 'b';
-
-        $iterator->continue();
-
-        print 'c';
-
-        $iterator->continue();
-
-        print 'd';
-
-        $this->expectOutputString('ab1c2d');
-    }
-
-    public function testLazyConcurrent(): void
-    {
-        $generator = Pipeline::fromIterable(static function () {
-            print '1';
-            yield;
-            print '2';
-            delay(1);
-            print '3';
-            yield;
-            print '4';
-            yield;
-            print '5';
-        });
-
-        // ensure async is already executed
-        delay(0);
-
-        print 'a';
-        $iterator = $generator->getIterator();
-
-        print 'b';
-        $iterator->continue();
-
-        print 'c';
-        $futures[] = async(fn () => $iterator->continue());
-        $futures[] = async(fn () => $iterator->continue());
-
-        print 'd';
-        awaitAll($futures);
-
-        print 'e';
-
-        $this->expectOutputString('ab1cd234e');
-    }
-
-    public function testLazyConcurrentTap(): void
-    {
-        $generator = Pipeline::fromIterable(static function () {
-            print '1';
-            yield;
-            print '2';
-            delay(1);
-            print '3';
-            yield;
-            print '4';
-            yield;
-            print '5';
-        });
-
-        // ensure async is already executed
-        delay(0);
-
-        print 'a';
-        $generator->concurrent(2)->tap(fn () => null)->getIterator(); // lazy and does nothing
-        print 'b';
-        delay(1);
-        print 'c';
-
-        $this->expectOutputString('abc');
-    }
-
     /**
      * @depends testYield
      */
@@ -211,6 +120,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
             try {
                 yield 0;
                 yield 1;
+                yield 2;
             } finally {
                 $invoked = true;
             }
@@ -222,6 +132,9 @@ class FromIterableGeneratorTest extends AsyncTestCase
         self::assertFalse($invoked);
 
         $iterator->dispose();
+
+        self::assertTrue($iterator->continue());
+        self::assertSame(1, $iterator->getValue()); // Value generated before disposal.
 
         delay(0); // Tick event loop to destroy generator.
 

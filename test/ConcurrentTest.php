@@ -75,31 +75,4 @@ class ConcurrentTest extends AsyncTestCase
 
         $iterator->continue();
     }
-
-    public function testConcurrentIteratorContinue(): void
-    {
-        $pipeline = Pipeline::fromIterable(function (): \Generator {
-            for ($i = 0; $i < 100; ++$i) {
-                yield $i;
-            }
-        });
-
-        $results = $pipeline->concurrent(100)
-            ->tap(fn () => delay(1))
-            ->map(fn (int $input): int => $input * 10)
-            ->filter(fn (int $input) => $input % 3 === 0)
-            ->tap(fn ($value) => print $value . ' ')
-            ->getIterator();
-
-        // Takes longer than 1 seconds due to filtering
-        $this->setTimeout(3.5);
-        $this->expectOutputString('0 30 60 90 ');
-
-        $futures[] = async(fn () => $results->continue());
-        $futures[] = async(fn () => $results->continue());
-        $futures[] = async(fn () => $results->continue());
-        $futures[] = async(fn () => $results->continue());
-
-        await($futures);
-    }
 }
