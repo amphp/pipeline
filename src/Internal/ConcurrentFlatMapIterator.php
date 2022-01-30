@@ -3,7 +3,6 @@
 namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
-use Amp\CancelledException;
 use Amp\Pipeline\ConcurrentIterator;
 use function Amp\async;
 use function Amp\Future\await;

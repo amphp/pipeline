@@ -5,9 +5,7 @@ namespace Amp\Pipeline;
 use Amp\DeferredFuture;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use function Amp\async;
 use function Amp\delay;
-use function Amp\Future\awaitAll;
 use function Amp\now;
 
 class FromIterableGeneratorTest extends AsyncTestCase

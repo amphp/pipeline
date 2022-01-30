@@ -4,9 +4,7 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use function Amp\async;
 use function Amp\delay;
-use function Amp\Future\await;
 
 class ConcurrentTest extends AsyncTestCase
 {
