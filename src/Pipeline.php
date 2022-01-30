@@ -48,7 +48,7 @@ final class Pipeline implements \IteratorAggregate
             return new self(new ConcurrentArrayIterator($iterable));
         }
 
-        return new self(new ConcurrentIterableIterator($iterable));
+        return new self(new ConcurrentIterableIterator($iterable, true));
     }
 
     /**
@@ -100,6 +100,8 @@ final class Pipeline implements \IteratorAggregate
 
     private bool $ordered = true;
 
+    private bool $lazy = true;
+
     private array $intermediateOperations = [];
 
     private bool $used = false;
@@ -145,6 +147,20 @@ final class Pipeline implements \IteratorAggregate
     public function unordered(): self
     {
         $this->ordered = false;
+
+        return $this;
+    }
+
+    public function lazy(): self
+    {
+        $this->lazy = true;
+
+        return $this;
+    }
+
+    public function eager(): self
+    {
+        $this->lazy = false;
 
         return $this;
     }
@@ -326,7 +342,7 @@ final class Pipeline implements \IteratorAggregate
             throw new \Error('Pipeline consumption has already been started');
         }
 
-        $this->intermediateOperations[] = new FlatMapOperation($this->concurrency, $this->ordered, $flatMap);
+        $this->intermediateOperations[] = new FlatMapOperation($this->concurrency, $this->ordered, $this->lazy, $flatMap);
 
         /** @var self<R> */
         return $this;

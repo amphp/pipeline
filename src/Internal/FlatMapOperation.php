@@ -24,18 +24,22 @@ final class FlatMapOperation implements IntermediateOperation
 
     private bool $ordered;
 
+    private bool $lazy;
+
     /** @var \Closure(T, int):iterable<R> */
     private \Closure $flatMap;
 
     /**
      * @param int $concurrency
      * @param bool $ordered
+     * @param bool $lazy
      * @param \Closure(T, int):iterable<R> $flatMap
      */
-    public function __construct(int $concurrency, bool $ordered, \Closure $flatMap)
+    public function __construct(int $concurrency, bool $ordered, bool $lazy, \Closure $flatMap)
     {
         $this->concurrency = $concurrency;
         $this->ordered = $ordered;
+        $this->lazy = $lazy;
         $this->flatMap = $flatMap;
     }
 
@@ -55,9 +59,9 @@ final class FlatMapOperation implements IntermediateOperation
                         yield $item;
                     }
                 }
-            })());
+            })(), $this->lazy);
         }
 
-        return new ConcurrentFlatMapIterator($source, $this->concurrency, $this->ordered, $this->flatMap);
+        return new ConcurrentFlatMapIterator($source, $this->concurrency, $this->ordered, $this->lazy, $this->flatMap);
     }
 }

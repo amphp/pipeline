@@ -15,7 +15,7 @@ use function Amp\async;
  */
 final class ConcurrentIterableIterator implements ConcurrentIterator
 {
-    private Limit $limit;
+    private ?Limit $limit;
 
     /** @var ConcurrentIterator<T> */
     private ConcurrentIterator $iterator;
@@ -23,19 +23,19 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
     /**
      * @param iterable<array-key, T> $iterable
      */
-    public function __construct(iterable $iterable)
+    public function __construct(iterable $iterable, bool $lazy)
     {
         $queue = new QueueState();
         $this->iterator = new ConcurrentQueueIterator($queue);
-        $this->limit = new Limit;
+        $this->limit = $lazy ? new Limit : null;
 
         async(function () use ($queue, $iterable) {
             try {
-                $this->limit->await();
+                $this->limit?->await();
 
                 foreach ($iterable as $value) {
                     $queue->push($value);
-                    $this->limit->await();
+                    $this->limit?->await();
                 }
 
                 $queue->complete();
@@ -49,12 +49,12 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
 
     public function continue(?Cancellation $cancellation = null): bool
     {
-        $this->limit->provide(1);
+        $this->limit?->provide(1);
 
         try {
             return $this->iterator->continue($cancellation);
         } catch (CancelledException $cancelledException) {
-            $this->limit->provide(-1);
+            $this->limit?->provide(-1);
 
             throw $cancelledException;
         }
@@ -73,7 +73,7 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
     public function dispose(): void
     {
         $this->iterator->dispose();
-        $this->limit->ignore();
+        $this->limit?->ignore();
     }
 
     public function getIterator(): \Traversable
