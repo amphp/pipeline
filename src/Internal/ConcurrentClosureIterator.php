@@ -73,7 +73,7 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
                             $queue->error($exception);
                             $deferredCancellation->cancel($exception);
                         }
-                        $sequence->resume($position);
+                        return;
                     } finally {
                         $sources->enqueue($suspension);
                     }
@@ -100,6 +100,7 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
         try {
             return $this->queue->continue($cancellation);
         } finally {
+            /** @psalm-suppress PossiblyUndefinedVariable $id will be defined if $cancellation is not null. */
             $cancellation?->unsubscribe($id);
         }
     }
