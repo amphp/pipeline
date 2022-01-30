@@ -34,8 +34,14 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
         $this->supplier = $supplier;
         $this->sequence = new Sequence();
         $this->queue = new QueueState();
-        $this->sources = new \SplQueue();
+        $this->sources = $sources = new \SplQueue();
         $this->deferredCancellation = new DeferredCancellation();
+
+        $this->deferredCancellation->getCancellation()->subscribe(static function () use ($sources): void {
+            while ($sources->isEmpty()) {
+                $sources->dequeue();
+            }
+        });
     }
 
     public function continue(?Cancellation $cancellation = null): bool
@@ -117,11 +123,8 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
 
     public function dispose(): void
     {
-        while (!$this->sources->isEmpty()) {
-            $this->sources->dequeue();
-        }
-
         $this->queue->dispose();
+        $this->deferredCancellation->cancel();
     }
 
     public function getIterator(): \Traversable
