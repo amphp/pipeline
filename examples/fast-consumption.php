@@ -42,12 +42,12 @@ try {
         $yielded = $future->await();
 
         if ($yielded === null) {
-            \printf("Async generator completed after yielding %d values\n", $key);
+            printf("Async generator completed after yielding %d values\n", $key);
             break;
         }
 
-        \printf("Async generator yielded %d\n", $yielded);
+        printf("Async generator yielded %d\n", $yielded);
     }
 } catch (\Exception $exception) {
-    \printf("Exception: %s\n", (string) $exception);
+    printf("Exception: %s\n", (string) $exception);
 }

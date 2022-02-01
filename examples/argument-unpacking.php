@@ -32,7 +32,7 @@ try {
     });
 
     echo "Unpacking arguments, please wait...\n";
-    \var_dump(...$pipeline);
+    var_dump(...$pipeline);
 } catch (\Exception $exception) {
-    \printf("Exception: %s\n", (string) $exception);
+    printf("Exception: %s\n", (string) $exception);
 }

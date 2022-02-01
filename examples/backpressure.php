@@ -32,9 +32,9 @@ try {
     });
 
     foreach ($pipeline as $value) {
-        \printf("Pipeline source yielded %d\n", $value);
+        printf("Pipeline source yielded %d\n", $value);
         delay(0.5); // Listener consumption takes 500 ms.
     }
 } catch (\Exception $exception) {
-    \printf("Exception: %s\n", (string) $exception);
+    printf("Exception: %s\n", (string) $exception);
 }
