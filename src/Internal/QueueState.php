@@ -50,10 +50,10 @@ final class QueueState implements \IteratorAggregate
     private int $positionOffset = 0;
 
     /** @var FiberLocal<int|null> */
-    private FiberLocal $currentPosition;
+    private readonly FiberLocal $currentPosition;
 
     /** @var FiberLocal<T|null> */
-    private FiberLocal $currentValue;
+    private readonly FiberLocal $currentValue;
 
     public function __construct(int $bufferSize = 0)
     {

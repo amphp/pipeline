@@ -17,7 +17,7 @@ use Amp\Pipeline\Internal\ConcurrentQueueIterator;
 final class Queue
 {
     /** @var Internal\QueueState<T> Has public emit, complete, and fail methods. */
-    private Internal\QueueState $state;
+    private readonly Internal\QueueState $state;
 
     /**
      * @param int $bufferSize Allowed number of items to internally buffer before awaiting backpressure from the

@@ -16,7 +16,7 @@ use function Amp\Future\await;
 final class ConcurrentFlatMapIterator implements ConcurrentIterator
 {
     /** @var ConcurrentIterator<T> */
-    private ConcurrentIterator $iterator;
+    private readonly ConcurrentIterator $iterator;
 
     /**
      * @template R

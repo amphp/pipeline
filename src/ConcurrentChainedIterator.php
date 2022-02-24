@@ -16,10 +16,10 @@ use Revolt\EventLoop\FiberLocal;
 final class ConcurrentChainedIterator implements ConcurrentIterator
 {
     /** @var ConcurrentIterator<T>[] */
-    private array $iterators;
+    private readonly array $iterators;
 
     /** @var FiberLocal<int|null> */
-    private FiberLocal $position;
+    private readonly FiberLocal $position;
 
     /**
      * @param ConcurrentIterator<T>[] $iterators

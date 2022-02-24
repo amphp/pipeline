@@ -14,7 +14,7 @@ use function Amp\async;
 final class ConcurrentIterableIterator implements ConcurrentIterator
 {
     /** @var ConcurrentIterator<T> */
-    private ConcurrentIterator $iterator;
+    private readonly ConcurrentIterator $iterator;
 
     /**
      * @param iterable<array-key, T> $iterable

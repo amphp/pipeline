@@ -8,7 +8,7 @@ use Amp\Pipeline\ConcurrentIterator;
 /** @internal */
 final class SortOperation implements IntermediateOperation
 {
-    private \Closure $compare;
+    private readonly \Closure $compare;
 
     public function __construct(\Closure $compare)
     {

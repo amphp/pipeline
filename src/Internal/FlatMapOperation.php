@@ -20,12 +20,12 @@ final class FlatMapOperation implements IntermediateOperation
         return $marker ??= new \stdClass;
     }
 
-    private int $concurrency;
+    private readonly int $concurrency;
 
-    private bool $ordered;
+    private readonly bool $ordered;
 
     /** @var \Closure(T, int):iterable<R> */
-    private \Closure $flatMap;
+    private readonly \Closure $flatMap;
 
     /**
      * @param \Closure(T, int):iterable<R> $flatMap

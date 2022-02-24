@@ -8,7 +8,7 @@ use Amp\Pipeline\ConcurrentIterator;
 /** @internal */
 final class ConcurrentQueueIterator implements ConcurrentIterator
 {
-    private QueueState $state;
+    private readonly QueueState $state;
 
     public function __construct(QueueState $state)
     {

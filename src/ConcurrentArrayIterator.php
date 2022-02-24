@@ -8,17 +8,17 @@ use Revolt\EventLoop\FiberLocal;
 final class ConcurrentArrayIterator implements ConcurrentIterator
 {
     private int $position = 0;
-    private int $size;
+    private readonly int $size;
 
-    private array $values;
+    private readonly array $values;
 
-    private FiberLocal $currentPosition;
+    private readonly FiberLocal $currentPosition;
 
     private ?DisposedException $disposed = null;
 
     public function __construct(array $values)
     {
-        $this->values = \PHP_VERSION_ID >= 80100 && \array_is_list($values) ? $values : \array_values($values);
+        $this->values = \array_is_list($values) ? $values : \array_values($values);
         $this->size = \count($values);
         $this->currentPosition = new FiberLocal(fn () => throw new \Error('Call continue() before calling get()'));
     }

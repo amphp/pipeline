@@ -93,7 +93,7 @@ final class Pipeline implements \IteratorAggregate
         ));
     }
 
-    private ConcurrentIterator $source;
+    private readonly ConcurrentIterator $source;
 
     private int $concurrency = 1;
 

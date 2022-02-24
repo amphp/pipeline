@@ -15,15 +15,15 @@ use Revolt\EventLoop;
  */
 final class ConcurrentClosureIterator implements ConcurrentIterator
 {
-    private \Closure $supplier;
+    private readonly \Closure $supplier;
 
-    private \SplQueue $sources;
+    private readonly \SplQueue $sources;
 
-    private QueueState $queue;
+    private readonly QueueState $queue;
 
-    private Sequence $sequence;
+    private readonly Sequence $sequence;
 
-    private DeferredCancellation $deferredCancellation;
+    private readonly DeferredCancellation $deferredCancellation;
 
     private int $cancellations = 0;
 
