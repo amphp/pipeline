@@ -37,7 +37,7 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
         $futures = [];
 
         for ($i = 0; $i < $concurrency; $i++) {
-            $futures[] = async(function () use ($queue, $iterator, $flatMap, $order, $stop) {
+            $futures[] = async(static function () use ($queue, $iterator, $flatMap, $order, $stop): void {
                 foreach ($iterator as $position => $value) {
                     try {
                         // The operation runs concurrently, but the emits are at the correct position
@@ -63,14 +63,12 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
             });
         }
 
-        async(function () use ($futures, $queue) {
+        async(static function () use ($futures, $queue): void {
             try {
                 await($futures);
                 $queue->complete();
             } catch (\Throwable $e) {
                 $queue->error($e);
-            } finally {
-                $queue->dispose();
             }
         });
     }

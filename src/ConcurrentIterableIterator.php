@@ -24,7 +24,7 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
         $queue = new QueueState();
         $this->iterator = new ConcurrentQueueIterator($queue);
 
-        async(function () use ($queue, $iterable) {
+        async(static function () use ($queue, $iterable): void {
             try {
                 foreach ($iterable as $value) {
                     $queue->push($value);
@@ -33,8 +33,6 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
                 $queue->complete();
             } catch (\Throwable $e) {
                 $queue->error($e);
-            } finally {
-                $queue->dispose();
             }
         });
     }
