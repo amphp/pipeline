@@ -221,8 +221,6 @@ final class Pipeline implements \IteratorAggregate
 
     /**
      * @param \Closure(T): bool $predicate
-     *
-     * @return bool
      */
     public function allMatch(\Closure $predicate): bool
     {
@@ -237,8 +235,6 @@ final class Pipeline implements \IteratorAggregate
 
     /**
      * @param \Closure(T): bool $predicate
-     *
-     * @return bool
      */
     public function anyMatch(\Closure $predicate): bool
     {
@@ -253,8 +249,6 @@ final class Pipeline implements \IteratorAggregate
 
     /**
      * @param \Closure(T): bool $predicate
-     *
-     * @return bool
      */
     public function noneMatch(\Closure $predicate): bool
     {
@@ -271,8 +265,6 @@ final class Pipeline implements \IteratorAggregate
      * Invokes the given callback for each value emitted on the pipeline.
      *
      * @param \Closure(T):void $forEach
-     *
-     * @return void
      */
     public function forEach(\Closure $forEach): void
     {
@@ -395,7 +387,6 @@ final class Pipeline implements \IteratorAggregate
     /**
      * Delays each item by $delay seconds.
      *
-     * @param float $delay
      *
      * @return self<T>
      */
@@ -406,8 +397,6 @@ final class Pipeline implements \IteratorAggregate
 
     /**
      * Skip the first N items of the pipeline.
-     *
-     * @param int $count
      *
      * @return self<T>
      */
@@ -464,8 +453,6 @@ final class Pipeline implements \IteratorAggregate
 
     /**
      * Take only the first N items of the pipeline.
-     *
-     * @param int $count
      *
      * @return self<T>
      */

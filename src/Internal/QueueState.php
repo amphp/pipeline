@@ -165,8 +165,6 @@ final class QueueState implements \IteratorAggregate
     }
 
     /**
-     * @return void
-     *
      * @see Pipeline::dispose()
      */
     public function dispose(): void
@@ -186,7 +184,6 @@ final class QueueState implements \IteratorAggregate
 
     /**
      * @param T $value
-     * @param int $position
      *
      * @return array|null Returns [?\Throwable, mixed] or null if no send value is available.
      *
@@ -308,8 +305,6 @@ final class QueueState implements \IteratorAggregate
     /**
      * Completes the pipeline.
      *
-     * @return void
-     *
      * @throws \Error If the iterator has already been completed.
      */
     public function complete(): void
@@ -319,10 +314,6 @@ final class QueueState implements \IteratorAggregate
 
     /**
      * Fails the pipeline.
-     *
-     * @param \Throwable $exception
-     *
-     * @return void
      */
     public function error(\Throwable $exception): void
     {
@@ -332,8 +323,6 @@ final class QueueState implements \IteratorAggregate
     /**
      * @param \Throwable|null $exception Failure reason or null for success.
      * @param bool $disposed Flag if the generator was disposed.
-     *
-     * @return void
      */
     private function finalize(?\Throwable $exception = null, bool $disposed = false): void
     {

@@ -28,8 +28,6 @@ final class FlatMapOperation implements IntermediateOperation
     private \Closure $flatMap;
 
     /**
-     * @param int $concurrency
-     * @param bool $ordered
      * @param \Closure(T, int):iterable<R> $flatMap
      */
     public function __construct(int $concurrency, bool $ordered, \Closure $flatMap)

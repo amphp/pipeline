@@ -105,8 +105,6 @@ final class Queue
 
     /**
      * Completes the queue.
-     *
-     * @return void
      */
     public function complete(): void
     {
@@ -115,10 +113,6 @@ final class Queue
 
     /**
      * Errors the queue with the given reason.
-     *
-     * @param \Throwable $reason
-     *
-     * @return void
      */
     public function error(\Throwable $reason): void
     {

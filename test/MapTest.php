@@ -175,7 +175,6 @@ class MapTest extends AsyncTestCase
         }
     }
 
-
     public function testPipelineFailsConcurrent2(): void
     {
         $this->expectOutputString('1234');

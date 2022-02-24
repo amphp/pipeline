@@ -22,8 +22,6 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
      * @template R
      *
      * @param ConcurrentIterator<T> $iterator
-     * @param int $concurrency
-     * @param bool $ordered
      * @param \Closure(T, int):iterable<R> $flatMap
      */
     public function __construct(ConcurrentIterator $iterator, int $concurrency, bool $ordered, \Closure $flatMap)

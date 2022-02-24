@@ -20,9 +20,6 @@ class ConcatTest extends AsyncTestCase
 
     /**
      * @dataProvider getArrays
-     *
-     * @param array $array
-     * @param array $expected
      */
     public function testConcatIterator(array $array, array $expected): void
     {
@@ -37,9 +34,6 @@ class ConcatTest extends AsyncTestCase
 
     /**
      * @dataProvider getArrays
-     *
-     * @param array $array
-     * @param array $expected
      */
     public function testConcatPipeline(array $array, array $expected): void
     {
