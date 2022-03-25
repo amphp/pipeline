@@ -59,6 +59,16 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
         return $position;
     }
 
+    public function hasPending(): bool
+    {
+        return $this->position < $this->size;
+    }
+
+    public function isConsumed(): bool
+    {
+        return $this->position >= $this->size;
+    }
+
     public function dispose(): void
     {
         $this->disposed ??= new DisposedException;

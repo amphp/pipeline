@@ -166,6 +166,11 @@ final class QueueState implements \IteratorAggregate
         return $position;
     }
 
+    public function hasPending(): bool
+    {
+        return \array_key_exists($this->consumePosition, $this->emittedValues);
+    }
+
     /**
      * @see Pipeline::dispose()
      */

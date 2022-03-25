@@ -40,6 +40,16 @@ final class ConcurrentQueueIterator implements ConcurrentIterator
         $this->state->dispose();
     }
 
+    public function hasPending(): bool
+    {
+        return $this->state->hasPending();
+    }
+
+    public function isConsumed(): bool
+    {
+        return $this->state->isConsumed() || $this->state->isDisposed();
+    }
+
     public function getIterator(): \Traversable
     {
         while ($this->state->continue()) {

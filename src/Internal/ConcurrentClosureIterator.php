@@ -121,6 +121,16 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
         return $this->queue->getPosition();
     }
 
+    public function hasPending(): bool
+    {
+        return $this->queue->hasPending();
+    }
+
+    public function isConsumed(): bool
+    {
+        return $this->queue->isConsumed() || $this->queue->isDisposed();
+    }
+
     public function dispose(): void
     {
         $this->queue->dispose();

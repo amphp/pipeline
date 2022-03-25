@@ -52,6 +52,16 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
         return $this->iterator->getPosition();
     }
 
+    public function hasPending(): bool
+    {
+        return $this->iterator->hasPending();
+    }
+
+    public function isConsumed(): bool
+    {
+        return $this->iterator->isConsumed();
+    }
+
     public function dispose(): void
     {
         $this->iterator->dispose();
