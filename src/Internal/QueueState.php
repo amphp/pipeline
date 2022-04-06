@@ -99,6 +99,8 @@ final class QueueState implements \IteratorAggregate
             return false;
         }
 
+        $this->currentValue->set(null); // Remove reference to current value while awaiting next value.
+
         // No value has been emitted, suspend fiber to await next value.
         $this->waiting[] = $suspension = EventLoop::getSuspension();
 
@@ -148,7 +150,7 @@ final class QueueState implements \IteratorAggregate
     public function getValue(): mixed
     {
         if ($this->currentPosition->get() === null) {
-            throw new \Error('Pipeline complete, cannot call getValue()');
+            throw new \Error('Pipeline complete or awaiting next value, cannot call getValue()');
         }
 
         return $this->currentValue->get();
