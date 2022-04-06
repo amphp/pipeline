@@ -7,7 +7,6 @@ use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\Internal;
 use Amp\Pipeline\ConcurrentIterator;
-use Amp\Pipeline\DisposedException;
 use Revolt\EventLoop;
 use Revolt\EventLoop\FiberLocal;
 use Revolt\EventLoop\Suspension;
@@ -176,7 +175,7 @@ final class QueueState implements \IteratorAggregate
                 return; // Pipeline already completed or failed.
             }
 
-            $this->finalize(new DisposedException, true);
+            $this->finalize(disposed: true);
         } finally {
             if ($this->disposed) {
                 $this->triggerDisposal();
@@ -205,7 +204,7 @@ final class QueueState implements \IteratorAggregate
 
             if ($this->disposed && empty($this->waiting)) {
                 $this->triggerDisposal();
-                return self::CONTINUE; // Subsequent push() calls will throw.
+                return self::CONTINUE;
             }
 
             if ($this->consumePosition > $position) {
@@ -216,9 +215,8 @@ final class QueueState implements \IteratorAggregate
         }
 
         if ($this->disposed) {
-            \assert(isset($this->exception), "Failure exception must be set when disposed");
             // Pipeline has been disposed and no Fibers are still pending.
-            return [$this->exception];
+            return self::CONTINUE;
         }
 
         $this->emittedValues[$position] = $value;
@@ -376,21 +374,17 @@ final class QueueState implements \IteratorAggregate
         }
     }
 
-    private function relieveBackPressure(?\Throwable $exception): void
+    private function relieveBackPressure(): void
     {
         $backPressure = $this->backpressure;
         unset($this->backpressure);
 
         foreach ($backPressure as $placeholder) {
-            if ($exception) {
-                $placeholder instanceof Suspension
-                    ? $placeholder->throw($exception)
-                    : $placeholder->error($exception);
-            } else {
-                $placeholder instanceof Suspension
-                    ? $placeholder->resume()
-                    : $placeholder->complete();
-            }
+            match (true) {
+                $placeholder instanceof Suspension => $placeholder->resume(),
+                $placeholder instanceof DeferredFuture => $placeholder->complete(),
+                default => throw new \Error('Unexpected value in back-pressure array'),
+            };
         }
     }
 
@@ -420,11 +414,11 @@ final class QueueState implements \IteratorAggregate
      */
     private function triggerDisposal(): void
     {
-        \assert($this->disposed && $this->exception, "Pipeline was not disposed on triggering disposal");
+        \assert($this->disposed, "Pipeline was not disposed on triggering disposal");
 
         /** @psalm-suppress RedundantCondition */
         if (isset($this->backpressure)) {
-            $this->relieveBackPressure($this->exception);
+            $this->relieveBackPressure();
         }
 
         /** @psalm-suppress RedundantCondition */

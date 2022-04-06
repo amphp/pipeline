@@ -64,8 +64,7 @@ final class Queue
      *
      * @param T $value
      *
-     * @return Future<null> Completes with null when the emitted value has been consumed or errors with
-     *                       {@see DisposedException} if the queue has been disposed.
+     * @return Future<null> Completes with null when the emitted value has been consumed or the queue disposed.
      */
     public function pushAsync(mixed $value): Future
     {
@@ -79,8 +78,6 @@ final class Queue
      * Use {@see pushAsync()} to push a value without waiting for consumption or free buffer space.
      *
      * @param T $value
-     *
-     * @throws DisposedException Thrown if the queue is disposed.
      */
     public function push(mixed $value): void
     {

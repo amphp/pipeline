@@ -18,7 +18,7 @@ final class ConcurrentDelayedArrayIterator implements ConcurrentIterator
 
     private FiberLocal $currentPosition;
 
-    private ?DisposedException $disposed = null;
+    private bool $disposed = false;
 
     private float $delay;
 
@@ -32,6 +32,10 @@ final class ConcurrentDelayedArrayIterator implements ConcurrentIterator
 
     public function continue(?Cancellation $cancellation = null): bool
     {
+        if ($this->disposed) {
+            return false;
+        }
+
         $position = $this->position++;
         if ($position < $this->size) {
             delay($this->delay);
@@ -66,7 +70,7 @@ final class ConcurrentDelayedArrayIterator implements ConcurrentIterator
 
     public function dispose(): void
     {
-        $this->disposed ??= new DisposedException;
+        $this->disposed = true;
     }
 
     public function getIterator(): \Traversable

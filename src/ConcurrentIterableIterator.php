@@ -28,6 +28,10 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
             try {
                 foreach ($iterable as $value) {
                     $queue->push($value);
+
+                    if ($queue->isDisposed()) {
+                        return;
+                    }
                 }
 
                 $queue->complete();

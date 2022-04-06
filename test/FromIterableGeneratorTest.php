@@ -119,6 +119,7 @@ class FromIterableGeneratorTest extends AsyncTestCase
                 yield 0;
                 yield 1;
                 yield 2;
+                self::fail('This should not be reached');
             } finally {
                 $invoked = true;
             }
@@ -136,52 +137,20 @@ class FromIterableGeneratorTest extends AsyncTestCase
 
         delay(0); // Tick event loop to destroy generator.
 
-        try {
-            $iterator->continue();
-
-            self::fail("Pipeline should have been disposed");
-        } catch (DisposedException) {
-            self::assertTrue($invoked);
-        }
+        self::assertFalse($iterator->continue());
+        self::assertTrue($invoked);
     }
 
-    /**
-     * @depends testDisposal
-     */
-    public function testYieldAfterDisposal(): void
+    public function testContinueAfterDisposal(): void
     {
         $generator = Pipeline::fromIterable(function () {
-            try {
-                yield 0;
-            } catch (DisposedException) {
-                yield 1;
-            }
+            yield 0;
+            self::fail('This should not be reached');
         })->getIterator();
 
         $generator->dispose();
 
-        $this->expectException(DisposedException::class);
-
-        $generator->continue();
-    }
-
-    public function testGetReturnAfterDisposal(): void
-    {
-        $generator = Pipeline::fromIterable(function () {
-            try {
-                yield 0;
-            } catch (DisposedException) {
-                return 1;
-            }
-
-            return 0;
-        })->getIterator();
-
-        $generator->dispose();
-
-        $this->expectException(DisposedException::class);
-
-        $generator->continue();
+        self::assertFalse($generator->continue());
     }
 
     public function testGeneratorStartsOnlyAfterCallingContinue(): void

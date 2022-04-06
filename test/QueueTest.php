@@ -212,12 +212,7 @@ class QueueTest extends AsyncTestCase
         $pipeline->dispose();
         self::assertTrue($this->queue->isDisposed());
 
-        try {
-            $this->queue->pushAsync(1)->await();
-            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException) {
-            delay(0); // Trigger disposal callback in defer.
-        }
+        $this->queue->push(1);
     }
 
     public function testEmitAfterAutomaticDisposal(): void
@@ -226,12 +221,7 @@ class QueueTest extends AsyncTestCase
         unset($pipeline); // Trigger automatic disposal.
         self::assertTrue($this->queue->isDisposed());
 
-        try {
-            $this->queue->pushAsync(1)->await();
-            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException) {
-            delay(0); // Trigger disposal callback in defer.
-        }
+        $this->queue->push(1);
     }
 
     public function testEmitAfterAutomaticDisposalAfterDelay(): void
@@ -242,21 +232,13 @@ class QueueTest extends AsyncTestCase
 
         delay(0.01);
 
-        try {
-            $this->queue->pushAsync(1)->await();
-            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException) {
-            delay(0); // Trigger disposal callback in defer.
-        }
+        $this->queue->push(1);
     }
 
     public function testEmitAfterAutomaticDisposalWithPendingContinueFuture(): void
     {
         $pipeline = $this->queue->pipe()->getIterator();
-        $future = async(function () use ($pipeline) {
-            $pipeline->continue();
-            return $pipeline->getValue();
-        });
+        $future = async(fn () => $pipeline->continue() ? $pipeline->getValue() : null);
 
         unset($pipeline); // Trigger automatic disposal.
         self::assertFalse($this->queue->isDisposed());
@@ -265,30 +247,17 @@ class QueueTest extends AsyncTestCase
 
         self::assertTrue($this->queue->isDisposed());
 
-        try {
-            $this->queue->pushAsync(2)->await();
-            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException) {
-            delay(0); // Trigger disposal callback in defer.
-        }
+        $this->queue->push(2);
     }
 
     public function testEmitAfterExplicitDisposalWithPendingContinueFuture(): void
     {
         $pipeline = $this->queue->pipe()->getIterator();
-        $future = async(function () use ($pipeline) {
-            $pipeline->continue();
-            return $pipeline->getValue();
-        });
+        $future = async(fn () => $pipeline->continue() ? $pipeline->getValue() : null);
         $pipeline->dispose();
         self::assertTrue($this->queue->isDisposed());
 
-        try {
-            $future->await();
-            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException) {
-            delay(0); // Trigger disposal callback in defer.
-        }
+        self::assertNull($future->await());
     }
 
     public function testEmitAfterDestruct(): void
@@ -299,23 +268,7 @@ class QueueTest extends AsyncTestCase
         self::assertTrue($this->queue->isDisposed());
         $future->ignore();
 
-        try {
-            $this->queue->pushAsync(2)->await();
-            $this->fail(\sprintf('Expected instance of %s to be thrown', DisposedException::class));
-        } catch (DisposedException) {
-            delay(0); // Trigger disposal callback in defer.
-        }
-    }
-
-    public function testFailWithDisposedException(): void
-    {
-        // Using DisposedException, but should be treated as fail, not disposal.
-        $this->queue->error(new DisposedException);
-
-        $this->expectException(\Error::class);
-        $this->expectExceptionMessage('Queue has already been completed');
-
-        $this->queue->complete();
+        $this->queue->push(2);
     }
 
     public function testTraversable(): void
@@ -397,25 +350,13 @@ class QueueTest extends AsyncTestCase
 
         $cancellation = new DeferredCancellation();
 
-        $future1 = async(function () use ($pipeline) {
-            $pipeline->continue();
-            return $pipeline->getValue();
-        });
+        $future1 = async(fn () => $pipeline->continue() ? $pipeline->getValue() : null);
 
-        $future2 = async(function () use ($pipeline, $cancellation) {
-            $pipeline->continue($cancellation->getCancellation());
-            return $pipeline->getValue();
-        });
+        $future2 = async(fn () => $pipeline->continue($cancellation->getCancellation()) ? $pipeline->getValue() : null);
 
-        $future3 = async(function () use ($pipeline) {
-            $pipeline->continue();
-            return $pipeline->getValue();
-        });
+        $future3 = async(fn () => $pipeline->continue() ? $pipeline->getValue() : null);
 
-        $future4 = async(function () use ($pipeline) {
-            $pipeline->continue();
-            return $pipeline->getValue();
-        });
+        $future4 = async(fn () => $pipeline->continue() ? $pipeline->getValue() : null);
 
         $cancellation->cancel();
 
@@ -441,15 +382,9 @@ class QueueTest extends AsyncTestCase
 
         $cancellation = new DeferredCancellation();
 
-        $future1 = async(function () use ($pipeline) {
-            $pipeline->continue();
-            return $pipeline->getValue();
-        });
+        $future1 = async(fn () => $pipeline->continue() ? $pipeline->getValue() : null);
 
-        $future2 = async(function () use ($pipeline, $cancellation) {
-            $pipeline->continue($cancellation->getCancellation());
-            return $pipeline->getValue();
-        });
+        $future2 = async(fn () => $pipeline->continue($cancellation->getCancellation()) ? $pipeline->getValue() : null);
 
         $cancellation->cancel();
 

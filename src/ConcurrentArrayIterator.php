@@ -14,7 +14,7 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
 
     private readonly FiberLocal $currentPosition;
 
-    private ?DisposedException $disposed = null;
+    private bool $disposed = false;
 
     public function __construct(array $values)
     {
@@ -26,7 +26,7 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
     public function continue(?Cancellation $cancellation = null): bool
     {
         if ($this->disposed) {
-            throw $this->disposed;
+            return false;
         }
 
         $position = $this->position++;
@@ -61,7 +61,7 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
 
     public function dispose(): void
     {
-        $this->disposed ??= new DisposedException;
+        $this->disposed = true;
     }
 
     public function getIterator(): \Traversable
