@@ -50,6 +50,12 @@ interface ConcurrentIterator extends \IteratorAggregate
     public function getPosition(): int;
 
     /**
+     * @return bool {@code true} if the iterator has completed (either successfully or with an error) or {@code false}
+     * if the iterator may still emit more values.
+     */
+    public function isComplete(): bool;
+
+    /**
      * Disposes the iterator, indicating the consumer is no longer interested in the iterator output.
      */
     public function dispose(): void;

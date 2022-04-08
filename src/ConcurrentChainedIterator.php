@@ -78,6 +78,11 @@ final class ConcurrentChainedIterator implements ConcurrentIterator
         return $this->iterators[$position]->getPosition();
     }
 
+    public function isComplete(): bool
+    {
+        return $this->position->get() !== null;
+    }
+
     public function dispose(): void
     {
         foreach ($this->iterators as $iterator) {
