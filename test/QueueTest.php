@@ -39,12 +39,12 @@ class QueueTest extends AsyncTestCase
         self::assertNull($future->await());
 
         self::assertFalse($this->queue->isComplete());
-        self::assertFalse($iterator->isConsumed());
+        self::assertFalse($iterator->isComplete());
 
         $this->queue->complete();
 
         self::assertTrue($this->queue->isComplete());
-        self::assertTrue($iterator->isConsumed());
+        self::assertTrue($iterator->isComplete());
 
         self::assertFalse($continue->await());
     }
@@ -56,7 +56,7 @@ class QueueTest extends AsyncTestCase
         self::assertTrue($this->queue->isComplete());
 
         $pipeline = $this->queue->pipe()->getIterator();
-        self::assertTrue($pipeline->isConsumed());
+        self::assertTrue($pipeline->isComplete());
 
         try {
             $pipeline->continue();
@@ -129,7 +129,6 @@ class QueueTest extends AsyncTestCase
         delay(0); // Enter async function above.
 
         $backPressure = $this->queue->pushAsync($value);
-        self::assertFalse($pipeline->hasPending());
 
         self::assertSame($value, $future->await());
 
@@ -142,11 +141,11 @@ class QueueTest extends AsyncTestCase
 
         self::assertNull($backPressure->await());
 
-        self::assertFalse($pipeline->isConsumed());
+        self::assertFalse($pipeline->isComplete());
 
         $this->queue->complete();
 
-        self::assertTrue($pipeline->isConsumed());
+        self::assertTrue($pipeline->isComplete());
     }
 
     public function testContinueAfterComplete(): void
@@ -220,7 +219,7 @@ class QueueTest extends AsyncTestCase
     {
         $pipeline = $this->queue->pipe();
         $pipeline->dispose();
-        self::assertTrue($pipeline->getIterator()->isConsumed());
+        self::assertTrue($pipeline->getIterator()->isComplete());
         self::assertTrue($this->queue->isDisposed());
 
         try {
@@ -535,11 +534,8 @@ class QueueTest extends AsyncTestCase
         $source = new Queue($bufferSize);
         $pipeline = $source->pipe()->getIterator();
 
-        self::assertFalse($pipeline->hasPending());
-
         for ($i = 0; $i < $bufferSize; $i++) {
             self::assertTrue($source->pushAsync('.')->isComplete());
-            self::assertTrue($pipeline->hasPending());
         }
 
         $blocked = $source->pushAsync('x');

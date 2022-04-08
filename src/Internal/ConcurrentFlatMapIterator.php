@@ -91,14 +91,9 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
         $this->iterator->dispose();
     }
 
-    public function hasPending(): bool
+    public function isComplete(): bool
     {
-        return $this->iterator->hasPending();
-    }
-
-    public function isConsumed(): bool
-    {
-        return $this->iterator->isConsumed();
+        return $this->iterator->isComplete();
     }
 
     public function getIterator(): \Traversable

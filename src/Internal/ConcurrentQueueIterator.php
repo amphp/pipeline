@@ -40,12 +40,7 @@ final class ConcurrentQueueIterator implements ConcurrentIterator
         $this->state->dispose();
     }
 
-    public function hasPending(): bool
-    {
-        return $this->state->hasPending();
-    }
-
-    public function isConsumed(): bool
+    public function isComplete(): bool
     {
         return $this->state->isConsumed() || $this->state->isDisposed();
     }

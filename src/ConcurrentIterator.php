@@ -50,16 +50,10 @@ interface ConcurrentIterator extends \IteratorAggregate
     public function getPosition(): int;
 
     /**
-     * @return bool {@code true} if there are values pending (buffered) or {@code false} if there are no values
-     * waiting to be consumed.
-     */
-    public function hasPending(): bool;
-
-    /**
      * @return bool {@code true} if the iterator has completed (either successfully or with an error) or {@code false}
      * if the iterator may still emit more values.
      */
-    public function isConsumed(): bool;
+    public function isComplete(): bool;
 
     /**
      * Disposes the iterator, indicating the consumer is no longer interested in the iterator output.
