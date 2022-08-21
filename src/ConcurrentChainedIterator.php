@@ -38,7 +38,7 @@ final class ConcurrentChainedIterator implements ConcurrentIterator
         }
 
         $this->iterators = \array_values($iterators);
-        $this->position = new FiberLocal(fn () => 0);
+        $this->position = new FiberLocal(static fn () => 0);
     }
 
     public function continue(?Cancellation $cancellation = null): bool

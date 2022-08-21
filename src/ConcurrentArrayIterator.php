@@ -20,7 +20,9 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
     {
         $this->values = \array_is_list($values) ? $values : \array_values($values);
         $this->size = \count($values);
-        $this->currentPosition = new FiberLocal(fn () => throw new \Error('Call continue() before calling get()'));
+        $this->currentPosition = new FiberLocal(
+            static fn () => throw new \Error('Call continue() before calling get()')
+        );
     }
 
     public function continue(?Cancellation $cancellation = null): bool
