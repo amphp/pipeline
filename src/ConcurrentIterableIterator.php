@@ -21,6 +21,20 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
      */
     public function __construct(iterable $iterable)
     {
+        if (\is_array($iterable)) {
+            $this->iterator = new ConcurrentArrayIterator($iterable);
+            return;
+        }
+
+        while ($iterable instanceof \IteratorAggregate) {
+            if ($iterable instanceof ConcurrentIterator) {
+                $this->iterator = $iterable;
+                return;
+            }
+
+            $iterable = $iterable->getIterator();
+        }
+
         $queue = new QueueState();
         $this->iterator = new ConcurrentQueueIterator($queue);
 
@@ -64,8 +78,6 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
 
     public function getIterator(): \Traversable
     {
-        while ($this->continue()) {
-            yield $this->getPosition() => $this->getValue();
-        }
+        return $this->iterator;
     }
 }
