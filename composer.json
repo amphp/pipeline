@@ -27,7 +27,7 @@
     "require": {
         "php": ">=8.1",
         "amphp/amp": "^3",
-        "revolt/event-loop": "^0.2"
+        "revolt/event-loop": "^1 || ^0.2"
     },
     "require-dev": {
         "amphp/phpunit-util": "^3",
