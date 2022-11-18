@@ -28,13 +28,6 @@ final class Queue
         $this->state = new Internal\QueueState($bufferSize);
     }
 
-    public function __destruct()
-    {
-        if (!$this->state->isComplete() && !$this->state->isDisposed()) {
-            $this->state->error(new \Error('Queue destroyed without completing'));
-        }
-    }
-
     /**
      * Returns a {@see Pipeline} to consume the queue.
      *
