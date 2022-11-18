@@ -544,7 +544,9 @@ class QueueTest extends AsyncTestCase
         self::assertTrue($pipeline->continue());
         self::assertTrue($blocked->isComplete());
 
-        self::assertFalse($source->pushAsync('x')->isComplete());
+        $blocked = $source->pushAsync('x');
+        self::assertFalse($blocked->isComplete());
+        $blocked->ignore();
 
         if ($bufferSize === 0) {
             return;
