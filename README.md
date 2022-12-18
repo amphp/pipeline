@@ -1,4 +1,4 @@
-# pipeline
+# amphp/pipeline
 
 Asynchronous iterators and operators.
 
@@ -12,7 +12,7 @@ composer require amphp/pipeline
 
 ## Versioning
 
-`amphp/sync` follows the [semver](http://semver.org/) semantic versioning specification like all other `amphp` packages.
+`amphp/pipeline` follows the [semver](http://semver.org/) semantic versioning specification like all other `amphp` packages.
 
 ## Security
 
