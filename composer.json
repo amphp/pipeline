@@ -30,14 +30,12 @@
         "revolt/event-loop": "^1 || ^0.2"
     },
     "require-dev": {
+        "amphp/php-cs-fixer-config": "^2",
         "amphp/phpunit-util": "^3",
-        "phpunit/phpunit": "^9",
-        "amphp/php-cs-fixer-config": "^2-dev",
-        "psalm/phar": "^4.12",
         "jetbrains/phpstorm-stubs": "^2021.3"
+        "phpunit/phpunit": "^9",
+        "psalm/phar": "^4.12"
     },
-    "minimum-stability": "beta",
-    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Amp\\Pipeline\\": "src"
