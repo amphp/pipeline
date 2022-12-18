@@ -32,7 +32,7 @@
     "require-dev": {
         "amphp/php-cs-fixer-config": "^2",
         "amphp/phpunit-util": "^3",
-        "jetbrains/phpstorm-stubs": "^2021.3"
+        "jetbrains/phpstorm-stubs": "^2021.3",
         "phpunit/phpunit": "^9",
         "psalm/phar": "^4.12"
     },
