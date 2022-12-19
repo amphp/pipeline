@@ -40,11 +40,6 @@
             "Amp\\Pipeline\\": "src"
         }
     },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "v1.x-dev"
-        }
-    },
     "autoload-dev": {
         "psr-4": {
             "Amp\\Pipeline\\": "test"
