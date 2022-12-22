@@ -9,7 +9,7 @@ use Amp\Pipeline\Internal\SortOperation;
 use function Amp\delay;
 
 /**
- * A pipeline is an asynchronous set of ordered values.
+ * A pipeline represents an asynchronous set and provides operations which can be applied over the set.
  *
  * @template T
  * @template-implements \IteratorAggregate<int, T>
@@ -71,25 +71,24 @@ final class Pipeline implements \IteratorAggregate
      *
      * @template Ts
      *
-     * @param Pipeline<Ts>[] $pipelines
+     * @param iterable<array-key, Ts>[] $pipelines
      *
      * @return self<Ts>
      */
     public static function concat(array $pipelines): self
     {
         foreach ($pipelines as $key => $pipeline) {
-            if (!$pipeline instanceof self) {
+            if (!\is_iterable($pipeline)) {
                 throw new \TypeError(\sprintf(
-                    'Argument #1 ($pipelines) must be of type array<%s>, %s given at key %s',
-                    self::class,
+                    'Argument #1 ($pipelines) must be of type array<iterable>, %s given at key %s',
                     \get_debug_type($pipeline),
-                    $key
+                    $key,
                 ));
             }
         }
 
         return new self(new ConcurrentChainedIterator(
-            \array_map(static fn (self $pipeline) => $pipeline->getIterator(), $pipelines)
+            \array_map(static fn (iterable $pipeline) => self::fromIterable($pipeline)->getIterator(), $pipelines)
         ));
     }
 

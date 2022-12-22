@@ -23,13 +23,9 @@ class ConcatTest extends AsyncTestCase
      */
     public function testConcatIterator(array $array, array $expected): void
     {
-        $iterators = \array_map(static function (iterable $iterable): ConcurrentIterator {
-            return Pipeline::fromIterable($iterable)->getIterator();
-        }, $array);
-
-        $iterator = new ConcurrentChainedIterator($iterators);
-
-        self::assertSame($expected, (new Pipeline($iterator))->toArray());
+        $iterators = \array_map(fn (array $array) => new ConcurrentArrayIterator($array), $array);
+        $pipeline = new Pipeline(new ConcurrentChainedIterator($iterators));
+        self::assertSame($expected, $pipeline->toArray());
     }
 
     /**
@@ -37,12 +33,7 @@ class ConcatTest extends AsyncTestCase
      */
     public function testConcatPipeline(array $array, array $expected): void
     {
-        $pipelines = \array_map(static function (iterable $iterable): Pipeline {
-            return Pipeline::fromIterable($iterable);
-        }, $array);
-
-        $pipeline = Pipeline::concat($pipelines);
-
+        $pipeline = Pipeline::concat($array);
         self::assertSame($expected, $pipeline->toArray());
     }
 
