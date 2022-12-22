@@ -44,7 +44,7 @@ interface ConcurrentIterator extends \IteratorAggregate
      * Advance the iterator to the next position using {@see continue()}, which must be called before this method may be
      * called for each position.
      *
-     * @return T The current position of the iterator. If the iterator has completed or {@see continue()} has
+     * @return int The current position of the iterator. If the iterator has completed or {@see continue()} has
      * not been called, an {@see \Error} will be thrown.
      */
     public function getPosition(): int;
