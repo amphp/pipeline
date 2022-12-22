@@ -274,7 +274,7 @@ final class Pipeline implements \IteratorAggregate
     /**
      * Collects all items into an array.
      *
-     * @return array<int, T>
+     * @return list<T>
      */
     public function toArray(): array
     {
