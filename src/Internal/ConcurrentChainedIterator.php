@@ -1,14 +1,17 @@
 <?php declare(strict_types=1);
 
-namespace Amp\Pipeline;
+namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
+use Amp\Pipeline\ConcurrentIterator;
 use Revolt\EventLoop\FiberLocal;
 
 /**
  * Concatenates the given iterators into a single iterator in sequential order.
  *
  * The prior iterator must complete before values are taken from any subsequent iterators.
+ *
+ * @internal
  *
  * @template T
  * @template-implements ConcurrentIterator<T>

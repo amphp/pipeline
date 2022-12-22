@@ -3,6 +3,7 @@
 namespace Amp\Pipeline;
 
 use Amp\Cancellation;
+use Amp\Pipeline\Internal\ConcurrentArrayIterator;
 use Revolt\EventLoop\FiberLocal;
 use function Amp\delay;
 

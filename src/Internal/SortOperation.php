@@ -2,7 +2,6 @@
 
 namespace Amp\Pipeline\Internal;
 
-use Amp\Pipeline\ConcurrentArrayIterator;
 use Amp\Pipeline\ConcurrentIterator;
 
 /** @internal */

@@ -4,6 +4,8 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
+use Amp\Pipeline\Internal\ConcurrentArrayIterator;
+use Amp\Pipeline\Internal\ConcurrentChainedIterator;
 use function Amp\async;
 use function Amp\Future\awaitFirst;
 

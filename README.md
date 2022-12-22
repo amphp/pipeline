@@ -28,9 +28,10 @@ A `ConcurrentIterator` may be used in place of an `Iterator`, meaning it can be 
 Like an `Iterator`, a `ConcurrentIterator` may also be iterated manually, with separate methods for advancing and retrieving the current value.
 
 ```php
-use Amp\Pipeline\ConcurrentArrayIterator;
+use Amp\Pipeline\Pipeline;
 
-$concurrentIterator = new ConcurrentArrayIterator($array);
+// Pipeline::getIterator() returns a ConcurrentIterator
+$concurrentIterator = Pipeline::fromIterable([1, 2, 3])->getIterator();
 while ($concurrentIterator->continue()) {
     $position = $concurrentIterator->getPosition();
     $value = $concurrentIterator->getValue();
@@ -40,8 +41,7 @@ while ($concurrentIterator->continue()) {
 
 // Equivalently, multiple fibers may consume a single ConcurrentIterator
 // instance using foreach.
-
-$concurrentIterator = new ConcurrentArrayIterator($array);
+$concurrentIterator = Pipeline::fromIterable([1, 2, 3])->getIterator();
 foreach ($concurrentIterator as $position => $value) {
     // ...
 }

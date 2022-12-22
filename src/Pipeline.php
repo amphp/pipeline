@@ -2,7 +2,10 @@
 
 namespace Amp\Pipeline;
 
+use Amp\Pipeline\Internal\ConcurrentArrayIterator;
+use Amp\Pipeline\Internal\ConcurrentChainedIterator;
 use Amp\Pipeline\Internal\ConcurrentClosureIterator;
+use Amp\Pipeline\Internal\ConcurrentIterableIterator;
 use Amp\Pipeline\Internal\FlatMapOperation;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\SortOperation;
@@ -92,8 +95,6 @@ final class Pipeline implements \IteratorAggregate
         ));
     }
 
-    private readonly ConcurrentIterator $source;
-
     private int $concurrency = 1;
 
     private bool $ordered = true;
@@ -105,9 +106,9 @@ final class Pipeline implements \IteratorAggregate
     /**
      * @param ConcurrentIterator<T> $source
      */
-    public function __construct(ConcurrentIterator $source)
-    {
-        $this->source = $source;
+    public function __construct(
+        private readonly ConcurrentIterator $source,
+    ) {
     }
 
     public function __destruct()

@@ -1,13 +1,14 @@
 <?php declare(strict_types=1);
 
-namespace Amp\Pipeline;
+namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
-use Amp\Pipeline\Internal\ConcurrentQueueIterator;
-use Amp\Pipeline\Internal\QueueState;
+use Amp\Pipeline\ConcurrentIterator;
 use function Amp\async;
 
 /**
+ * @internal
+ *
  * @template T
  * @template-implements ConcurrentIterator<T>
  */

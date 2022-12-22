@@ -1,10 +1,18 @@
 <?php declare(strict_types=1);
 
-namespace Amp\Pipeline;
+namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
+use Amp\Pipeline\ConcurrentIterator;
+use Amp\Pipeline\DisposedException;
 use Revolt\EventLoop\FiberLocal;
 
+/**
+ * @internal
+ *
+ * @template T
+ * @template-implements ConcurrentIterator<T>
+ */
 final class ConcurrentArrayIterator implements ConcurrentIterator
 {
     private int $position = 0;
@@ -16,6 +24,9 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
 
     private ?DisposedException $disposed = null;
 
+    /**
+     * @param array<array-key, T> $values
+     */
     public function __construct(array $values)
     {
         $this->values = \array_is_list($values) ? $values : \array_values($values);
