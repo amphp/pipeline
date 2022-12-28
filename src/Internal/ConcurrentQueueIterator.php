@@ -8,7 +8,7 @@ use Amp\Pipeline\ConcurrentIterator;
 /**
  * @internal
  *
- * @template T
+ * @template-covariant T
  * @implements ConcurrentIterator<T>
  */
 final class ConcurrentQueueIterator implements ConcurrentIterator

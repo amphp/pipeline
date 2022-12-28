@@ -10,7 +10,7 @@ use Revolt\EventLoop;
 /**
  * @internal
  *
- * @template T
+ * @template-covariant T
  * @template-implements ConcurrentIterator<T>
  */
 final class ConcurrentClosureIterator implements ConcurrentIterator

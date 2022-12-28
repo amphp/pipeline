@@ -5,7 +5,7 @@ namespace Amp\Pipeline;
 use Amp\Cancellation;
 
 /**
- * @template T
+ * @template-covariant T
  * @template-extends \IteratorAggregate<int, T>
  */
 interface ConcurrentIterator extends \IteratorAggregate

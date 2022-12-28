@@ -19,21 +19,14 @@ final class FlatMapOperation implements IntermediateOperation
         return $marker ??= new \stdClass;
     }
 
-    private readonly int $concurrency;
-
-    private readonly bool $ordered;
-
-    /** @var \Closure(T, int):iterable<R> */
-    private readonly \Closure $flatMap;
-
     /**
      * @param \Closure(T, int):iterable<R> $flatMap
      */
-    public function __construct(int $concurrency, bool $ordered, \Closure $flatMap)
-    {
-        $this->concurrency = $concurrency;
-        $this->ordered = $ordered;
-        $this->flatMap = $flatMap;
+    public function __construct(
+        private readonly int $concurrency,
+        private readonly bool $ordered,
+        private readonly \Closure $flatMap
+    ) {
     }
 
     public function __invoke(ConcurrentIterator $source): ConcurrentIterator

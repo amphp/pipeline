@@ -10,7 +10,7 @@ use Revolt\EventLoop\FiberLocal;
 /**
  * @internal
  *
- * @template T
+ * @template-covariant T
  * @template-implements ConcurrentIterator<T>
  */
 final class ConcurrentArrayIterator implements ConcurrentIterator

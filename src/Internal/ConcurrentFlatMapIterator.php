@@ -10,7 +10,7 @@ use function Amp\Future\await;
 /**
  * @internal
  *
- * @template T
+ * @template-covariant T
  * @template-implements ConcurrentIterator<T>
  */
 final class ConcurrentFlatMapIterator implements ConcurrentIterator

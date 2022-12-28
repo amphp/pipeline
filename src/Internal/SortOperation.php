@@ -4,16 +4,24 @@ namespace Amp\Pipeline\Internal;
 
 use Amp\Pipeline\ConcurrentIterator;
 
-/** @internal */
+/**
+ * @template T
+ *
+ * @internal
+ */
 final class SortOperation implements IntermediateOperation
 {
-    private readonly \Closure $compare;
-
-    public function __construct(\Closure $compare)
+    /**
+     * @param \Closure(T, T):int $compare
+     */
+    public function __construct(private readonly \Closure $compare)
     {
-        $this->compare = $compare;
     }
 
+    /**
+     * @param ConcurrentIterator<T> $source
+     * @return ConcurrentIterator<T>
+     */
     public function __invoke(ConcurrentIterator $source): ConcurrentIterator
     {
         $values = \iterator_to_array($source, false);
