@@ -5,7 +5,12 @@ namespace Amp\Pipeline\Internal;
 use Amp\Cancellation;
 use Amp\Pipeline\ConcurrentIterator;
 
-/** @internal */
+/**
+ * @internal
+ *
+ * @template T
+ * @implements ConcurrentIterator<T>
+ */
 final class ConcurrentQueueIterator implements ConcurrentIterator
 {
     private readonly QueueState $state;

@@ -19,6 +19,7 @@ use Revolt\EventLoop\Suspension;
  * @internal
  *
  * @template T
+ * @implements \IteratorAggregate<int, T>
  */
 final class QueueState implements \IteratorAggregate
 {
@@ -337,6 +338,7 @@ final class QueueState implements \IteratorAggregate
             $message = "Queue has already been completed";
 
             if (isset($this->resolutionTrace)) {
+                /** @psalm-suppress ArgumentTypeCoercion $this->resolution trace generated from debug_backtrace() */
                 $trace = Internal\formatStacktrace($this->resolutionTrace);
                 $message .= ". Previous completion trace:\n\n{$trace}\n\n";
             } else {
