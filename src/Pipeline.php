@@ -7,6 +7,7 @@ use Amp\Pipeline\Internal\ConcurrentArrayIterator;
 use Amp\Pipeline\Internal\ConcurrentChainedIterator;
 use Amp\Pipeline\Internal\ConcurrentClosureIterator;
 use Amp\Pipeline\Internal\ConcurrentIterableIterator;
+use Amp\Pipeline\Internal\ConcurrentMergedIterator;
 use Amp\Pipeline\Internal\FlatMapOperation;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\SortOperation;
@@ -69,31 +70,57 @@ final class Pipeline implements \IteratorAggregate
     }
 
     /**
-     * Concatenates the given pipelines into a single pipeline in sequential order.
+     * Merges the given iterables into a single pipeline. The returned pipeline emits a value anytime one of the
+     * merged iterables produces a value.
+     *
+     * @template Ts
+     *
+     * @param array<iterable<Ts>> $pipelines
+     *f
+     * @return self<Ts>
+     */
+    public static function merge(array $pipelines): self
+    {
+        return new self(new ConcurrentMergedIterator(self::mapToConcurrentIterators($pipelines)));
+    }
+
+    /**
+     * Concatenates the given iterables into a single pipeline in sequential order.
      *
      * The prior pipeline must complete before values are taken from any subsequent pipelines.
      *
      * @template Ts
      *
-     * @param iterable<Ts>[] $pipelines
+     * @param array<iterable<Ts>> $pipelines
      *
      * @return self<Ts>
      */
     public static function concat(array $pipelines): self
     {
-        foreach ($pipelines as $key => $pipeline) {
-            if (!\is_iterable($pipeline)) {
+        return new self(new ConcurrentChainedIterator(self::mapToConcurrentIterators($pipelines)));
+    }
+
+    /**
+     * @template Tk of array-key
+     * @template Ts
+     *
+     * @param array<Tk, iterable<Ts>> $iterables
+     *
+     * @return array<Tk, ConcurrentIterator<Ts>>
+     */
+    private static function mapToConcurrentIterators(array $iterables): array
+    {
+        foreach ($iterables as $key => $iterable) {
+            if (!\is_iterable($iterable)) {
                 throw new \TypeError(\sprintf(
                     'Argument #1 ($pipelines) must be of type array<iterable>, %s given at key %s',
-                    \get_debug_type($pipeline),
+                    \get_debug_type($iterable),
                     $key,
                 ));
             }
         }
 
-        return new self(new ConcurrentChainedIterator(
-            \array_map(static fn (iterable $pipeline) => self::fromIterable($pipeline)->getIterator(), $pipelines)
-        ));
+        return \array_map(static fn (iterable $pipeline) => self::fromIterable($pipeline)->getIterator(), $iterables);
     }
 
     private int $concurrency = 1;
