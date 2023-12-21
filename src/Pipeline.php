@@ -2,6 +2,7 @@
 
 namespace Amp\Pipeline;
 
+use Amp\Cancellation;
 use Amp\Pipeline\Internal\ConcurrentArrayIterator;
 use Amp\Pipeline\Internal\ConcurrentChainedIterator;
 use Amp\Pipeline\Internal\ConcurrentClosureIterator;
@@ -24,7 +25,7 @@ final class Pipeline implements \IteratorAggregate
      *
      * @template Ts
      *
-     * @param (\Closure():iterable<array-key, Ts>)|iterable<array-key, Ts> $iterable
+     * @param (\Closure():iterable<Ts>)|iterable<Ts> $iterable
      *
      * @return self<Ts>
      */
@@ -58,7 +59,7 @@ final class Pipeline implements \IteratorAggregate
      *
      * @template Ts
      *
-     * @param \Closure(\Amp\Cancellation): Ts $supplier Elements to emit.
+     * @param \Closure(Cancellation): Ts $supplier Elements to emit.
      *
      * @return self<Ts>
      */
@@ -74,7 +75,7 @@ final class Pipeline implements \IteratorAggregate
      *
      * @template Ts
      *
-     * @param iterable<array-key, Ts>[] $pipelines
+     * @param iterable<Ts>[] $pipelines
      *
      * @return self<Ts>
      */

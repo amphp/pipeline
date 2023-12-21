@@ -18,7 +18,7 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
     private readonly ConcurrentIterator $iterator;
 
     /**
-     * @param iterable<array-key, T> $iterable
+     * @param iterable<T> $iterable
      */
     public function __construct(iterable $iterable)
     {

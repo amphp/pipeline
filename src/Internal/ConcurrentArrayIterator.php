@@ -20,16 +20,17 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
 
     private readonly array $values;
 
+    /** @var FiberLocal<int|null> */
     private readonly FiberLocal $currentPosition;
 
     private ?DisposedException $disposed = null;
 
     /**
-     * @param array<array-key, T> $values
+     * @param array<T> $values
      */
     public function __construct(array $values)
     {
-        $this->values = \array_is_list($values) ? $values : \array_values($values);
+        $this->values = \array_values($values);
         $this->size = \count($values);
         $this->currentPosition = new FiberLocal(
             static fn () => throw new \Error('Call continue() before calling get()')

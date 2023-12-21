@@ -19,12 +19,6 @@
             </errorLevel>
         </ForbiddenCode>
 
-        <!--        <RedundantConditionGivenDocblockType>-->
-        <!--            <errorLevel type="suppress">-->
-        <!--                <directory name="src"/>-->
-        <!--            </errorLevel>-->
-        <!--        </RedundantConditionGivenDocblockType>-->
-
         <DocblockTypeContradiction>
             <errorLevel type="suppress">
                 <directory name="src" />
@@ -36,5 +30,11 @@
                 <directory name="src" />
             </errorLevel>
         </MissingClosureReturnType>
+
+        <UnsupportedPropertyReferenceUsage>
+            <errorLevel type="suppress">
+                <directory name="src" />
+            </errorLevel>
+        </UnsupportedPropertyReferenceUsage>
     </issueHandlers>
 </psalm>

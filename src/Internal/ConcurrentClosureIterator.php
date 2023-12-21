@@ -6,6 +6,7 @@ use Amp\Cancellation;
 use Amp\DeferredCancellation;
 use Amp\Pipeline\ConcurrentIterator;
 use Revolt\EventLoop;
+use Revolt\EventLoop\Suspension;
 
 /**
  * @internal
@@ -15,10 +16,10 @@ use Revolt\EventLoop;
  */
 final class ConcurrentClosureIterator implements ConcurrentIterator
 {
-    private readonly \Closure $supplier;
-
+    /** @var \SplQueue<Suspension<int>> */
     private readonly \SplQueue $sources;
 
+    /** @var QueueState<T> */
     private readonly QueueState $queue;
 
     private readonly Sequence $sequence;
@@ -29,9 +30,11 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
 
     private int $position = 0;
 
-    public function __construct(\Closure $supplier)
+    /**
+     * @param \Closure(Cancellation):T $supplier
+     */
+    public function __construct(private readonly \Closure $supplier)
     {
-        $this->supplier = $supplier;
         $this->sequence = new Sequence();
         $this->queue = new QueueState();
         $this->sources = $sources = new \SplQueue();

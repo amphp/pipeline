@@ -23,7 +23,7 @@ interface ConcurrentIterator extends \IteratorAggregate
      * @param Cancellation|null $cancellation Cancels waiting for the next value. If cancelled, the next value is not
      *     lost, but will be available to the next call to this method.
      *
-     * @return bool {@code true} if a value is available, {@code false} if the iterator has completed.
+     * @return bool `true` if a value is available, `false` if the iterator has completed.
      */
     public function continue(?Cancellation $cancellation = null): bool;
 
@@ -50,7 +50,7 @@ interface ConcurrentIterator extends \IteratorAggregate
     public function getPosition(): int;
 
     /**
-     * @return bool {@code true} if the iterator has completed (either successfully or with an error) or {@code false}
+     * @return bool `true` if the iterator has completed (either successfully or with an error) or `false`
      * if the iterator may still emit more values.
      */
     public function isComplete(): bool;
