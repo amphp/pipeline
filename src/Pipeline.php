@@ -489,12 +489,18 @@ final class Pipeline implements \IteratorAggregate
         return $this->flatMap(static function (mixed $value) use ($count) {
             static $i = 0;
 
-            if ($i++ < $count) {
+            if (++$i < $count) {
                 return [$value];
             }
 
-            /** @var T[] */
-            return [FlatMapOperation::getStopMarker()];
+            /** @var T $stopMarker Fake stop marker as type T. */
+            $stopMarker = FlatMapOperation::getStopMarker();
+
+            if ($i === $count) {
+                return [$value, $stopMarker];
+            }
+
+            return [$stopMarker];
         });
     }
 
