@@ -23,6 +23,7 @@ final class FlatMapOperation implements IntermediateOperation
      * @param \Closure(T, int):iterable<R> $flatMap
      */
     public function __construct(
+        private readonly int $bufferSize,
         private readonly int $concurrency,
         private readonly bool $ordered,
         private readonly \Closure $flatMap
@@ -45,9 +46,15 @@ final class FlatMapOperation implements IntermediateOperation
                         yield $item;
                     }
                 }
-            })());
+            })(), $this->bufferSize);
         }
 
-        return new ConcurrentFlatMapIterator($source, $this->concurrency, $this->ordered, $this->flatMap);
+        return new ConcurrentFlatMapIterator(
+            $source,
+            $this->bufferSize,
+            $this->concurrency,
+            $this->ordered,
+            $this->flatMap,
+        );
     }
 }

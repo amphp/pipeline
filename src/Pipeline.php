@@ -9,6 +9,7 @@ use Amp\Pipeline\Internal\ConcurrentClosureIterator;
 use Amp\Pipeline\Internal\ConcurrentIterableIterator;
 use Amp\Pipeline\Internal\ConcurrentMergedIterator;
 use Amp\Pipeline\Internal\FlatMapOperation;
+use Amp\Pipeline\Internal\IntermediateOperation;
 use Amp\Pipeline\Internal\Sequence;
 use Amp\Pipeline\Internal\SortOperation;
 use function Amp\delay;
@@ -123,10 +124,15 @@ final class Pipeline implements \IteratorAggregate
         return \array_map(static fn (iterable $pipeline) => self::fromIterable($pipeline)->getIterator(), $iterables);
     }
 
+    /** @var non-negative-int */
+    private int $bufferSize = 0;
+
+    /** @var positive-int */
     private int $concurrency = 1;
 
     private bool $ordered = true;
 
+    /** @var list<IntermediateOperation> */
     private array $intermediateOperations = [];
 
     private bool $used = false;
@@ -144,6 +150,17 @@ final class Pipeline implements \IteratorAggregate
         if (!$this->used) {
             $this->source->dispose();
         }
+    }
+
+    public function buffer(int $bufferSize): self
+    {
+        if ($bufferSize < 0) {
+            throw new \ValueError('Argument #1 ($bufferSize) must be non-negative, got ' . $bufferSize);
+        }
+
+        $this->bufferSize = $bufferSize;
+
+        return $this;
     }
 
     public function concurrent(int $concurrency): self
@@ -345,7 +362,12 @@ final class Pipeline implements \IteratorAggregate
             throw new \Error('Pipeline consumption has already been started');
         }
 
-        $this->intermediateOperations[] = new FlatMapOperation($this->concurrency, $this->ordered, $flatMap);
+        $this->intermediateOperations[] = new FlatMapOperation(
+            $this->bufferSize,
+            $this->concurrency,
+            $this->ordered,
+            $flatMap,
+        );
 
         /** @var self<R> */
         return $this;

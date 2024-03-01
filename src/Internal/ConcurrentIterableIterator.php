@@ -20,7 +20,7 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
     /**
      * @param iterable<T> $iterable
      */
-    public function __construct(iterable $iterable)
+    public function __construct(iterable $iterable, int $bufferSize = 0)
     {
         if (\is_array($iterable)) {
             $this->iterator = new ConcurrentArrayIterator($iterable);
@@ -36,7 +36,7 @@ final class ConcurrentIterableIterator implements ConcurrentIterator
             $iterable = $iterable->getIterator();
         }
 
-        $queue = new QueueState();
+        $queue = new QueueState($bufferSize);
         $this->iterator = new ConcurrentQueueIterator($queue);
 
         async(static function () use ($queue, $iterable): void {
