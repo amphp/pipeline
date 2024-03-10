@@ -24,9 +24,14 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
      * @param ConcurrentIterator<T> $iterator
      * @param \Closure(T, int):iterable<R> $flatMap
      */
-    public function __construct(ConcurrentIterator $iterator, int $concurrency, bool $ordered, \Closure $flatMap)
-    {
-        $queue = new QueueState;
+    public function __construct(
+        ConcurrentIterator $iterator,
+        int $bufferSize,
+        int $concurrency,
+        bool $ordered,
+        \Closure $flatMap,
+    ) {
+        $queue = new QueueState($bufferSize);
         $this->iterator = new ConcurrentQueueIterator($queue);
         $order = $ordered ? new Sequence : null;
 
