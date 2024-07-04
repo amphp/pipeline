@@ -386,7 +386,7 @@ final class QueueState implements \IteratorAggregate
     private function relieveBackPressure(?\Throwable $exception): void
     {
         $backPressure = $this->backpressure;
-        unset($this->backpressure);
+        $this->backpressure = [];
 
         foreach ($backPressure as $placeholder) {
             if ($exception) {
@@ -407,17 +407,13 @@ final class QueueState implements \IteratorAggregate
     private function resolvePending(): void
     {
         $waiting = $this->waiting;
-        unset($this->waiting);
+        $this->waiting = [];
 
-        $exception = $this->exception ?? null;
-
-        if ($waiting) {
-            foreach ($waiting as $suspension) {
-                if ($exception) {
-                    $suspension->throw($exception);
-                } else {
-                    $suspension->resume($this->currentPosition);
-                }
+        foreach ($waiting as $suspension) {
+            if ($this->exception) {
+                $suspension->throw($this->exception);
+            } else {
+                $suspension->resume($this->currentPosition);
             }
         }
     }

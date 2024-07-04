@@ -566,4 +566,23 @@ class QueueTest extends AsyncTestCase
         yield 'buffer size 5' => [5];
         yield 'buffer size 10' => [10];
     }
+
+    public function testCompleteWhileContinueCancellationPending(): void
+    {
+        $queue = new Queue();
+        $iterator = $queue->iterate();
+
+        $deferredCancellation = new DeferredCancellation();
+
+        $future1 = async(fn () => $iterator->continue($deferredCancellation->getCancellation()));
+
+        $future2 = async(function () use ($queue, $deferredCancellation): void {
+            $deferredCancellation->cancel();
+            $queue->complete();
+        });
+
+        $future2->await();
+
+        self::assertFalse($future1->await());
+    }
 }
