@@ -177,17 +177,18 @@ final class QueueState implements \IteratorAggregate
      */
     public function dispose(): void
     {
-        try {
-            if ($this->completed || $this->disposed) {
-                return; // Pipeline already completed or failed.
-            }
-
-            $this->finalize(new DisposedException, true);
-        } finally {
-            if ($this->disposed) {
-                $this->triggerDisposal();
-            }
+        if ($this->disposed) {
+            return;
         }
+
+        if ($this->completed) {
+            $this->disposed = true;
+            $this->exception = new DisposedException;
+            $this->triggerDisposal();
+            return;
+        }
+
+        $this->finalize(new DisposedException, true);
     }
 
     /**
