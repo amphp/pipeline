@@ -611,4 +611,18 @@ class QueueTest extends AsyncTestCase
 
         self::assertFalse($future1->await());
     }
+
+    public function testDisposalWhileWaiting(): void
+    {
+        $queue = new Queue();
+        $iterator = $queue->iterate();
+
+        $future = async(fn () => $iterator->continue());
+
+        async(fn () => $iterator->dispose());
+
+        $this->expectException(DisposedException::class);
+
+        $future->await();
+    }
 }

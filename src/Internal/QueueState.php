@@ -376,9 +376,7 @@ final class QueueState implements \IteratorAggregate
         }
 
         if ($this->disposed) {
-            if (empty($this->waiting)) {
-                $this->triggerDisposal();
-            }
+            $this->triggerDisposal();
         } else {
             $this->resolvePending();
         }
