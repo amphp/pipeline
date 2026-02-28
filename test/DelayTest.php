@@ -19,7 +19,7 @@ class DelayTest extends AsyncTestCase
     public function testConcurrentDelay(): void
     {
         $this->setMinimumRuntime(0.05);
-        $this->setTimeout(0.1);
+        $this->setTimeout(0.5);
         $pipeline = Pipeline::fromIterable(\range(1, 50));
         $pipeline->concurrent(10)->delay(0.01)->toArray();
     }

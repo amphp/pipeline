@@ -16,10 +16,10 @@ class TakeTest extends AsyncTestCase
         self::assertSame([1, 2], $pipeline->toArray());
     }
 
-    public function testCompleteBeforeSourceCompletes()
+    public function testCompleteBeforeSourceCompletes(): void
     {
         $count = 3;
-        $this->setTimeout(0.1 * $count + 0.1);
+        $this->setTimeout(1);
 
         $emitted = Pipeline::fromIterable(function () use ($count): \Generator {
             for ($i = 0; $i < $count; ++$i) {

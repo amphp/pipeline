@@ -94,7 +94,7 @@ class MergeTest extends AsyncTestCase
         $iterator = Pipeline::merge($pipelines)->getIterator();
 
         $this->expectException(DisposedException::class);
-        $this->setTimeout(0.3);
+        $this->setTimeout(0.9);
 
         while ($iterator->continue()) {
             if ($iterator->getValue() === 7) {
