@@ -47,6 +47,7 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
         });
     }
 
+    #[\Override]
     public function continue(?Cancellation $cancellation = null): bool
     {
         if ($this->queue->isComplete()) {
@@ -114,27 +115,32 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
         }
     }
 
+    #[\Override]
     public function getValue(): mixed
     {
         return $this->queue->getValue();
     }
 
+    #[\Override]
     public function getPosition(): int
     {
         return $this->queue->getPosition();
     }
 
+    #[\Override]
     public function isComplete(): bool
     {
         return $this->queue->isConsumed() || $this->queue->isDisposed();
     }
 
+    #[\Override]
     public function dispose(): void
     {
         $this->queue->dispose();
         $this->deferredCancellation->cancel();
     }
 
+    #[\Override]
     public function getIterator(): \Traversable
     {
         while ($this->continue()) {

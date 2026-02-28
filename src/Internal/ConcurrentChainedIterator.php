@@ -44,6 +44,7 @@ final class ConcurrentChainedIterator implements ConcurrentIterator
         $this->position = new FiberLocal(static fn () => 0);
     }
 
+    #[\Override]
     public function continue(?Cancellation $cancellation = null): bool
     {
         $position = $this->position->get();
@@ -61,6 +62,7 @@ final class ConcurrentChainedIterator implements ConcurrentIterator
         return false;
     }
 
+    #[\Override]
     public function getValue(): mixed
     {
         $position = $this->position->get();
@@ -71,6 +73,7 @@ final class ConcurrentChainedIterator implements ConcurrentIterator
         return $this->iterators[$position]->getValue();
     }
 
+    #[\Override]
     public function getPosition(): int
     {
         $position = $this->position->get();
@@ -81,11 +84,13 @@ final class ConcurrentChainedIterator implements ConcurrentIterator
         return $this->iterators[$position]->getPosition();
     }
 
+    #[\Override]
     public function isComplete(): bool
     {
         return $this->position->get() !== null;
     }
 
+    #[\Override]
     public function dispose(): void
     {
         foreach ($this->iterators as $iterator) {
@@ -93,6 +98,7 @@ final class ConcurrentChainedIterator implements ConcurrentIterator
         }
     }
 
+    #[\Override]
     public function getIterator(): \Traversable
     {
         while ($this->continue()) {

@@ -25,31 +25,37 @@ final class ConcurrentQueueIterator implements ConcurrentIterator
         $this->state->dispose();
     }
 
+    #[\Override]
     public function continue(?Cancellation $cancellation = null): bool
     {
         return $this->state->continue($cancellation);
     }
 
+    #[\Override]
     public function getValue(): mixed
     {
         return $this->state->getValue();
     }
 
+    #[\Override]
     public function getPosition(): int
     {
         return $this->state->getPosition();
     }
 
+    #[\Override]
     public function dispose(): void
     {
         $this->state->dispose();
     }
 
+    #[\Override]
     public function isComplete(): bool
     {
         return $this->state->isConsumed() || $this->state->isDisposed();
     }
 
+    #[\Override]
     public function getIterator(): \Traversable
     {
         while ($this->state->continue()) {

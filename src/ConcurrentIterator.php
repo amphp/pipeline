@@ -64,5 +64,6 @@ interface ConcurrentIterator extends \IteratorAggregate
      * @return \Traversable<int, T> Returns an iterator with {@see getPosition()} as key and {@see getValue()} as
      *     value. Multiple calls must be allowed to allow for concurrent iteration.
      */
+    #[\Override]
     public function getIterator(): \Traversable;
 }

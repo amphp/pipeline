@@ -435,6 +435,7 @@ final class QueueState implements \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function getIterator(): \Traversable
     {
         while ($this->continue()) {

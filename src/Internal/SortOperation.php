@@ -22,6 +22,7 @@ final class SortOperation implements IntermediateOperation
      * @param ConcurrentIterator<T> $source
      * @return ConcurrentIterator<T>
      */
+    #[\Override]
     public function __invoke(ConcurrentIterator $source): ConcurrentIterator
     {
         $values = \iterator_to_array($source, false);

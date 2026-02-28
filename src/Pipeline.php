@@ -566,6 +566,7 @@ final class Pipeline implements \IteratorAggregate
     /**
      * @return ConcurrentIterator<T>
      */
+    #[\Override]
     public function getIterator(): ConcurrentIterator
     {
         if ($this->used) {

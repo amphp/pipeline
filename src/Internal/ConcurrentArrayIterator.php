@@ -37,6 +37,7 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
         );
     }
 
+    #[\Override]
     public function continue(?Cancellation $cancellation = null): bool
     {
         if ($this->disposed) {
@@ -53,6 +54,7 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
         return false;
     }
 
+    #[\Override]
     public function getValue(): mixed
     {
         $position = $this->currentPosition->get();
@@ -63,6 +65,7 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
         return $this->values[$position];
     }
 
+    #[\Override]
     public function getPosition(): int
     {
         $position = $this->currentPosition->get();
@@ -73,16 +76,19 @@ final class ConcurrentArrayIterator implements ConcurrentIterator
         return $position;
     }
 
+    #[\Override]
     public function isComplete(): bool
     {
         return $this->position >= $this->size;
     }
 
+    #[\Override]
     public function dispose(): void
     {
         $this->disposed ??= new DisposedException;
     }
 
+    #[\Override]
     public function getIterator(): \Traversable
     {
         while ($this->continue()) {

@@ -76,31 +76,37 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
         });
     }
 
+    #[\Override]
     public function continue(?Cancellation $cancellation = null): bool
     {
         return $this->iterator->continue($cancellation);
     }
 
+    #[\Override]
     public function getValue(): mixed
     {
         return $this->iterator->getValue();
     }
 
+    #[\Override]
     public function getPosition(): int
     {
         return $this->iterator->getPosition();
     }
 
+    #[\Override]
     public function dispose(): void
     {
         $this->iterator->dispose();
     }
 
+    #[\Override]
     public function isComplete(): bool
     {
         return $this->iterator->isComplete();
     }
 
+    #[\Override]
     public function getIterator(): \Traversable
     {
         while ($this->continue()) {

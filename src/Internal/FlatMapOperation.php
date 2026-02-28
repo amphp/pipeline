@@ -30,6 +30,7 @@ final class FlatMapOperation implements IntermediateOperation
     ) {
     }
 
+    #[\Override]
     public function __invoke(ConcurrentIterator $source): ConcurrentIterator
     {
         if ($this->concurrency === 1) {
