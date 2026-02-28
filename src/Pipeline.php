@@ -65,7 +65,7 @@ final class Pipeline implements \IteratorAggregate
      *
      * @return self<Ts>
      */
-    public static function generate(\Closure $supplier): Pipeline
+    public static function generate(\Closure $supplier): self
     {
         return new self(new ConcurrentClosureIterator($supplier));
     }
@@ -193,11 +193,14 @@ final class Pipeline implements \IteratorAggregate
         return $this;
     }
 
+    /**
+     * @psalm-suppress PossiblyUnusedReturnValue
+     */
     public function count(): int
     {
         $count = 0;
 
-        foreach ($this as $ignored) {
+        foreach ($this as $_) {
             $count++;
         }
 
@@ -423,7 +426,7 @@ final class Pipeline implements \IteratorAggregate
      *
      * @return R
      */
-    public function reduce(\Closure $accumulator, mixed $initial = null)
+    public function reduce(\Closure $accumulator, mixed $initial = null): mixed
     {
         $result = $initial;
 

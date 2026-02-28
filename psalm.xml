@@ -13,23 +13,23 @@
     </projectFiles>
 
     <issueHandlers>
-        <ForbiddenCode>
-            <errorLevel type="suppress">
-                <directory name="examples"/>
-            </errorLevel>
-        </ForbiddenCode>
-
         <DocblockTypeContradiction>
             <errorLevel type="suppress">
                 <directory name="src" />
             </errorLevel>
         </DocblockTypeContradiction>
 
-        <MissingClosureReturnType>
+        <ForbiddenCode>
             <errorLevel type="suppress">
-                <directory name="src" />
+                <directory name="examples"/>
             </errorLevel>
-        </MissingClosureReturnType>
+        </ForbiddenCode>
+
+        <PossiblyUnusedMethod>
+            <errorLevel type="suppress">
+                <directory name="src"/>
+            </errorLevel>
+        </PossiblyUnusedMethod>
 
         <UnsupportedPropertyReferenceUsage>
             <errorLevel type="suppress">

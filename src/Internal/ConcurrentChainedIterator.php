@@ -48,6 +48,9 @@ final class ConcurrentChainedIterator implements ConcurrentIterator
     public function continue(?Cancellation $cancellation = null): bool
     {
         $position = $this->position->get();
+        if ($position === null) {
+            return false;
+        }
 
         while (isset($this->iterators[$position])) {
             if ($this->iterators[$position]->continue($cancellation)) {
