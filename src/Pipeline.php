@@ -152,7 +152,7 @@ final class Pipeline implements \IteratorAggregate
         }
     }
 
-    public function buffer(int $bufferSize): self
+    public function buffer(int $bufferSize): static
     {
         if ($bufferSize < 0) {
             throw new \ValueError('Argument #1 ($bufferSize) must be non-negative, got ' . $bufferSize);
@@ -163,7 +163,7 @@ final class Pipeline implements \IteratorAggregate
         return $this;
     }
 
-    public function concurrent(int $concurrency): self
+    public function concurrent(int $concurrency): static
     {
         if ($concurrency < 1) {
             throw new \ValueError('Argument #1 ($concurrency) must be positive, got ' . $concurrency);
@@ -174,19 +174,19 @@ final class Pipeline implements \IteratorAggregate
         return $this;
     }
 
-    public function sequential(): self
+    public function sequential(): static
     {
         return $this->concurrent(1);
     }
 
-    public function ordered(): self
+    public function ordered(): static
     {
         $this->ordered = true;
 
         return $this;
     }
 
-    public function unordered(): self
+    public function unordered(): static
     {
         $this->ordered = false;
 
