@@ -35,15 +35,17 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
      */
     public function __construct(private readonly \Closure $supplier)
     {
-        $this->sequence = new Sequence();
+        $this->sequence = $sequence = new Sequence();
         $this->queue = new QueueState();
         $this->sources = $sources = new \SplQueue();
         $this->deferredCancellation = new DeferredCancellation();
 
-        $this->deferredCancellation->getCancellation()->subscribe(static function () use ($sources): void {
+        $this->deferredCancellation->getCancellation()->subscribe(static function () use ($sources, $sequence): void {
             while (!$sources->isEmpty()) {
                 $sources->dequeue();
             }
+
+            $sequence->dispose();
         });
     }
 
@@ -89,10 +91,14 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
                     }
 
                     $sequence->await($position);
-                    if (!$queue->isComplete()) {
-                        $queue->push($value);
+
+                    try {
+                        if (!$queue->isComplete()) {
+                            $queue->push($value);
+                        }
+                    } finally {
+                        $sequence->resume($position);
                     }
-                    $sequence->resume($position);
                 } while ($position = $suspension->suspend());
             }, $this->position++);
         } else {

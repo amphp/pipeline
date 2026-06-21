@@ -48,4 +48,9 @@ final class Sequence
 
         $this->position = $newPosition;
     }
+
+    public function dispose(): void
+    {
+        $this->resume(\PHP_INT_MAX - 1);
+    }
 }

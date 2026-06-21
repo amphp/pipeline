@@ -60,6 +60,7 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
 
                         if ($item === $stop) {
                             $queue->complete();
+                            $order?->dispose();
                             return;
                         }
 
@@ -71,7 +72,7 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
             });
         }
 
-        async(static function () use ($futures, $queue): void {
+        async(static function () use ($futures, $queue, $order): void {
             try {
                 await($futures);
 
@@ -82,6 +83,8 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
                 if (!$queue->isComplete()) {
                     $queue->error($e);
                 }
+            } finally {
+                $order?->dispose();
             }
         });
     }
