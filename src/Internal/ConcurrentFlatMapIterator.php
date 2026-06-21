@@ -33,7 +33,7 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
     ) {
         $queue = new QueueState($bufferSize);
         $this->iterator = new ConcurrentQueueIterator($queue);
-        $order = $ordered ? new Sequence : null;
+        $order = $ordered ? new Sequence() : null;
 
         $stop = FlatMapOperation::getStopMarker();
 
@@ -53,9 +53,14 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
                     $order?->await($position);
 
                     foreach ($iterable as $item) {
+                        // Another concurrent coroutine may have already completed the queue
+                        if ($queue->isComplete()) {
+                            return;
+                        }
+
                         if ($item === $stop) {
                             $queue->complete();
-                            break 2;
+                            return;
                         }
 
                         $queue->push($item);
@@ -69,9 +74,14 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
         async(static function () use ($futures, $queue): void {
             try {
                 await($futures);
-                $queue->complete();
+
+                if (!$queue->isComplete()) {
+                    $queue->complete();
+                }
             } catch (\Throwable $e) {
-                $queue->error($e);
+                if (!$queue->isComplete()) {
+                    $queue->error($e);
+                }
             }
         });
     }

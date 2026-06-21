@@ -45,4 +45,19 @@ class TakeTest extends AsyncTestCase
 
         $iterator->continue();
     }
+
+    public function testUnorderedConcurrent(): void
+    {
+        $size = 50;
+
+        // The stop marker completes the underlying queue; with multiple unordered
+        // coroutines this must not complete the queue more than once.
+        $values = Pipeline::fromIterable(\range(1, 100))
+            ->concurrent(4)
+            ->unordered()
+            ->take($size)
+            ->toArray();
+
+        self::assertCount($size, $values);
+    }
 }
