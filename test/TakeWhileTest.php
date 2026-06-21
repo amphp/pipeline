@@ -4,7 +4,6 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
-use function Amp\delay;
 
 class TakeWhileTest extends AsyncTestCase
 {
