@@ -17,7 +17,7 @@ class ConcurrentClosureIteratorTest extends AsyncTestCase
 
             $i++;
 
-            delay(0.5, true, $cancellation);
+            delay(0.5, cancellation: $cancellation);
 
             return $i;
         });
@@ -35,5 +35,34 @@ class ConcurrentClosureIteratorTest extends AsyncTestCase
         self::assertTrue($iterator->continue(new TimeoutCancellation(1)));
         self::assertSame(2, $iterator->getValue());
         self::assertSame(1, $iterator->getPosition());
+    }
+
+    public function testDisposeBeforeConsume(): void
+    {
+        $iterator = new ConcurrentClosureIterator(fn () => 1);
+
+        $iterator->dispose();
+
+        delay(0.01); // Allow the cancellation callback to run on the event loop.
+
+        self::assertTrue($iterator->isComplete());
+    }
+
+    public function testDisposeAfterConsume(): void
+    {
+        $iterator = new ConcurrentClosureIterator(function (): int {
+            static $i = 0;
+
+            return ++$i;
+        });
+
+        self::assertTrue($iterator->continue());
+        self::assertSame(1, $iterator->getValue());
+
+        $iterator->dispose();
+
+        delay(0.01); // Allow the cancellation callback to run on the event loop.
+
+        self::assertTrue($iterator->isComplete());
     }
 }

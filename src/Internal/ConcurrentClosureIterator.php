@@ -41,7 +41,7 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
         $this->deferredCancellation = new DeferredCancellation();
 
         $this->deferredCancellation->getCancellation()->subscribe(static function () use ($sources): void {
-            while ($sources->isEmpty()) {
+            while (!$sources->isEmpty()) {
                 $sources->dequeue();
             }
         });
