@@ -98,4 +98,22 @@ class ConcatTest extends AsyncTestCase
 
         Pipeline::concat([1]);
     }
+
+    /**
+     * @dataProvider getArrays
+     */
+    public function testIsComplete(array $arrays): void
+    {
+        $iterator = new ConcurrentChainedIterator(
+            \array_map(fn (array $array) => new ConcurrentArrayIterator($array), $arrays),
+        );
+
+        self::assertFalse($iterator->isComplete());
+
+        while ($iterator->continue()) {
+            self::assertFalse($iterator->isComplete());
+        }
+
+        self::assertTrue($iterator->isComplete());
+    }
 }

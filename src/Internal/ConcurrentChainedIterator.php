@@ -90,7 +90,7 @@ final class ConcurrentChainedIterator implements ConcurrentIterator
     #[\Override]
     public function isComplete(): bool
     {
-        return $this->position->get() !== null;
+        return $this->position->get() === null;
     }
 
     #[\Override]
