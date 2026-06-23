@@ -4,6 +4,7 @@ namespace Amp\Pipeline;
 
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\PHPUnit\TestException;
+use Revolt\EventLoop;
 use function Amp\delay;
 
 class ConcurrentTest extends AsyncTestCase
@@ -32,6 +33,32 @@ class ConcurrentTest extends AsyncTestCase
             ->toArray();
 
         self::assertSame($range, $results);
+    }
+
+    public function testConcurrencyOrderedWithAsyncSource(): void
+    {
+        $range = \range(0, 99);
+
+        $queue = new Queue();
+
+        EventLoop::queue(function () use ($queue): void {
+            foreach (\array_chunk(\range(0, 99), 10) as $chunk) {
+                \array_map($queue->pushAsync(...), $chunk);
+                delay(0.1);
+            }
+
+            $queue->complete();
+        });
+
+        $emitted = [];
+
+        Pipeline::fromIterable($queue->iterate())
+            ->concurrent(7)
+            ->forEach(function (int $value) use (&$emitted): void {
+                $emitted[] = $value;
+            });
+
+        self::assertSame($range, $emitted);
     }
 
     public function testConcurrencyUnordered(): void

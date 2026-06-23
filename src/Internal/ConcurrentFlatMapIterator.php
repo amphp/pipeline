@@ -3,9 +3,9 @@
 namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
+use Amp\Future;
 use Amp\Pipeline\ConcurrentIterator;
 use function Amp\async;
-use function Amp\Future\await;
 
 /**
  * @internal
@@ -33,48 +33,66 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
     ) {
         $queue = new QueueState($bufferSize);
         $this->iterator = new ConcurrentQueueIterator($queue);
-        $order = $ordered ? new Sequence() : null;
+
+        $preOrder = $ordered ? new Sequence() : null;
+        $postOrder = $ordered ? new Sequence() : null;
 
         $stop = FlatMapOperation::getStopMarker();
 
         $futures = [];
 
         for ($i = 0; $i < $concurrency; $i++) {
-            $futures[] = async(static function () use ($queue, $iterator, $flatMap, $order, $stop): void {
+            $futures[] = async(static function () use (
+                $queue,
+                $iterator,
+                $flatMap,
+                $preOrder,
+                $postOrder,
+                $stop,
+            ): void {
                 foreach ($iterator as $position => $value) {
+                    // Force ordering of concurrent coroutines regardless of the emitted order of the source iterator.
+                    $preOrder?->barrier($position);
+
                     try {
-                        // The operation runs concurrently, but the emits are at the correct position
                         $iterable = $flatMap($value, $position);
                     } catch (\Throwable $exception) {
-                        $order?->await($position);
+                        $postOrder?->await($position);
+
+                        $preOrder?->dispose();
+                        $postOrder?->dispose();
+
                         throw $exception;
                     }
 
-                    $order?->await($position);
+                    $postOrder?->await($position);
 
                     foreach ($iterable as $item) {
-                        // Another concurrent coroutine may have already completed the queue
+                        // Another concurrent coroutine already completed the queue
                         if ($queue->isComplete()) {
                             return;
                         }
 
                         if ($item === $stop) {
                             $queue->complete();
-                            $order?->dispose();
+
+                            $preOrder?->dispose();
+                            $postOrder?->dispose();
+
                             return;
                         }
 
                         $queue->push($item);
                     }
 
-                    $order?->resume($position);
+                    $postOrder?->resume($position);
                 }
             });
         }
 
-        async(static function () use ($futures, $queue, $order): void {
+        async(static function () use ($futures, $queue): void {
             try {
-                await($futures);
+                Future\await($futures);
 
                 if (!$queue->isComplete()) {
                     $queue->complete();
@@ -83,8 +101,6 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
                 if (!$queue->isComplete()) {
                     $queue->error($e);
                 }
-            } finally {
-                $order?->dispose();
             }
         });
     }

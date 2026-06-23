@@ -3,11 +3,15 @@
 namespace Amp\Pipeline\Internal;
 
 use Revolt\EventLoop;
+use Revolt\EventLoop\Suspension;
 
 /** @internal */
 final class Sequence
 {
+    /** @var non-negative-int */
     private int $position = 0;
+
+    /** @var array<int, Suspension> */
     private array $suspensions = [];
 
     public function await(int $position): void
@@ -47,6 +51,17 @@ final class Sequence
         }
 
         $this->position = $newPosition;
+    }
+
+    /**
+     * Awaiting and immediately resuming acts as a barrier, ensuring callbacks are executed in order.
+     * Note that resuming a suspension is async, so the code immediately following this call is executed
+     * before resuming other coroutines.
+     */
+    public function barrier(int $position): void
+    {
+        $this->await($position);
+        $this->resume($position);
     }
 
     public function dispose(): void
