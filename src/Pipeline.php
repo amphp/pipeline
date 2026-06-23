@@ -403,7 +403,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function tap(\Closure $tap): static
     {
-        return $this->flatMap(static function (mixed $value) use ($tap) {
+        return $this->flatMap(static function (mixed $value) use ($tap): array {
             $tap($value);
 
             return [$value];
@@ -442,7 +442,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function skip(int $count): static
     {
-        return $this->flatMap(static function (mixed $value) use ($count) {
+        return $this->flatMap(static function (mixed $value) use ($count): array {
             static $i = 0;
 
             if ($i++ < $count) {
@@ -462,27 +462,25 @@ final class Pipeline implements \IteratorAggregate
      */
     public function skipWhile(\Closure $predicate): static
     {
-        $sequence = new Sequence;
-        $skipping = true;
-
         return $this->flatMap(
-            static function (mixed $value, int $position) use ($sequence, $predicate, &$skipping) {
+            static function (mixed $value, int $position) use ($predicate): array {
+                static $sequence = new Sequence();
+                static $skipping = true;
+
                 if (!$skipping) {
                     return [$value];
                 }
 
                 $predicateResult = $predicate($value);
 
-                $sequence->await($position);
+                $sequence->barrier($position);
 
-                /** @psalm-suppress RedundantCondition */
+                /** @psalm-suppress RedundantCondition $skipping may be modified by a concurrent call */
                 if ($skipping && $predicateResult) {
-                    $sequence->resume($position);
                     return [];
                 }
 
                 $skipping = false;
-                $sequence->resume($position);
 
                 return [$value];
             }
@@ -494,7 +492,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function take(int $count): static
     {
-        return $this->flatMap(static function (mixed $value) use ($count) {
+        return $this->flatMap(static function (mixed $value) use ($count): array {
             static $i = 0;
 
             if (++$i < $count) {
@@ -519,27 +517,25 @@ final class Pipeline implements \IteratorAggregate
      */
     public function takeWhile(\Closure $predicate): static
     {
-        $sequence = new Sequence;
-        $taking = true;
-
         return $this->flatMap(
-            static function (mixed $value, int $position) use ($sequence, $predicate, &$taking) {
+            static function (mixed $value, int $position) use ($predicate): array {
+                static $sequence = new Sequence();
+                static $taking = true;
+
                 if (!$taking) {
-                    return [];
+                    return [FlatMapOperation::getStopMarker()];
                 }
 
                 $predicateResult = $predicate($value);
 
-                $sequence->await($position);
+                $sequence->barrier($position);
 
-                /** @psalm-suppress RedundantCondition */
+                /** @psalm-suppress RedundantCondition $taking may be modified by a concurrent call */
                 if ($taking && $predicateResult) {
-                    $sequence->resume($position);
                     return [$value];
                 }
 
                 $taking = false;
-                $sequence->resume($position);
 
                 /** @var T[] */
                 return [FlatMapOperation::getStopMarker()];
