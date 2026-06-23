@@ -332,13 +332,9 @@ final class Pipeline implements \IteratorAggregate
     /**
      * Sorts values, requires buffering all values.
      *
-     * @template R
-     *
      * @param null|\Closure(T, T):int $compare
-     *
-     * @return self<R>
      */
-    public function sorted(?\Closure $compare = null): self
+    public function sorted(?\Closure $compare = null): static
     {
         if ($this->used) {
             throw new \Error('Pipeline consumption has already been started');
@@ -394,10 +390,8 @@ final class Pipeline implements \IteratorAggregate
      * Filters values.
      *
      * @param \Closure(T):bool $filter Keep value if {@code $filter} returns {@code true}.
-     *
-     * @return self<T>
      */
-    public function filter(\Closure $filter): self
+    public function filter(\Closure $filter): static
     {
         return $this->flatMap(static fn (mixed $value) => $filter($value) ? [$value] : []);
     }
@@ -406,10 +400,8 @@ final class Pipeline implements \IteratorAggregate
      * Invokes the given function each time a value is streamed through the pipeline to perform side effects.
      *
      * @param \Closure(T):void $tap
-     *
-     * @return self<T>
      */
-    public function tap(\Closure $tap): self
+    public function tap(\Closure $tap): static
     {
         return $this->flatMap(static function (mixed $value) use ($tap) {
             $tap($value);
@@ -439,21 +431,16 @@ final class Pipeline implements \IteratorAggregate
 
     /**
      * Delays each item by $delay seconds.
-     *
-     *
-     * @return self<T>
      */
-    public function delay(float $delay): self
+    public function delay(float $delay): static
     {
         return $this->tap(static fn () => delay($delay));
     }
 
     /**
      * Skip the first N items of the pipeline.
-     *
-     * @return self<T>
      */
-    public function skip(int $count): self
+    public function skip(int $count): static
     {
         return $this->flatMap(static function (mixed $value) use ($count) {
             static $i = 0;
@@ -472,10 +459,8 @@ final class Pipeline implements \IteratorAggregate
      * All values are emitted afterwards without invoking {@code $predicate}.
      *
      * @param \Closure(T):bool $predicate
-     *
-     * @return self<T>
      */
-    public function skipWhile(\Closure $predicate): self
+    public function skipWhile(\Closure $predicate): static
     {
         $sequence = new Sequence;
         $skipping = true;
@@ -506,10 +491,8 @@ final class Pipeline implements \IteratorAggregate
 
     /**
      * Take only the first N items of the pipeline.
-     *
-     * @return self<T>
      */
-    public function take(int $count): self
+    public function take(int $count): static
     {
         return $this->flatMap(static function (mixed $value) use ($count) {
             static $i = 0;
@@ -533,10 +516,8 @@ final class Pipeline implements \IteratorAggregate
      * Takes values on the pipeline until {@code $predicate} returns {@code false}.
      *
      * @param \Closure(T):bool $predicate
-     *
-     * @return self<T>
      */
-    public function takeWhile(\Closure $predicate): self
+    public function takeWhile(\Closure $predicate): static
     {
         $sequence = new Sequence;
         $taking = true;
