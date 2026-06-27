@@ -2,6 +2,7 @@
 
 namespace Amp\Pipeline;
 
+use Amp\Cancellation;
 use Amp\CancelledException;
 use Amp\DeferredCancellation;
 use Amp\Future;
@@ -9,6 +10,9 @@ use Amp\PHPUnit\AsyncTestCase;
 use Revolt\EventLoop;
 use function Amp\async;
 use function Amp\delay;
+use function Amp\Future\awaitAll;
+use function consume;
+use function sprintf;
 
 class QueueTest extends AsyncTestCase
 {
@@ -624,5 +628,52 @@ class QueueTest extends AsyncTestCase
         $this->expectException(DisposedException::class);
 
         $future->await();
+    }
+
+    public function testIssue23(): void
+    {
+        $expected = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+        $queue = new Queue();
+        $iterator = $queue->iterate();
+        $deferredCancellation = new DeferredCancellation();
+
+        $results = [];
+
+        $consume = function (
+            ConcurrentIterator $iterator,
+            ?Cancellation $cancellation = null,
+        ) use (&$results): void {
+            while ($iterator->continue($cancellation)) {
+                $results[$iterator->getPosition()] = $iterator->getValue();
+            }
+        };
+
+        $deferredCancellation->getCancellation()->subscribe(
+            function () use ($queue, $expected): void {
+                foreach ($expected as $value) {
+                    $queue->push($value);
+                }
+                $queue->complete();
+            },
+        );
+
+        Future\await([
+            async(fn () => $consume($iterator)),
+            async(function () use ($consume, $iterator, $deferredCancellation): void {
+                try {
+                    $consume($iterator, $deferredCancellation->getCancellation());
+                    self::fail('Expected cancellation exception');
+                } catch (\Throwable) {
+                    // Cancellation expected.
+                }
+            }),
+            async(function () use ($consume, $iterator, $deferredCancellation): void {
+                $deferredCancellation->cancel();
+                $consume($iterator);
+            }),
+        ]);
+
+        self::assertEquals($expected, $results);
     }
 }
