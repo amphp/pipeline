@@ -10,9 +10,6 @@ use Amp\PHPUnit\AsyncTestCase;
 use Revolt\EventLoop;
 use function Amp\async;
 use function Amp\delay;
-use function Amp\Future\awaitAll;
-use function consume;
-use function sprintf;
 
 class QueueTest extends AsyncTestCase
 {
