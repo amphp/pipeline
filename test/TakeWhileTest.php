@@ -70,16 +70,24 @@ class TakeWhileTest extends AsyncTestCase
         $iterator->continue();
     }
 
-    public function testUnorderedConcurrent(): void
+    public function provideSizes(): iterable
     {
-        $size = 50;
+        foreach (\range(10, 100, 10) as $size) {
+            yield 'take-' . $size => [$size];
+        }
+    }
 
+    /**
+     * @dataProvider provideSizes
+     */
+    public function testUnorderedConcurrent(int $size): void
+    {
         // The stop marker completes the underlying queue; with multiple unordered
         // coroutines this must not complete the queue more than once.
         $values = Pipeline::fromIterable(\range(1, 100))
             ->concurrent(4)
             ->unordered()
-            ->take($size)
+            ->takeWhile(fn (int $value) => $value <= $size)
             ->toArray();
 
         self::assertCount($size, $values);
