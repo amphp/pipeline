@@ -3,6 +3,7 @@
 namespace Amp\Pipeline\Internal;
 
 use Amp\Cancellation;
+use Amp\CancelledException;
 use Amp\DeferredCancellation;
 use Amp\Pipeline\ConcurrentIterator;
 use Amp\Pipeline\DisposedException;
@@ -58,11 +59,9 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
         }
 
         if ($this->cancellations) {
+            // A previous cancellation left a supplier callback awaiting a value, so skip enqueuing another callback.
             --$this->cancellations;
-            return $this->queue->continue($cancellation);
-        }
-
-        if ($this->sources->isEmpty()) {
+        } elseif ($this->sources->isEmpty()) {
             $queue = $this->queue;
             $sources = $this->sources;
             $sequence = $this->sequence;
@@ -113,18 +112,12 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
             $suspension->resume($this->position++);
         }
 
-        if ($cancellation) {
-            $cancellations = &$this->cancellations;
-            $id = $cancellation->subscribe(static function () use (&$cancellations): void {
-                ++$cancellations;
-            });
-        }
-
         try {
             return $this->queue->continue($cancellation);
-        } finally {
-            /** @psalm-suppress PossiblyUndefinedVariable $id will be defined if $cancellation is not null. */
-            $cancellation?->unsubscribe($id);
+        } catch (CancelledException $exception) {
+            // The next call to continue() will consume the pending value.
+            ++$this->cancellations;
+            throw $exception;
         }
     }
 
