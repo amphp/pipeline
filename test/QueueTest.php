@@ -329,6 +329,44 @@ class QueueTest extends AsyncTestCase
         $this->queue->complete();
     }
 
+    public function testContinueAfterFailThenDisposal(): void
+    {
+        $iteratorA = $this->queue->iterate();
+        $iteratorB = $this->queue->iterate();
+
+        $this->queue->error($exception = new \Exception('Queue failed'));
+
+        $iteratorA->dispose();
+
+        try {
+            $iteratorB->continue();
+            self::fail('Expected exception to be thrown');
+        } catch (\Exception $caught) {
+            self::assertSame($exception, $caught);
+        }
+    }
+
+    public function testContinueAfterCompleteThenDisposal(): void
+    {
+        $queue = new Queue(2);
+        $queue->pushAsync(1)->ignore();
+        $queue->pushAsync(2)->ignore();
+        $queue->complete();
+
+        $iteratorA = $queue->iterate();
+        $iteratorB = $queue->iterate();
+
+        $iteratorA->dispose();
+
+        self::assertTrue($iteratorB->continue());
+        self::assertSame(1, $iteratorB->getValue());
+
+        self::assertTrue($iteratorB->continue());
+        self::assertSame(2, $iteratorB->getValue());
+
+        self::assertFalse($iteratorB->continue());
+    }
+
     public function testBackpressureRelievedAfterCompletionThenDisposal(): void
     {
         $emit1 = $this->queue->pushAsync(1);

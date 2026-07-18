@@ -185,12 +185,11 @@ final class QueueState implements \IteratorAggregate
 
         if ($this->completed) {
             $this->disposed = true;
-            $this->exception = new DisposedException;
-            $this->triggerDisposal();
+            $this->relieveBackPressure(new DisposedException());
             return;
         }
 
-        $this->finalize(new DisposedException, true);
+        $this->finalize(new DisposedException(), true);
     }
 
     /**
@@ -426,15 +425,8 @@ final class QueueState implements \IteratorAggregate
     {
         \assert($this->disposed && $this->exception, "Pipeline was not disposed on triggering disposal");
 
-        /** @psalm-suppress RedundantCondition */
-        if (isset($this->backpressure)) {
-            $this->relieveBackPressure($this->exception);
-        }
-
-        /** @psalm-suppress RedundantCondition */
-        if (isset($this->waiting)) {
-            $this->resolvePending();
-        }
+        $this->relieveBackPressure($this->exception);
+        $this->resolvePending();
     }
 
     #[\Override]
