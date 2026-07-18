@@ -3,9 +3,11 @@
 namespace Amp\Pipeline;
 
 use Amp\CancelledException;
+use Amp\Future;
 use Amp\PHPUnit\AsyncTestCase;
 use Amp\Pipeline\Internal\ConcurrentClosureIterator;
 use Amp\TimeoutCancellation;
+use function Amp\async;
 use function Amp\delay;
 
 class ConcurrentClosureIteratorTest extends AsyncTestCase
@@ -35,6 +37,55 @@ class ConcurrentClosureIteratorTest extends AsyncTestCase
         self::assertTrue($iterator->continue(new TimeoutCancellation(1)));
         self::assertSame(2, $iterator->getValue());
         self::assertSame(1, $iterator->getPosition());
+    }
+
+    public function testConcurrentContinueWhileSourceAwaitsSequence(): void
+    {
+        $invocations = 0;
+        $iterator = new ConcurrentClosureIterator(function () use (&$invocations): int {
+            $i = $invocations++;
+            if ($i === 0) {
+                delay(0.1); // First invocation is slow, subsequent invocations return immediately.
+            }
+
+            return $i;
+        });
+
+        $consume = static fn () => $iterator->continue() ? $iterator->getValue() : null;
+
+        $futures = [];
+        $futures[] = async($consume);
+        $futures[] = async($consume);
+
+        delay(0.05); // Allow the second supplier fiber to block on the ordering sequence.
+
+        $futures[] = async($consume);
+
+        self::assertSame([0, 1, 2], Future\await($futures));
+        self::assertSame(3, $invocations);
+    }
+
+    public function testDisposeWhileSourceSuspendedInPush(): void
+    {
+        $iterator = new ConcurrentClosureIterator(function (): int {
+            delay(0.05);
+
+            return 1;
+        });
+
+        try {
+            $iterator->continue(new TimeoutCancellation(0.01));
+            self::fail('Should throw exception');
+        } catch (CancelledException) {
+        }
+
+        delay(0.1); // Allow the supplier fiber to suspend within push() awaiting backpressure.
+
+        $iterator->dispose();
+
+        delay(0.1); // Allow the supplier fiber to be resumed with the disposal exception.
+
+        self::assertTrue($iterator->isComplete());
     }
 
     public function testDisposeBeforeConsume(): void

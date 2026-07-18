@@ -5,6 +5,7 @@ namespace Amp\Pipeline\Internal;
 use Amp\Cancellation;
 use Amp\DeferredCancellation;
 use Amp\Pipeline\ConcurrentIterator;
+use Amp\Pipeline\DisposedException;
 use Revolt\EventLoop;
 use Revolt\EventLoop\Suspension;
 
@@ -85,9 +86,8 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
                             $queue->error($exception);
                             $deferredCancellation->cancel($exception);
                         }
+
                         return;
-                    } finally {
-                        $sources->enqueue($suspension);
                     }
 
                     $sequence->await($position);
@@ -96,9 +96,16 @@ final class ConcurrentClosureIterator implements ConcurrentIterator
                         if (!$queue->isComplete()) {
                             $queue->push($value);
                         }
+                    } catch (DisposedException $exception) {
+                        $deferredCancellation->cancel($exception);
+                        return;
                     } finally {
                         $sequence->resume($position);
                     }
+
+                    // Make this fiber available for reuse only once it is suspended below, otherwise a concurrent
+                    // continue() may resume the suspension while suspended in Sequence::await() or QueueState::push().
+                    $sources->enqueue($suspension);
                 } while ($position = $suspension->suspend());
             }, $this->position++);
         } else {
