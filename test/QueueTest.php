@@ -346,6 +346,47 @@ class QueueTest extends AsyncTestCase
         }
     }
 
+    public function testBackPressureOnFail(): void
+    {
+        $future = $this->queue->pushAsync(1);
+
+        $this->queue->error($exception = new \Exception('Queue failed'));
+
+        // Producer waits until the value is consumed, even after the queue errors.
+        self::assertFalse($future->isComplete());
+
+        $iterator = $this->queue->iterate();
+
+        // Values enqueued before the error are delivered before the error is thrown.
+        self::assertTrue($iterator->continue());
+        self::assertSame(1, $iterator->getValue());
+
+        self::assertNull($future->await());
+
+        try {
+            $iterator->continue();
+            self::fail('Expected exception to be thrown');
+        } catch (\Exception $caught) {
+            self::assertSame($exception, $caught);
+        }
+    }
+
+    public function testBackPressureOnFailThenDisposal(): void
+    {
+        $future = $this->queue->pushAsync(1);
+
+        $this->queue->error(new \Exception('Queue failed'));
+
+        $iterator = $this->queue->iterate();
+        $iterator->dispose();
+
+        // Disposal relieves the pending backpressure of an errored queue.
+        $this->expectException(DisposedException::class);
+        $this->expectExceptionMessage('The iterator has been disposed');
+
+        $future->await();
+    }
+
     public function testContinueAfterCompleteThenDisposal(): void
     {
         $queue = new Queue(2);
