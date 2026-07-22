@@ -57,6 +57,11 @@ interface ConcurrentIterator extends \IteratorAggregate
 
     /**
      * Disposes the iterator, indicating the consumer is no longer interested in the iterator output.
+     *
+     * Disposal applies only to this iterator. An iterator derived from another iterator does not dispose of its
+     * source iterator, as the source may be shared with other consumers. Producers pushing to an abandoned source
+     * remain suspended until the source itself is disposed, either explicitly (e.g. {@see Pipeline::dispose()})
+     * or by garbage collection.
      */
     public function dispose(): void;
 

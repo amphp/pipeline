@@ -564,6 +564,10 @@ final class Pipeline implements \IteratorAggregate
         return $source;
     }
 
+    /**
+     * Disposes the source of the pipeline, indicating the consumer is no longer interested in the pipeline output.
+     * Producers pushing to the source will receive a {@see DisposedException}.
+     */
     public function dispose(): void
     {
         $this->source->dispose();

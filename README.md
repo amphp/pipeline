@@ -142,6 +142,12 @@ Pipeline::generate(function (): int { static $v = 0; return ++$v; })
     });
 ```
 
+#### Disposal
+
+Iterators derived from another iterator, such as the iterator returned from `Pipeline::getIterator()` or created by intermediate operations like `map()`, are independent of their source: disposing the derived iterator does not dispose the source iterator, since the source may be shared with other consumers. For example, a limited number of values may be consumed from a source using `take()`, with the remaining values consumed from the source afterward.
+
+Use `Pipeline::dispose()` to explicitly dispose the source of a pipeline, signaling any producers pushing to the source with a `DisposedException`. A source is also disposed automatically once the last reference to it is destroyed, so producers pushing to an abandoned source may remain suspended until the source is garbage collected.
+
 ## Versioning
 
 `amphp/pipeline` follows the [semver](http://semver.org/) semantic versioning specification like all other `amphp` packages.
