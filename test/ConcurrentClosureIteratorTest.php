@@ -95,19 +95,19 @@ class ConcurrentClosureIteratorTest extends AsyncTestCase
         $iterator = new ConcurrentClosureIterator(function () use (&$invocations): int {
             $i = $invocations++;
 
-            delay(0.1);
+            delay(0.5);
 
             return $i;
         });
 
         try {
-            $iterator->continue(new TimeoutCancellation(0.02));
+            $iterator->continue(new TimeoutCancellation(0.1));
             self::fail('Should throw exception');
         } catch (CancelledException) {
         }
 
         try {
-            $iterator->continue(new TimeoutCancellation(0.02));
+            $iterator->continue(new TimeoutCancellation(0.1));
             self::fail('Should throw exception');
         } catch (CancelledException) {
         }
@@ -120,13 +120,13 @@ class ConcurrentClosureIteratorTest extends AsyncTestCase
     public function testDisposeWhileSourceSuspendedInPush(): void
     {
         $iterator = new ConcurrentClosureIterator(function (): int {
-            delay(0.05);
+            delay(0.5);
 
             return 1;
         });
 
         try {
-            $iterator->continue(new TimeoutCancellation(0.01));
+            $iterator->continue(new TimeoutCancellation(0.1));
             self::fail('Should throw exception');
         } catch (CancelledException) {
         }
