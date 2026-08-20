@@ -5,6 +5,7 @@ namespace Amp\Pipeline\Internal;
 use Amp\Cancellation;
 use Amp\Future;
 use Amp\Pipeline\ConcurrentIterator;
+use Amp\Pipeline\Emission;
 use function Amp\async;
 
 /**
@@ -22,7 +23,7 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
      * @template R
      *
      * @param ConcurrentIterator<T> $iterator
-     * @param \Closure(T, int):iterable<R> $flatMap
+     * @param \Closure(T, int):Emission<R> $flatMap
      */
     public function __construct(
         ConcurrentIterator $iterator,
@@ -37,8 +38,6 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
         $preOrder = $ordered ? new Sequence() : null;
         $postOrder = $ordered ? new Sequence() : null;
 
-        $stop = FlatMapOperation::getStopMarker();
-
         $futures = [];
 
         for ($i = 0; $i < $concurrency; $i++) {
@@ -48,14 +47,13 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
                 $flatMap,
                 $preOrder,
                 $postOrder,
-                $stop,
             ): void {
                 foreach ($iterator as $position => $value) {
                     // Force ordering of concurrent coroutines regardless of the emitted order of the source iterator.
                     $preOrder?->barrier($position);
 
                     try {
-                        $iterable = $flatMap($value, $position);
+                        $emission = $flatMap($value, $position);
                     } catch (\Throwable $exception) {
                         $postOrder?->await($position);
 
@@ -67,22 +65,22 @@ final class ConcurrentFlatMapIterator implements ConcurrentIterator
 
                     $postOrder?->await($position);
 
-                    foreach ($iterable as $item) {
+                    foreach ($emission as $item) {
                         // Another concurrent coroutine already completed the queue
                         if ($queue->isComplete()) {
                             return;
                         }
 
-                        if ($item === $stop) {
-                            $queue->complete();
-
-                            $preOrder?->dispose();
-                            $postOrder?->dispose();
-
-                            return;
-                        }
-
                         $queue->push($item);
+                    }
+
+                    if ($emission->isFinal()) {
+                        $queue->complete();
+
+                        $preOrder?->dispose();
+                        $postOrder?->dispose();
+
+                        return;
                     }
 
                     $postOrder?->resume($position);

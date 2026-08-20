@@ -3,6 +3,7 @@
 namespace Amp\Pipeline\Internal;
 
 use Amp\Pipeline\ConcurrentIterator;
+use Amp\Pipeline\Emission;
 
 /**
  * @template T
@@ -12,21 +13,14 @@ use Amp\Pipeline\ConcurrentIterator;
  */
 final class FlatMapOperation implements IntermediateOperation
 {
-    public static function getStopMarker(): object
-    {
-        static $marker;
-
-        return $marker ??= new \stdClass;
-    }
-
     /**
-     * @param \Closure(T, int):iterable<R> $flatMap
+     * @param \Closure(T, int):Emission<R> $flatMap
      */
     public function __construct(
         private readonly int $bufferSize,
         private readonly int $concurrency,
         private readonly bool $ordered,
-        private readonly \Closure $flatMap
+        private readonly \Closure $flatMap,
     ) {
     }
 
@@ -34,20 +28,7 @@ final class FlatMapOperation implements IntermediateOperation
     public function __invoke(ConcurrentIterator $source): ConcurrentIterator
     {
         if ($this->concurrency === 1) {
-            $stop = self::getStopMarker();
-
-            return new ConcurrentIterableIterator((function () use ($source, $stop): iterable {
-                foreach ($source as $position => $value) {
-                    $iterable = ($this->flatMap)($value, $position);
-                    foreach ($iterable as $item) {
-                        if ($item === $stop) {
-                            return;
-                        }
-
-                        yield $item;
-                    }
-                }
-            })(), $this->bufferSize);
+            return new ConcurrentIterableIterator($this->consume($source), $this->bufferSize);
         }
 
         return new ConcurrentFlatMapIterator(
@@ -57,5 +38,18 @@ final class FlatMapOperation implements IntermediateOperation
             $this->ordered,
             $this->flatMap,
         );
+    }
+
+    private function consume(ConcurrentIterator $source): \Generator
+    {
+        foreach ($source as $position => $value) {
+            $emission = ($this->flatMap)($value, $position);
+
+            yield from $emission;
+
+            if ($emission->isFinal()) {
+                return;
+            }
+        }
     }
 }

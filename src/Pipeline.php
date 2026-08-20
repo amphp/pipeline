@@ -37,7 +37,10 @@ final class Pipeline implements \IteratorAggregate
             $iterable = $iterable();
 
             if (!\is_iterable($iterable)) {
-                throw new \TypeError('Return value of argument #1 ($iterable) must be of type iterable, ' . \get_debug_type($iterable) . ' returned');
+                throw new \TypeError(\sprintf(
+                    'Return value of argument #1 ($iterable) must be of type iterable, %s returned',
+                    \get_debug_type($iterable),
+                ));
             }
         }
 
@@ -351,11 +354,11 @@ final class Pipeline implements \IteratorAggregate
      *
      * @template R
      *
-     * @param \Closure(T, int):iterable<R> $flatMap
+     * @param \Closure(T, int): Emission<R> $applicator
      *
      * @return self<R>
      */
-    public function flatMap(\Closure $flatMap): self
+    public function apply(\Closure $applicator): self
     {
         if ($this->used) {
             throw new \Error('Pipeline consumption has already been started');
@@ -365,11 +368,35 @@ final class Pipeline implements \IteratorAggregate
             $this->bufferSize,
             $this->concurrency,
             $this->ordered,
-            $flatMap,
+            $applicator,
         );
 
         /** @var self<R> */
         return $this;
+    }
+
+    /**
+     * Maps values, flattening one level.
+     *
+     * @template R
+     *
+     * @param \Closure(T, int):iterable<R> $flatMap
+     *
+     * @return self<R>
+     */
+    public function flatMap(\Closure $flatMap): self
+    {
+        return $this->apply(static function (mixed $value, int $position) use ($flatMap): Emission {
+            $iterable = $flatMap($value, $position);
+
+            if (!\is_iterable($iterable)) {
+                throw new \TypeError(
+                    \sprintf('flatMap callback must return an iterable, %s returned', \get_debug_type($iterable)),
+                );
+            }
+
+            return Emission::of($iterable);
+        });
     }
 
     /**
@@ -383,7 +410,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function map(\Closure $map): self
     {
-        return $this->flatMap(static fn (mixed $value) => [$map($value)]);
+        return $this->apply(static fn (mixed $value) => Emission::of([$map($value)]));
     }
 
     /**
@@ -393,7 +420,7 @@ final class Pipeline implements \IteratorAggregate
      */
     public function filter(\Closure $filter): static
     {
-        return $this->flatMap(static fn (mixed $value) => $filter($value) ? [$value] : []);
+        return $this->apply(static fn (mixed $value) => Emission::of($filter($value) ? [$value] : []));
     }
 
     /**
@@ -403,10 +430,10 @@ final class Pipeline implements \IteratorAggregate
      */
     public function tap(\Closure $tap): static
     {
-        return $this->flatMap(static function (mixed $value) use ($tap): array {
+        return $this->apply(static function (mixed $value) use ($tap): Emission {
             $tap($value);
 
-            return [$value];
+            return Emission::of([$value]);
         });
     }
 
@@ -442,14 +469,14 @@ final class Pipeline implements \IteratorAggregate
      */
     public function skip(int $count): static
     {
-        return $this->flatMap(static function (mixed $value) use ($count): array {
+        return $this->apply(static function (mixed $value) use ($count): Emission {
             static $i = 0;
 
             if ($i++ < $count) {
-                return [];
+                return Emission::of([]);
             }
 
-            return [$value];
+            return Emission::of([$value]);
         });
     }
 
@@ -462,13 +489,13 @@ final class Pipeline implements \IteratorAggregate
      */
     public function skipWhile(\Closure $predicate): static
     {
-        return $this->flatMap(
-            static function (mixed $value, int $position) use ($predicate): array {
+        return $this->apply(
+            static function (mixed $value, int $position) use ($predicate): Emission {
                 static $sequence = new Sequence();
                 static $skipping = true;
 
                 if (!$skipping) {
-                    return [$value];
+                    return Emission::of([$value]);
                 }
 
                 $predicateResult = $predicate($value);
@@ -477,12 +504,12 @@ final class Pipeline implements \IteratorAggregate
 
                 /** @psalm-suppress RedundantCondition $skipping may be modified by a concurrent call */
                 if ($skipping && $predicateResult) {
-                    return [];
+                    return Emission::of([]);
                 }
 
                 $skipping = false;
 
-                return [$value];
+                return Emission::of([$value]);
             }
         );
     }
@@ -492,21 +519,18 @@ final class Pipeline implements \IteratorAggregate
      */
     public function take(int $count): static
     {
-        return $this->flatMap(static function (mixed $value) use ($count): array {
+        return $this->apply(static function (mixed $value) use ($count): Emission {
             static $i = 0;
 
             if (++$i < $count) {
-                return [$value];
+                return Emission::of([$value]);
             }
-
-            /** @var T $stopMarker Fake stop marker as type T. */
-            $stopMarker = FlatMapOperation::getStopMarker();
 
             if ($i === $count) {
-                return [$value, $stopMarker];
+                return Emission::end([$value]);
             }
 
-            return [$stopMarker];
+            return Emission::end();
         });
     }
 
@@ -517,13 +541,13 @@ final class Pipeline implements \IteratorAggregate
      */
     public function takeWhile(\Closure $predicate): static
     {
-        return $this->flatMap(
-            static function (mixed $value, int $position) use ($predicate): array {
+        return $this->apply(
+            static function (mixed $value, int $position) use ($predicate): Emission {
                 static $sequence = new Sequence();
                 static $taking = true;
 
                 if (!$taking) {
-                    return [FlatMapOperation::getStopMarker()];
+                    return Emission::end();
                 }
 
                 $predicateResult = $predicate($value);
@@ -532,13 +556,12 @@ final class Pipeline implements \IteratorAggregate
 
                 /** @psalm-suppress RedundantCondition $taking may be modified by a concurrent call */
                 if ($taking && $predicateResult) {
-                    return [$value];
+                    return Emission::of([$value]);
                 }
 
                 $taking = false;
 
-                /** @var T[] */
-                return [FlatMapOperation::getStopMarker()];
+                return Emission::end();
             }
         );
     }
